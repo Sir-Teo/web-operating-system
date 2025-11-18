@@ -72,17 +72,27 @@ Visit `https://your-username.github.io/web-operating-system/`
 - **Smooth Animations** - Window fade-ins, icon lifts, button transforms
 - **Responsive Design** - Works on desktop, tablet, and mobile
 
-### 💻 Advanced Terminal
+### 💻 Advanced Terminal v2.0
 
-**20+ Built-in Commands:**
-- File System: `ls`, `cd`, `pwd`, `cat`, `mkdir`, `rm`, `touch`, `tree`, `cp`, `mv`
-- System: `ps`, `uname`, `date`, `whoami`, `neofetch`
-- Utilities: `echo`, `help`, `clear`
+**40+ Built-in Commands:**
+- File System: `ls`, `cd`, `pwd`, `cat`, `mkdir`, `rm`, `touch`, `tree`, `cp`, `mv`, `find`
+- Text Processing: `grep`, `wc`, `sort`, `uniq`, `head`, `tail`, `cut`
+- System: `ps`, `uname`, `date`, `whoami`, `neofetch`, `env`, `export`
+- Job Control: `jobs`, `fg`, `bg`, `wait`, `kill`
+- Scripting: `script`, `alias`, `history`
+- Customization: `theme`
 
-**Features:**
+**✨ New Features:**
+- ✅ **Shell Scripting** - Full bash-like scripting with variables, loops, conditionals, functions
+- ✅ **Background Jobs** - Run commands in background with `&`, manage with job control
+- ✅ **8 Themes** - Matrix, Dracula, Solarized, Nord, Monokai, One Dark, Gruvbox, Tokyo Night
+- ✅ **Fuzzy Search** - Ctrl+R for intelligent history search
+- ✅ **Auto-Suggestions** - Real-time command suggestions from history
+- ✅ **Signal Handling** - Ctrl+C, Ctrl+Z, Ctrl+D for process control
+- ✅ **Pipes & Redirection** - Chain commands with `|`, redirect with `>` and `>>`
 - ✅ Tab autocomplete
 - ✅ Command history (↑/↓ arrows)
-- ✅ Matrix-style theme with scanline effects
+- ✅ Matrix-style theme with scanline effects (or choose your favorite!)
 - ✅ Emoji indicators and helpful error messages
 - ✅ ASCII art and beautiful formatting
 
