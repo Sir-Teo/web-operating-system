@@ -5,6 +5,7 @@ import { terminalThemes, applyTheme, getCurrentTheme, getAvailableThemes } from 
 import { FileAttributes } from '../../filesystem/FileAttributes.js';
 import { FileWatcher } from '../../filesystem/FileWatcher.js';
 import { CompressionManager } from '../../filesystem/CompressionManager.js';
+import { FileEncryption } from '../../filesystem/FileEncryption.js';
 
 export default class Terminal {
   constructor(context) {
@@ -36,6 +37,9 @@ export default class Terminal {
 
     // Initialize compression manager
     this.compressionManager = new CompressionManager(context.fs);
+
+    // Initialize encryption manager
+    this.fileEncryption = new FileEncryption(context.fs);
   }
 
   async init() {
@@ -471,7 +475,14 @@ export default class Terminal {
       // Phase 2.2: Compression & Archives
       gzip: this.cmd_gzip.bind(this),
       gunzip: this.cmd_gunzip.bind(this),
-      tar: this.cmd_tar.bind(this)
+      tar: this.cmd_tar.bind(this),
+      // Phase 2.3: File Encryption & Security
+      encrypt: this.cmd_encrypt.bind(this),
+      decrypt: this.cmd_decrypt.bind(this),
+      md5sum: this.cmd_md5sum.bind(this),
+      sha256sum: this.cmd_sha256sum.bind(this),
+      sha512sum: this.cmd_sha512sum.bind(this),
+      shred: this.cmd_shred.bind(this)
     };
 
     if (builtins[command]) {
@@ -846,6 +857,14 @@ export default class Terminal {
 ║    tar -xzf <archive>   Extract tar.gz archive         ║
 ║    tar -xzf <archive> -C <dir>  Extract to directory   ║
 ║                                                         ║
+║  🔐 Encryption & Security:                              ║
+║    encrypt <file> <password>  Encrypt file (AES-256)   ║
+║    decrypt <file> <password>  Decrypt encrypted file   ║
+║    md5sum <file>        Calculate MD5 hash             ║
+║    sha256sum <file>     Calculate SHA-256 hash         ║
+║    sha512sum <file>     Calculate SHA-512 hash         ║
+║    shred [-n N] <file>  Securely delete file           ║
+║                                                         ║
 ║  💻 System:                                             ║
 ║    ps               List running processes             ║
 ║    uname [-a]       Print system information           ║
@@ -906,6 +925,9 @@ export default class Terminal {
   • File Watching: Monitor files/directories for changes
   • Compression: gzip/gunzip for file compression
   • Archives: tar for creating and extracting archives
+  • Encryption: AES-256-GCM encryption for sensitive files
+  • Hashing: MD5, SHA-256, SHA-512 checksums
+  • Secure Deletion: Multi-pass file shredding
 
 📝 Script Example:
   name="WebOS"
@@ -2062,6 +2084,189 @@ export default class Terminal {
       }
     } catch (error) {
       return `❌ tar: ${error.message}`;
+    }
+  }
+
+  /**
+   * Encrypt a file with AES-256
+   */
+  async cmd_encrypt(args) {
+    if (args.length < 2) {
+      return '❌ encrypt: missing operands\n💡 Usage: encrypt <file> <password> [output]\n   Example: encrypt secret.txt mypassword\n   Output: secret.txt.enc';
+    }
+
+    const sourcePath = this._resolvePath(args[0]);
+    const password = args[1];
+    const destPath = args[2] ? this._resolvePath(args[2]) : null;
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(sourcePath);
+
+      // Encrypt file
+      const result = await this.fileEncryption.encryptFile(sourcePath, password, destPath);
+
+      let output = `🔒 Encrypted: ${args[0]} → ${result.outputPath.split('/').pop()}\n`;
+      output += `📊 Original:  ${this._formatBytes(result.originalSize)}\n`;
+      output += `   Encrypted: ${this._formatBytes(result.encryptedSize)}\n`;
+      output += `🔐 Algorithm: AES-256-GCM\n`;
+      output += `⚠️  Keep your password safe!\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ encrypt: ${error.message}`;
+    }
+  }
+
+  /**
+   * Decrypt an encrypted file
+   */
+  async cmd_decrypt(args) {
+    if (args.length < 2) {
+      return '❌ decrypt: missing operands\n💡 Usage: decrypt <file.enc> <password> [output]\n   Example: decrypt secret.txt.enc mypassword\n   Output: secret.txt';
+    }
+
+    const sourcePath = this._resolvePath(args[0]);
+    const password = args[1];
+    const destPath = args[2] ? this._resolvePath(args[2]) : null;
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(sourcePath);
+
+      // Decrypt file
+      const result = await this.fileEncryption.decryptFile(sourcePath, password, destPath);
+
+      let output = `🔓 Decrypted: ${args[0]} → ${result.outputPath.split('/').pop()}\n`;
+      output += `📊 Encrypted:  ${this._formatBytes(result.encryptedSize)}\n`;
+      output += `   Decrypted:  ${this._formatBytes(result.decryptedSize)}\n`;
+      output += `✅ Decryption successful!\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ decrypt: ${error.message}`;
+    }
+  }
+
+  /**
+   * Calculate MD5 hash of a file
+   */
+  async cmd_md5sum(args) {
+    if (args.length === 0) {
+      return '❌ md5sum: missing operand\n💡 Usage: md5sum <file>\n   Example: md5sum file.txt';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(filePath);
+
+      // Calculate hash
+      const hash = await this.fileEncryption.hashFile(filePath, 'MD5');
+
+      return `${hash}  ${args[0]}\n⚠️  Note: MD5 is cryptographically broken. Use SHA-256 for security.`;
+    } catch (error) {
+      return `❌ md5sum: ${error.message}`;
+    }
+  }
+
+  /**
+   * Calculate SHA-256 hash of a file
+   */
+  async cmd_sha256sum(args) {
+    if (args.length === 0) {
+      return '❌ sha256sum: missing operand\n💡 Usage: sha256sum <file>\n   Example: sha256sum file.txt';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(filePath);
+
+      // Calculate hash
+      const hash = await this.fileEncryption.hashFile(filePath, 'SHA-256');
+
+      return `${hash}  ${args[0]}`;
+    } catch (error) {
+      return `❌ sha256sum: ${error.message}`;
+    }
+  }
+
+  /**
+   * Calculate SHA-512 hash of a file
+   */
+  async cmd_sha512sum(args) {
+    if (args.length === 0) {
+      return '❌ sha512sum: missing operand\n💡 Usage: sha512sum <file>\n   Example: sha512sum file.txt';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(filePath);
+
+      // Calculate hash
+      const hash = await this.fileEncryption.hashFile(filePath, 'SHA-512');
+
+      return `${hash}  ${args[0]}`;
+    } catch (error) {
+      return `❌ sha512sum: ${error.message}`;
+    }
+  }
+
+  /**
+   * Securely delete a file
+   */
+  async cmd_shred(args) {
+    if (args.length === 0) {
+      return '❌ shred: missing operand\n💡 Usage: shred [-n passes] <file>\n   Example: shred secret.txt\n   Example: shred -n 5 secret.txt';
+    }
+
+    const flags = args.filter(arg => arg.startsWith('-'));
+    const fileArgs = args.filter(arg => !arg.startsWith('-'));
+
+    if (fileArgs.length === 0) {
+      return '❌ shred: missing file operand';
+    }
+
+    // Parse number of passes
+    let passes = 3;
+    const nIndex = flags.findIndex(f => f === '-n');
+    if (nIndex >= 0) {
+      const nValueIndex = args.indexOf('-n') + 1;
+      if (args[nValueIndex] && !isNaN(args[nValueIndex])) {
+        passes = parseInt(args[nValueIndex], 10);
+        // Remove the passes count from fileArgs if it was included
+        const passesArgIndex = fileArgs.indexOf(args[nValueIndex]);
+        if (passesArgIndex >= 0) {
+          fileArgs.splice(passesArgIndex, 1);
+        }
+      }
+    }
+
+    const filePath = this._resolvePath(fileArgs[0]);
+
+    try {
+      // Check if file exists
+      const stat = await this.context.fs.stat(filePath);
+
+      // Confirm deletion
+      let output = `⚠️  Securely deleting: ${fileArgs[0]}\n`;
+      output += `📊 Size: ${this._formatBytes(stat.size)}\n`;
+      output += `🔄 Passes: ${passes}\n`;
+
+      // Perform secure deletion
+      const result = await this.fileEncryption.secureDelete(filePath, passes);
+
+      output += `✅ File securely deleted!\n`;
+      output += `🗑️  ${result.passes} overwrite passes completed\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ shred: ${error.message}`;
     }
   }
 
