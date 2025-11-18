@@ -5,6 +5,8 @@ import { terminalThemes, applyTheme, getCurrentTheme, getAvailableThemes } from 
 import { FileAttributes } from '../../filesystem/FileAttributes.js';
 import { FileWatcher } from '../../filesystem/FileWatcher.js';
 import { CompressionManager } from '../../filesystem/CompressionManager.js';
+import { FileEncryption } from '../../filesystem/FileEncryption.js';
+import NetworkStack from '../../network/NetworkStack.js';
 
 export default class Terminal {
   constructor(context) {
@@ -36,6 +38,12 @@ export default class Terminal {
 
     // Initialize compression manager
     this.compressionManager = new CompressionManager(context.fs);
+
+    // Initialize encryption manager
+    this.fileEncryption = new FileEncryption(context.fs);
+
+    // Initialize network stack
+    this.networkStack = NetworkStack;
   }
 
   async init() {
@@ -471,7 +479,26 @@ export default class Terminal {
       // Phase 2.2: Compression & Archives
       gzip: this.cmd_gzip.bind(this),
       gunzip: this.cmd_gunzip.bind(this),
-      tar: this.cmd_tar.bind(this)
+      tar: this.cmd_tar.bind(this),
+      // Phase 2.3: File Encryption & Security
+      encrypt: this.cmd_encrypt.bind(this),
+      decrypt: this.cmd_decrypt.bind(this),
+      md5sum: this.cmd_md5sum.bind(this),
+      sha256sum: this.cmd_sha256sum.bind(this),
+      sha512sum: this.cmd_sha512sum.bind(this),
+      shred: this.cmd_shred.bind(this),
+      // Phase 3: Networking Stack
+      ping: this.cmd_ping.bind(this),
+      curl: this.cmd_curl.bind(this),
+      wget: this.cmd_wget.bind(this),
+      fetch: this.cmd_fetch.bind(this),
+      netstat: this.cmd_netstat.bind(this),
+      ifconfig: this.cmd_ifconfig.bind(this),
+      route: this.cmd_route.bind(this),
+      nslookup: this.cmd_nslookup.bind(this),
+      dig: this.cmd_dig.bind(this),
+      traceroute: this.cmd_traceroute.bind(this),
+      iptables: this.cmd_iptables.bind(this)
     };
 
     if (builtins[command]) {
@@ -846,6 +873,27 @@ export default class Terminal {
 ║    tar -xzf <archive>   Extract tar.gz archive         ║
 ║    tar -xzf <archive> -C <dir>  Extract to directory   ║
 ║                                                         ║
+║  🔐 Encryption & Security:                              ║
+║    encrypt <file> <password>  Encrypt file (AES-256)   ║
+║    decrypt <file> <password>  Decrypt encrypted file   ║
+║    md5sum <file>        Calculate MD5 hash             ║
+║    sha256sum <file>     Calculate SHA-256 hash         ║
+║    sha512sum <file>     Calculate SHA-512 hash         ║
+║    shred [-n N] <file>  Securely delete file           ║
+║                                                         ║
+║  🌐 Networking:                                         ║
+║    ping <host> [-c N]   Test connectivity              ║
+║    curl <url> [-o file] Fetch URL content              ║
+║    wget <url> [-O file] Download file                  ║
+║    fetch <url>          HTTP request                   ║
+║    netstat [-a]         Network statistics             ║
+║    ifconfig             Network interfaces             ║
+║    route                Routing table                  ║
+║    nslookup <domain>    DNS lookup                     ║
+║    dig <domain> [type]  DNS query (A, MX, NS, etc.)    ║
+║    traceroute <host>    Trace route to host            ║
+║    iptables [-L|-A|-F]  Manage firewall rules          ║
+║                                                         ║
 ║  💻 System:                                             ║
 ║    ps               List running processes             ║
 ║    uname [-a]       Print system information           ║
@@ -906,6 +954,12 @@ export default class Terminal {
   • File Watching: Monitor files/directories for changes
   • Compression: gzip/gunzip for file compression
   • Archives: tar for creating and extracting archives
+  • Encryption: AES-256-GCM encryption for sensitive files
+  • Hashing: MD5, SHA-256, SHA-512 checksums
+  • Secure Deletion: Multi-pass file shredding
+  • Networking: HTTP requests, ping, DNS lookup, traceroute
+  • Firewall: Rule-based network filtering and security
+  • Downloads: wget/curl for fetching remote files
 
 📝 Script Example:
   name="WebOS"
@@ -2062,6 +2116,566 @@ export default class Terminal {
       }
     } catch (error) {
       return `❌ tar: ${error.message}`;
+    }
+  }
+
+  /**
+   * Encrypt a file with AES-256
+   */
+  async cmd_encrypt(args) {
+    if (args.length < 2) {
+      return '❌ encrypt: missing operands\n💡 Usage: encrypt <file> <password> [output]\n   Example: encrypt secret.txt mypassword\n   Output: secret.txt.enc';
+    }
+
+    const sourcePath = this._resolvePath(args[0]);
+    const password = args[1];
+    const destPath = args[2] ? this._resolvePath(args[2]) : null;
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(sourcePath);
+
+      // Encrypt file
+      const result = await this.fileEncryption.encryptFile(sourcePath, password, destPath);
+
+      let output = `🔒 Encrypted: ${args[0]} → ${result.outputPath.split('/').pop()}\n`;
+      output += `📊 Original:  ${this._formatBytes(result.originalSize)}\n`;
+      output += `   Encrypted: ${this._formatBytes(result.encryptedSize)}\n`;
+      output += `🔐 Algorithm: AES-256-GCM\n`;
+      output += `⚠️  Keep your password safe!\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ encrypt: ${error.message}`;
+    }
+  }
+
+  /**
+   * Decrypt an encrypted file
+   */
+  async cmd_decrypt(args) {
+    if (args.length < 2) {
+      return '❌ decrypt: missing operands\n💡 Usage: decrypt <file.enc> <password> [output]\n   Example: decrypt secret.txt.enc mypassword\n   Output: secret.txt';
+    }
+
+    const sourcePath = this._resolvePath(args[0]);
+    const password = args[1];
+    const destPath = args[2] ? this._resolvePath(args[2]) : null;
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(sourcePath);
+
+      // Decrypt file
+      const result = await this.fileEncryption.decryptFile(sourcePath, password, destPath);
+
+      let output = `🔓 Decrypted: ${args[0]} → ${result.outputPath.split('/').pop()}\n`;
+      output += `📊 Encrypted:  ${this._formatBytes(result.encryptedSize)}\n`;
+      output += `   Decrypted:  ${this._formatBytes(result.decryptedSize)}\n`;
+      output += `✅ Decryption successful!\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ decrypt: ${error.message}`;
+    }
+  }
+
+  /**
+   * Calculate MD5 hash of a file
+   */
+  async cmd_md5sum(args) {
+    if (args.length === 0) {
+      return '❌ md5sum: missing operand\n💡 Usage: md5sum <file>\n   Example: md5sum file.txt';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(filePath);
+
+      // Calculate hash
+      const hash = await this.fileEncryption.hashFile(filePath, 'MD5');
+
+      return `${hash}  ${args[0]}\n⚠️  Note: MD5 is cryptographically broken. Use SHA-256 for security.`;
+    } catch (error) {
+      return `❌ md5sum: ${error.message}`;
+    }
+  }
+
+  /**
+   * Calculate SHA-256 hash of a file
+   */
+  async cmd_sha256sum(args) {
+    if (args.length === 0) {
+      return '❌ sha256sum: missing operand\n💡 Usage: sha256sum <file>\n   Example: sha256sum file.txt';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(filePath);
+
+      // Calculate hash
+      const hash = await this.fileEncryption.hashFile(filePath, 'SHA-256');
+
+      return `${hash}  ${args[0]}`;
+    } catch (error) {
+      return `❌ sha256sum: ${error.message}`;
+    }
+  }
+
+  /**
+   * Calculate SHA-512 hash of a file
+   */
+  async cmd_sha512sum(args) {
+    if (args.length === 0) {
+      return '❌ sha512sum: missing operand\n💡 Usage: sha512sum <file>\n   Example: sha512sum file.txt';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(filePath);
+
+      // Calculate hash
+      const hash = await this.fileEncryption.hashFile(filePath, 'SHA-512');
+
+      return `${hash}  ${args[0]}`;
+    } catch (error) {
+      return `❌ sha512sum: ${error.message}`;
+    }
+  }
+
+  /**
+   * Securely delete a file
+   */
+  async cmd_shred(args) {
+    if (args.length === 0) {
+      return '❌ shred: missing operand\n💡 Usage: shred [-n passes] <file>\n   Example: shred secret.txt\n   Example: shred -n 5 secret.txt';
+    }
+
+    const flags = args.filter(arg => arg.startsWith('-'));
+    const fileArgs = args.filter(arg => !arg.startsWith('-'));
+
+    if (fileArgs.length === 0) {
+      return '❌ shred: missing file operand';
+    }
+
+    // Parse number of passes
+    let passes = 3;
+    const nIndex = flags.findIndex(f => f === '-n');
+    if (nIndex >= 0) {
+      const nValueIndex = args.indexOf('-n') + 1;
+      if (args[nValueIndex] && !isNaN(args[nValueIndex])) {
+        passes = parseInt(args[nValueIndex], 10);
+        // Remove the passes count from fileArgs if it was included
+        const passesArgIndex = fileArgs.indexOf(args[nValueIndex]);
+        if (passesArgIndex >= 0) {
+          fileArgs.splice(passesArgIndex, 1);
+        }
+      }
+    }
+
+    const filePath = this._resolvePath(fileArgs[0]);
+
+    try {
+      // Check if file exists
+      const stat = await this.context.fs.stat(filePath);
+
+      // Confirm deletion
+      let output = `⚠️  Securely deleting: ${fileArgs[0]}\n`;
+      output += `📊 Size: ${this._formatBytes(stat.size)}\n`;
+      output += `🔄 Passes: ${passes}\n`;
+
+      // Perform secure deletion
+      const result = await this.fileEncryption.secureDelete(filePath, passes);
+
+      output += `✅ File securely deleted!\n`;
+      output += `🗑️  ${result.passes} overwrite passes completed\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ shred: ${error.message}`;
+    }
+  }
+
+  /**
+   * Ping a host
+   */
+  async cmd_ping(args) {
+    if (args.length === 0) {
+      return '❌ ping: missing operand\n💡 Usage: ping <host> [-c count]\n   Example: ping google.com\n   Example: ping example.com -c 10';
+    }
+
+    const host = args[0];
+    let count = 4;
+
+    // Parse count option
+    const cIndex = args.indexOf('-c');
+    if (cIndex >= 0 && args[cIndex + 1]) {
+      count = parseInt(args[cIndex + 1], 10) || 4;
+    }
+
+    try {
+      let output = `🌐 PING ${host}\n`;
+      output += `⏳ Sending ${count} packets...\n\n`;
+
+      const result = await this.networkStack.ping(host, { count });
+
+      result.results.forEach(r => {
+        if (r.success) {
+          output += `✅ Reply from ${result.ip}: seq=${r.seq} time=${r.time}ms TTL=${r.ttl}\n`;
+        } else {
+          output += `❌ Request timeout for seq=${r.seq}\n`;
+        }
+      });
+
+      output += `\n📊 Statistics:\n`;
+      output += `   Packets: Sent=${result.statistics.transmitted}, Received=${result.statistics.received}, Loss=${result.statistics.loss}%\n`;
+      output += `   Round trip: Min=${result.statistics.min}ms, Max=${result.statistics.max}ms, Avg=${result.statistics.avg}ms\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ ping: ${error.message}`;
+    }
+  }
+
+  /**
+   * Fetch URL content (curl-like)
+   */
+  async cmd_curl(args) {
+    if (args.length === 0) {
+      return '❌ curl: missing URL\n💡 Usage: curl <url> [options]\n   Example: curl https://api.github.com/users/octocat\n   Options: -o <file> (save to file), -i (include headers)';
+    }
+
+    const url = args[0];
+    const saveToFile = args.includes('-o');
+    const includeHeaders = args.includes('-i');
+    const outputFile = saveToFile ? args[args.indexOf('-o') + 1] : null;
+
+    try {
+      let output = `🌐 Fetching: ${url}\n\n`;
+
+      const response = await this.networkStack.fetch(url);
+
+      let content = '';
+
+      if (includeHeaders) {
+        content += `HTTP/${response.status} ${response.statusText}\n`;
+        response.headers.forEach((value, key) => {
+          content += `${key}: ${value}\n`;
+        });
+        content += '\n';
+      }
+
+      const text = await response.text();
+      content += text;
+
+      if (saveToFile) {
+        const filePath = this._resolvePath(outputFile);
+        await this.context.fs.writeFile(filePath, content);
+        output += `✅ Saved to: ${outputFile}\n`;
+        output += `📊 Size: ${this._formatBytes(content.length)}\n`;
+      } else {
+        // Limit output to first 1000 chars for display
+        if (content.length > 1000) {
+          output += content.substring(0, 1000) + '\n\n... (truncated)\n';
+          output += `💡 Total size: ${this._formatBytes(content.length)}\n`;
+        } else {
+          output += content;
+        }
+      }
+
+      return output;
+    } catch (error) {
+      return `❌ curl: ${error.message}`;
+    }
+  }
+
+  /**
+   * Download file (wget-like)
+   */
+  async cmd_wget(args) {
+    if (args.length === 0) {
+      return '❌ wget: missing URL\n💡 Usage: wget <url> [-O filename]\n   Example: wget https://example.com/file.zip\n   Example: wget https://example.com/data.json -O mydata.json';
+    }
+
+    const url = args[0];
+    let filename = url.split('/').pop() || 'download';
+
+    // Check for -O option
+    const oIndex = args.indexOf('-O');
+    if (oIndex >= 0 && args[oIndex + 1]) {
+      filename = args[oIndex + 1];
+    }
+
+    try {
+      let output = `🌐 Downloading: ${url}\n`;
+      output += `📁 Saving to: ${filename}\n\n`;
+
+      const response = await this.networkStack.fetch(url);
+      const data = await response.arrayBuffer();
+
+      const filePath = this._resolvePath(filename);
+      await this.context.fs.writeFile(filePath, new Uint8Array(data));
+
+      output += `✅ Download complete!\n`;
+      output += `📊 Size: ${this._formatBytes(data.byteLength)}\n`;
+      output += `📁 Saved: ${filename}\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ wget: ${error.message}`;
+    }
+  }
+
+  /**
+   * Fetch command (simpler HTTP requests)
+   */
+  async cmd_fetch(args) {
+    return await this.cmd_curl(args);
+  }
+
+  /**
+   * Show network statistics
+   */
+  async cmd_netstat(args) {
+    const connections = this.networkStack.getConnections();
+    const stats = this.networkStack.getStatistics();
+
+    let output = `📊 Network Statistics\n\n`;
+
+    if (args.includes('-a') || args.includes('--all')) {
+      output += `Active Connections:\n`;
+      if (connections.length === 0) {
+        output += `  No active connections\n`;
+      } else {
+        connections.forEach((conn, index) => {
+          output += `  ${index + 1}. ${conn.type.toUpperCase()} - ${conn.url} (${conn.method || 'N/A'})\n`;
+          output += `     Started: ${new Date(conn.started).toLocaleTimeString()}\n`;
+        });
+      }
+      output += `\n`;
+    }
+
+    output += `Statistics:\n`;
+    output += `  Active Connections: ${stats.activeConnections}\n`;
+    output += `  Successful Requests: ${stats.requestsSuccessful}\n`;
+    output += `  Failed Requests: ${stats.requestsFailed}\n`;
+    output += `  Bytes Sent: ${this._formatBytes(stats.bytesSent)}\n`;
+    output += `  Bytes Received: ${this._formatBytes(stats.bytesReceived)}\n`;
+
+    return output;
+  }
+
+  /**
+   * Show network interfaces
+   */
+  async cmd_ifconfig(args) {
+    const interfaces = this.networkStack.getInterfaces();
+
+    let output = `🌐 Network Interfaces\n\n`;
+
+    interfaces.forEach(iface => {
+      output += `${iface.name}: ${iface.flags.join(',')} MTU:${iface.mtu}\n`;
+
+      iface.addresses.forEach(addr => {
+        output += `  ${addr.family}: ${addr.address}`;
+        if (addr.netmask) {
+          output += ` netmask ${addr.netmask}`;
+        }
+        if (addr.broadcast) {
+          output += ` broadcast ${addr.broadcast}`;
+        }
+        output += `\n`;
+      });
+
+      if (iface.mac) {
+        output += `  ether ${iface.mac}\n`;
+      }
+
+      output += `\n`;
+    });
+
+    return output;
+  }
+
+  /**
+   * Show routing table
+   */
+  async cmd_route(args) {
+    const routes = this.networkStack.getRoutes();
+
+    let output = `🛣️  Kernel IP routing table\n\n`;
+    output += `Destination      Gateway          Netmask          Iface    Metric\n`;
+    output += `─────────────────────────────────────────────────────────────────\n`;
+
+    routes.forEach(route => {
+      output += `${route.destination.padEnd(17)}`;
+      output += `${route.gateway.padEnd(17)}`;
+      output += `${route.netmask.padEnd(17)}`;
+      output += `${route.interface.padEnd(9)}`;
+      output += `${route.metric}\n`;
+    });
+
+    return output;
+  }
+
+  /**
+   * DNS lookup
+   */
+  async cmd_nslookup(args) {
+    if (args.length === 0) {
+      return '❌ nslookup: missing operand\n💡 Usage: nslookup <domain>\n   Example: nslookup google.com';
+    }
+
+    const domain = args[0];
+
+    try {
+      const ip = await this.networkStack.getDNS().resolve(domain);
+      const dnsServers = this.networkStack.getDNS().getDNSServers();
+
+      let output = `🔍 DNS Lookup for: ${domain}\n\n`;
+      output += `Server: ${dnsServers[0]}\n\n`;
+      output += `Non-authoritative answer:\n`;
+      output += `Name: ${domain}\n`;
+      output += `Address: ${ip}\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ nslookup: ${error.message}`;
+    }
+  }
+
+  /**
+   * DNS query (dig-like)
+   */
+  async cmd_dig(args) {
+    if (args.length === 0) {
+      return '❌ dig: missing operand\n💡 Usage: dig <domain> [type]\n   Example: dig google.com\n   Example: dig google.com MX';
+    }
+
+    const domain = args[0];
+    const recordType = args[1] || 'A';
+
+    try {
+      const records = await this.networkStack.getDNS().getRecords(domain, recordType);
+
+      let output = `🔍 DNS Query for: ${domain}\n\n`;
+      output += `;; QUESTION SECTION:\n`;
+      output += `;${domain}. IN ${recordType}\n\n`;
+      output += `;; ANSWER SECTION:\n`;
+
+      records.forEach(record => {
+        if (record.type === 'MX') {
+          output += `${record.name}. ${record.ttl} IN ${record.type} ${record.priority} ${record.value}\n`;
+        } else {
+          output += `${record.name}. ${record.ttl} IN ${record.type} ${record.value}\n`;
+        }
+      });
+
+      output += `\n;; Query time: ${Math.floor(Math.random() * 50 + 10)} msec\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ dig: ${error.message}`;
+    }
+  }
+
+  /**
+   * Traceroute to host
+   */
+  async cmd_traceroute(args) {
+    if (args.length === 0) {
+      return '❌ traceroute: missing operand\n💡 Usage: traceroute <host>\n   Example: traceroute google.com';
+    }
+
+    const host = args[0];
+
+    try {
+      let output = `🛰️  Traceroute to ${host}\n\n`;
+
+      const hops = await this.networkStack.traceroute(host);
+
+      hops.forEach(hop => {
+        output += `${hop.hop.toString().padStart(2)}  `;
+        output += `${hop.hostname.padEnd(30)} `;
+        output += `(${hop.ip.padEnd(15)})  `;
+        output += `${hop.time1}ms  ${hop.time2}ms  ${hop.time3}ms\n`;
+      });
+
+      return output;
+    } catch (error) {
+      return `❌ traceroute: ${error.message}`;
+    }
+  }
+
+  /**
+   * Manage firewall rules
+   */
+  async cmd_iptables(args) {
+    const firewall = this.networkStack.getFirewall();
+
+    if (args.length === 0 || args[0] === '-L') {
+      // List rules
+      const rules = firewall.getRules();
+      const status = firewall.getStatus();
+
+      let output = `🔥 Firewall Status\n\n`;
+      output += `Enabled: ${status.enabled ? 'Yes' : 'No'}\n`;
+      output += `Default Policy: ${status.defaultPolicy.toUpperCase()}\n`;
+      output += `Rules: ${status.ruleCount}\n\n`;
+
+      if (rules.length === 0) {
+        output += `No custom rules defined\n`;
+      } else {
+        output += `Chain Rules:\n`;
+        output += `──────────────────────────────────────────────────\n`;
+        rules.forEach((rule, index) => {
+          output += `${(index + 1).toString().padStart(3)}. ${rule.action.toUpperCase().padEnd(6)} `;
+          output += `${rule.type.padEnd(10)} `;
+          if (rule.pattern) {
+            output += `${String(rule.pattern).substring(0, 30)}`;
+          } else if (rule.port) {
+            output += `port ${rule.port}`;
+          }
+          if (rule.reason) {
+            output += ` (${rule.reason})`;
+          }
+          output += `\n`;
+        });
+      }
+
+      return output;
+    } else if (args[0] === '-A' && args[1] && args[2]) {
+      // Add rule
+      const action = args[1].toLowerCase();
+      const target = args[2];
+
+      if (!['allow', 'deny'].includes(action)) {
+        return '❌ iptables: action must be "allow" or "deny"';
+      }
+
+      try {
+        if (action === 'allow') {
+          firewall.allowHostname(target, 'User rule');
+        } else {
+          firewall.blockHostname(target, 'User rule');
+        }
+
+        return `✅ Firewall rule added: ${action.toUpperCase()} ${target}`;
+      } catch (error) {
+        return `❌ iptables: ${error.message}`;
+      }
+    } else if (args[0] === '-F') {
+      // Flush rules
+      firewall.clearRules();
+      return `✅ Firewall rules cleared`;
+    } else {
+      return '❌ iptables: invalid arguments\n💡 Usage:\n   iptables -L (list rules)\n   iptables -A allow <host> (add allow rule)\n   iptables -A deny <host> (add deny rule)\n   iptables -F (flush all rules)';
     }
   }
 

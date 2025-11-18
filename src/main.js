@@ -6,6 +6,7 @@ import { StartMenu } from './ui/StartMenu.js';
 import AppRegistry from './apps/AppRegistry.js';
 import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
+import FileManagerV2 from './apps/file-manager/FileManagerV2.js';
 import TextEditor from './apps/text-editor/TextEditor.js';
 
 class WebOS {
@@ -76,6 +77,17 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: FileManager
+    });
+
+    // Register Advanced File Manager
+    AppRegistry.register({
+      id: 'file-manager-v2',
+      name: 'File Explorer',
+      version: '2.0.0',
+      icon: '🗂️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: FileManagerV2
     });
 
     // Register Text Editor
