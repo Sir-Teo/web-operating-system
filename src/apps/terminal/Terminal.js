@@ -1,3 +1,8 @@
+import { ScriptParser } from './ScriptParser.js';
+import { ScriptExecutor } from './ScriptExecutor.js';
+import { JobManager } from './JobManager.js';
+import { terminalThemes, applyTheme, getCurrentTheme, getAvailableThemes } from './TerminalThemes.js';
+
 export default class Terminal {
   constructor(context) {
     this.context = context;
@@ -10,6 +15,16 @@ export default class Terminal {
       USER: 'user'
     };
     this.commandHistory = [];
+
+    // Initialize new features
+    this.scriptParser = new ScriptParser();
+    this.jobManager = new JobManager(this);
+    this.currentTheme = getCurrentTheme();
+    this.multiLineMode = false;
+    this.multiLineBuffer = [];
+    this.searchMode = false;
+    this.searchResults = [];
+    this.searchIndex = 0;
   }
 
   async init() {
@@ -190,10 +205,79 @@ export default class Terminal {
     // Show welcome message
     this._showWelcome(output);
 
-    // Setup input handler
+    // Setup enhanced input handler with new features
     input.addEventListener('keydown', async (e) => {
+      // Ctrl+C: Interrupt foreground job
+      if (e.ctrlKey && e.key === 'c') {
+        e.preventDefault();
+        if (this.jobManager.hasForegroundJob()) {
+          const msg = this.jobManager.interruptForeground();
+          if (msg) this._addOutput(output, msg, '#ff5555');
+        }
+        input.value = '';
+        return;
+      }
+
+      // Ctrl+Z: Suspend foreground job
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        if (this.jobManager.hasForegroundJob()) {
+          const msg = this.jobManager.suspendForeground();
+          if (msg) this._addOutput(output, msg, '#f1fa8c');
+        }
+        input.value = '';
+        return;
+      }
+
+      // Ctrl+D: Exit (optional)
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        this._addOutput(output, '\n👋 Logout\n', '#00d4ff');
+        return;
+      }
+
+      // Ctrl+R: Fuzzy search history
+      if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        this._startFuzzySearch(input, output);
+        return;
+      }
+
+      // Ctrl+L: Clear screen
+      if (e.ctrlKey && e.key === 'l') {
+        e.preventDefault();
+        output.innerHTML = '';
+        this._showWelcome(output);
+        return;
+      }
+
       if (e.key === 'Enter') {
         const command = input.value.trim();
+
+        // Handle multi-line mode
+        if (this.multiLineMode) {
+          if (command === '') {
+            // Execute multi-line script
+            const script = this.multiLineBuffer.join('\n');
+            this.multiLineMode = false;
+            this.multiLineBuffer = [];
+            prompt.textContent = this._getPrompt();
+
+            this._addOutput(output, `${this._getPrompt()}${script}`, '#00d4ff');
+            const result = await this.executeCommand(script);
+            if (result !== '\x1bc') {
+              this._addOutput(output, result, '#00ff41');
+            }
+            input.value = '';
+            return;
+          } else {
+            this.multiLineBuffer.push(command);
+            this._addOutput(output, `> ${command}`, '#00d4ff');
+            input.value = '';
+            return;
+          }
+        }
+
         if (command) {
           this.history.push(command);
           this.historyIndex = this.history.length;
@@ -211,6 +295,7 @@ export default class Terminal {
           prompt.textContent = this._getPrompt();
         }
         input.value = '';
+        this._hideAutoSuggest();
         container.scrollTop = container.scrollHeight;
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
@@ -229,14 +314,21 @@ export default class Terminal {
         }
       } else if (e.key === 'Tab') {
         e.preventDefault();
-        // Basic autocomplete
+        // Enhanced autocomplete
         const value = input.value;
-        const commands = ['cd', 'ls', 'pwd', 'cat', 'echo', 'mkdir', 'rm', 'touch', 'help', 'clear', 'ps', 'uname', 'date', 'whoami', 'tree', 'cp', 'mv', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail', 'cut', 'neofetch'];
+        const commands = ['cd', 'ls', 'pwd', 'cat', 'echo', 'mkdir', 'rm', 'touch', 'help', 'clear', 'ps', 'uname', 'date', 'whoami', 'tree', 'cp', 'mv', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail', 'cut', 'neofetch', 'script', 'theme', 'jobs', 'fg', 'bg', 'wait', 'kill'];
         const matches = commands.filter(cmd => cmd.startsWith(value));
         if (matches.length === 1) {
           input.value = matches[0] + ' ';
+        } else if (matches.length > 1) {
+          this._addOutput(output, matches.join('  '), '#f1fa8c');
         }
       }
+    });
+
+    // Auto-suggest as user types
+    input.addEventListener('input', (e) => {
+      this._showAutoSuggest(input, output);
     });
 
     // Auto-focus input
@@ -302,6 +394,13 @@ export default class Terminal {
   }
 
   async executeCommand(commandLine) {
+    // Handle background execution (&)
+    if (commandLine.trim().endsWith('&')) {
+      const cmd = commandLine.trim().slice(0, -1).trim();
+      const jobId = await this.jobManager.createJob(cmd, true);
+      return `✅ Job [${jobId}] started in background: ${cmd}`;
+    }
+
     // Parse pipes and redirection
     if (commandLine.includes('|') || commandLine.includes('>') || commandLine.includes('<')) {
       return await this._executePipelineOrRedirect(commandLine);
@@ -328,7 +427,7 @@ export default class Terminal {
       cp: this.cmd_cp.bind(this),
       mv: this.cmd_mv.bind(this),
       neofetch: this.cmd_neofetch.bind(this),
-      // New advanced commands
+      // Text processing commands
       grep: this.cmd_grep.bind(this),
       find: this.cmd_find.bind(this),
       wc: this.cmd_wc.bind(this),
@@ -336,7 +435,19 @@ export default class Terminal {
       uniq: this.cmd_uniq.bind(this),
       head: this.cmd_head.bind(this),
       tail: this.cmd_tail.bind(this),
-      cut: this.cmd_cut.bind(this)
+      cut: this.cmd_cut.bind(this),
+      // New shell scripting and job control commands
+      script: this.cmd_script.bind(this),
+      theme: this.cmd_theme.bind(this),
+      jobs: this.cmd_jobs.bind(this),
+      fg: this.cmd_fg.bind(this),
+      bg: this.cmd_bg.bind(this),
+      wait: this.cmd_wait.bind(this),
+      kill: this.cmd_kill.bind(this),
+      export: this.cmd_export.bind(this),
+      env: this.cmd_env.bind(this),
+      alias: this.cmd_alias.bind(this),
+      history: this.cmd_history.bind(this)
     };
 
     if (builtins[command]) {
@@ -679,7 +790,7 @@ export default class Terminal {
   cmd_help() {
     return `
 ╔════════════════════════════════════════════════════════╗
-║                  AVAILABLE COMMANDS                    ║
+║              WEBOS TERMINAL - HELP GUIDE               ║
 ╠════════════════════════════════════════════════════════╣
 ║  📁 File System:                                       ║
 ║    ls [-l] [dir]    List directory contents            ║
@@ -700,6 +811,8 @@ export default class Terminal {
 ║    date             Display current date/time          ║
 ║    whoami           Display current user               ║
 ║    neofetch         Display system info (fancy!)       ║
+║    env              Show environment variables         ║
+║    export VAR=val   Set environment variable           ║
 ║    clear            Clear terminal                     ║
 ║                                                         ║
 ║  🔧 Text Processing:                                    ║
@@ -711,17 +824,49 @@ export default class Terminal {
 ║    tail [-n N] [file]      Show last N lines           ║
 ║    cut -f N [-d delim] [file]  Extract fields          ║
 ║                                                         ║
+║  🔄 Job Control:                                        ║
+║    command &        Run command in background          ║
+║    jobs             List background jobs               ║
+║    fg <id>          Bring job to foreground            ║
+║    bg <id>          Resume job in background           ║
+║    wait <id>        Wait for job to complete           ║
+║    kill <id>        Kill a job                         ║
+║                                                         ║
+║  📜 Scripting:                                          ║
+║    script <file>    Execute shell script               ║
+║    alias [name=cmd] Create command alias               ║
+║    history          Show command history               ║
+║                                                         ║
+║  🎨 Customization:                                      ║
+║    theme [name]     Change terminal theme              ║
+║                                                         ║
 ║  ℹ️  Utilities:                                         ║
 ║    echo <text>      Display text                       ║
 ║    help             Show this help message             ║
 ╚════════════════════════════════════════════════════════╝
 
-💡 Tips:
-  • Use ↑/↓ arrows to navigate command history
-  • Use Tab for command autocomplete
-  • Use pipes: command1 | command2
-  • Use redirection: command > file.txt or command >> file.txt
-  • Example: ls | grep .txt | wc -l
+⌨️  Keyboard Shortcuts:
+  • ↑/↓          Navigate command history
+  • Tab           Autocomplete commands
+  • Ctrl+C        Interrupt foreground job
+  • Ctrl+Z        Suspend foreground job
+  • Ctrl+D        Exit/Logout
+  • Ctrl+R        Fuzzy search history
+  • Ctrl+L        Clear screen
+
+💡 Advanced Features:
+  • Pipes: command1 | command2 | command3
+  • Redirection: command > file.txt or command >> file.txt
+  • Background: long_command &
+  • Scripts: Support for variables, loops, conditionals, functions
+  • Themes: matrix, dracula, solarized, nord, monokai, one-dark, etc.
+
+📝 Script Example:
+  name="WebOS"
+  echo "Hello, $name!"
+  for file in *.txt; do
+    cat "$file"
+  done
 `;
   }
 
@@ -1100,5 +1245,325 @@ export default class Terminal {
     }
 
     return result.join('\n');
+  }
+
+  // ========== NEW COMMANDS ==========
+
+  /**
+   * Execute a shell script
+   */
+  async cmd_script(args) {
+    if (args.length === 0) {
+      return '❌ script: missing script file\n💡 Usage: script <file.sh>';
+    }
+
+    const filePath = this._resolvePath(args[0]);
+
+    try {
+      const scriptContent = await this.context.fs.readFile(filePath, { encoding: 'utf8' });
+
+      // Parse the script
+      const ast = this.scriptParser.parse(scriptContent);
+
+      // Execute the script
+      const executor = new ScriptExecutor(this);
+      executor.setEnvironment(this.env);
+
+      const result = await executor.execute(ast);
+
+      // Update environment variables
+      this.env = { ...this.env, ...executor.getEnvironment() };
+
+      return result || '✅ Script executed successfully';
+    } catch (error) {
+      return `❌ script: ${error.message}`;
+    }
+  }
+
+  /**
+   * Change terminal theme
+   */
+  async cmd_theme(args) {
+    if (args.length === 0) {
+      // List available themes
+      const themes = getAvailableThemes();
+      const current = getCurrentTheme();
+      let output = '🎨 Available Themes:\n\n';
+      themes.forEach(theme => {
+        const marker = theme === current ? '✓' : ' ';
+        const themeName = terminalThemes[theme].name;
+        output += `  [${marker}] ${theme.padEnd(15)} - ${themeName}\n`;
+      });
+      output += '\n💡 Usage: theme <name>';
+      return output;
+    }
+
+    const themeName = args[0];
+    const themes = getAvailableThemes();
+
+    if (!themes.includes(themeName)) {
+      return `❌ Theme not found: ${themeName}\n💡 Available: ${themes.join(', ')}`;
+    }
+
+    // Apply theme
+    const container = document.querySelector('.terminal-container');
+    if (container) {
+      applyTheme(themeName, container);
+      this.currentTheme = themeName;
+      return `✅ Theme changed to: ${themeName}`;
+    }
+
+    return '❌ Could not apply theme';
+  }
+
+  /**
+   * List background jobs
+   */
+  async cmd_jobs(args) {
+    return this.jobManager.listJobs();
+  }
+
+  /**
+   * Bring job to foreground
+   */
+  async cmd_fg(args) {
+    if (args.length === 0) {
+      return '❌ fg: missing job ID\n💡 Usage: fg <job_id>';
+    }
+
+    const jobId = parseInt(args[0]);
+    return await this.jobManager.foreground(jobId);
+  }
+
+  /**
+   * Resume job in background
+   */
+  async cmd_bg(args) {
+    if (args.length === 0) {
+      return '❌ bg: missing job ID\n💡 Usage: bg <job_id>';
+    }
+
+    const jobId = parseInt(args[0]);
+    return this.jobManager.background(jobId);
+  }
+
+  /**
+   * Wait for job to complete
+   */
+  async cmd_wait(args) {
+    if (args.length === 0) {
+      return '❌ wait: missing job ID\n💡 Usage: wait <job_id>';
+    }
+
+    const jobId = parseInt(args[0]);
+    return await this.jobManager.wait(jobId);
+  }
+
+  /**
+   * Kill a job
+   */
+  async cmd_kill(args) {
+    if (args.length === 0) {
+      return '❌ kill: missing job ID\n💡 Usage: kill <job_id>';
+    }
+
+    const jobId = parseInt(args[0]);
+    return this.jobManager.kill(jobId);
+  }
+
+  /**
+   * Export environment variable
+   */
+  async cmd_export(args) {
+    if (args.length === 0) {
+      return '❌ export: missing variable assignment\n💡 Usage: export VAR=value';
+    }
+
+    const assignment = args.join(' ');
+    const match = assignment.match(/^(\w+)=(.+)$/);
+
+    if (!match) {
+      return '❌ export: invalid syntax\n💡 Usage: export VAR=value';
+    }
+
+    this.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
+    return `✅ Exported: ${match[1]}=${this.env[match[1]]}`;
+  }
+
+  /**
+   * Show environment variables
+   */
+  async cmd_env(args) {
+    let output = '🌍 Environment Variables:\n\n';
+    for (const [key, value] of Object.entries(this.env)) {
+      output += `${key}=${value}\n`;
+    }
+    return output;
+  }
+
+  /**
+   * Create command alias
+   */
+  async cmd_alias(args) {
+    if (!this.aliases) {
+      this.aliases = {};
+    }
+
+    if (args.length === 0) {
+      // List all aliases
+      if (Object.keys(this.aliases).length === 0) {
+        return '💡 No aliases defined';
+      }
+      let output = '📝 Aliases:\n\n';
+      for (const [name, command] of Object.entries(this.aliases)) {
+        output += `${name}='${command}'\n`;
+      }
+      return output;
+    }
+
+    const assignment = args.join(' ');
+    const match = assignment.match(/^(\w+)=(.+)$/);
+
+    if (!match) {
+      return '❌ alias: invalid syntax\n💡 Usage: alias name=\'command\'';
+    }
+
+    this.aliases[match[1]] = match[2].replace(/^["']|["']$/g, '');
+    return `✅ Alias created: ${match[1]}='${this.aliases[match[1]]}'`;
+  }
+
+  /**
+   * Show command history
+   */
+  async cmd_history(args) {
+    if (this.history.length === 0) {
+      return '📜 No command history';
+    }
+
+    let output = '📜 Command History:\n\n';
+    this.history.forEach((cmd, index) => {
+      output += `${String(index + 1).padStart(4)}  ${cmd}\n`;
+    });
+
+    return output;
+  }
+
+  // ========== HELPER METHODS FOR NEW FEATURES ==========
+
+  /**
+   * Show auto-suggest based on history
+   */
+  _showAutoSuggest(input, output) {
+    const value = input.value;
+    if (!value) {
+      this._hideAutoSuggest();
+      return;
+    }
+
+    // Find matching commands from history
+    const matches = this.history.filter(cmd =>
+      cmd.startsWith(value) && cmd !== value
+    );
+
+    if (matches.length > 0) {
+      const suggestion = matches[matches.length - 1]; // Most recent match
+      const suggestionText = suggestion.slice(value.length);
+
+      // Create or update suggestion element
+      let suggestEl = input.parentElement.querySelector('.auto-suggest');
+      if (!suggestEl) {
+        suggestEl = document.createElement('span');
+        suggestEl.className = 'auto-suggest';
+        suggestEl.style.cssText = `
+          position: absolute;
+          left: ${input.offsetLeft + this._getTextWidth(value, input)}px;
+          top: ${input.offsetTop}px;
+          color: rgba(0, 255, 65, 0.4);
+          pointer-events: none;
+          font-family: inherit;
+          font-size: inherit;
+        `;
+        input.parentElement.appendChild(suggestEl);
+      }
+
+      suggestEl.textContent = suggestionText;
+      suggestEl.style.left = `${input.offsetLeft + this._getTextWidth(value, input)}px`;
+
+      // Accept suggestion with Tab or Right Arrow
+      input.dataset.suggestion = suggestion;
+    } else {
+      this._hideAutoSuggest();
+    }
+  }
+
+  /**
+   * Hide auto-suggest
+   */
+  _hideAutoSuggest() {
+    const suggestEl = document.querySelector('.auto-suggest');
+    if (suggestEl) {
+      suggestEl.remove();
+    }
+  }
+
+  /**
+   * Get text width for positioning
+   */
+  _getTextWidth(text, element) {
+    const canvas = this._getTextWidth.canvas || (this._getTextWidth.canvas = document.createElement('canvas'));
+    const context = canvas.getContext('2d');
+    const style = window.getComputedStyle(element);
+    context.font = style.font;
+    return context.measureText(text).width;
+  }
+
+  /**
+   * Start fuzzy search mode
+   */
+  _startFuzzySearch(input, output) {
+    if (this.history.length === 0) {
+      this._addOutput(output, '📜 No command history', '#f1fa8c');
+      return;
+    }
+
+    this.searchMode = true;
+    this.searchResults = [...this.history].reverse();
+    this.searchIndex = 0;
+
+    this._addOutput(output, '\n🔍 Fuzzy Search (Ctrl+R again for next, Esc to cancel):', '#f1fa8c');
+
+    // Replace input handler temporarily
+    const originalValue = input.value;
+
+    const searchHandler = (e) => {
+      if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        // Next result
+        this.searchIndex = (this.searchIndex + 1) % this.searchResults.length;
+        input.value = this.searchResults[this.searchIndex];
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        // Cancel search
+        this.searchMode = false;
+        input.value = originalValue;
+        input.removeEventListener('keydown', searchHandler);
+        this._addOutput(output, '❌ Search cancelled', '#f1fa8c');
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        // Accept result
+        this.searchMode = false;
+        input.removeEventListener('keydown', searchHandler);
+        // Trigger normal enter handling
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+        input.dispatchEvent(enterEvent);
+      }
+    };
+
+    input.addEventListener('keydown', searchHandler);
+
+    // Show first result
+    if (this.searchResults.length > 0) {
+      input.value = this.searchResults[0];
+    }
   }
 }
