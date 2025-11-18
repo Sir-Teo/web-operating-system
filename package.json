@@ -16,12 +16,18 @@
     "type": "git",
     "url": "http://local_proxy@127.0.0.1:37179/git/Sir-Teo/web-operating-system"
   },
-  "keywords": ["webos", "operating-system", "browser", "pwa", "file-system"],
+  "keywords": [
+    "webos",
+    "operating-system",
+    "browser",
+    "pwa",
+    "file-system"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@vitest/ui": "^2.1.8",
     "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.8",
     "eslint": "^9.39.1",
     "gh-pages": "^6.3.0",
     "happy-dom": "^15.11.7",
@@ -31,6 +37,7 @@
   },
   "dependencies": {
     "idb": "^8.0.3",
+    "pako": "^2.1.0",
     "winbox": "^0.2.82"
   }
 }

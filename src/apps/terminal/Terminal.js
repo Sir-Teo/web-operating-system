@@ -4,6 +4,7 @@ import { JobManager } from './JobManager.js';
 import { terminalThemes, applyTheme, getCurrentTheme, getAvailableThemes } from './TerminalThemes.js';
 import { FileAttributes } from '../../filesystem/FileAttributes.js';
 import { FileWatcher } from '../../filesystem/FileWatcher.js';
+import { CompressionManager } from '../../filesystem/CompressionManager.js';
 
 export default class Terminal {
   constructor(context) {
@@ -32,6 +33,9 @@ export default class Terminal {
     this.fileAttributes = new FileAttributes();
     this.fileWatcher = new FileWatcher(context.fs);
     this.activeWatchers = new Map();
+
+    // Initialize compression manager
+    this.compressionManager = new CompressionManager(context.fs);
   }
 
   async init() {
@@ -323,7 +327,7 @@ export default class Terminal {
         e.preventDefault();
         // Enhanced autocomplete
         const value = input.value;
-        const commands = ['cd', 'ls', 'pwd', 'cat', 'echo', 'mkdir', 'rm', 'touch', 'help', 'clear', 'ps', 'uname', 'date', 'whoami', 'tree', 'cp', 'mv', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail', 'cut', 'neofetch', 'script', 'theme', 'jobs', 'fg', 'bg', 'wait', 'kill', 'chmod', 'chown', 'ln', 'readlink', 'watch', 'lsattr', 'chattr', 'stat', 'export', 'env', 'alias', 'history'];
+        const commands = ['cd', 'ls', 'pwd', 'cat', 'echo', 'mkdir', 'rm', 'touch', 'help', 'clear', 'ps', 'uname', 'date', 'whoami', 'tree', 'cp', 'mv', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail', 'cut', 'neofetch', 'script', 'theme', 'jobs', 'fg', 'bg', 'wait', 'kill', 'chmod', 'chown', 'ln', 'readlink', 'watch', 'lsattr', 'chattr', 'stat', 'export', 'env', 'alias', 'history', 'gzip', 'gunzip', 'tar'];
         const matches = commands.filter(cmd => cmd.startsWith(value));
         if (matches.length === 1) {
           input.value = matches[0] + ' ';
@@ -463,7 +467,11 @@ export default class Terminal {
       watch: this.cmd_watch.bind(this),
       lsattr: this.cmd_lsattr.bind(this),
       chattr: this.cmd_chattr.bind(this),
-      stat: this.cmd_stat.bind(this)
+      stat: this.cmd_stat.bind(this),
+      // Phase 2.2: Compression & Archives
+      gzip: this.cmd_gzip.bind(this),
+      gunzip: this.cmd_gunzip.bind(this),
+      tar: this.cmd_tar.bind(this)
     };
 
     if (builtins[command]) {
@@ -831,6 +839,13 @@ export default class Terminal {
 ║    chattr +/-attr <file> Change extended attributes    ║
 ║    watch <path>         Watch for file changes         ║
 ║                                                         ║
+║  📦 Compression & Archives:                             ║
+║    gzip <file>          Compress file with gzip        ║
+║    gunzip <file.gz>     Decompress gzip file           ║
+║    tar -czf <archive> <files>  Create tar.gz archive   ║
+║    tar -xzf <archive>   Extract tar.gz archive         ║
+║    tar -xzf <archive> -C <dir>  Extract to directory   ║
+║                                                         ║
 ║  💻 System:                                             ║
 ║    ps               List running processes             ║
 ║    uname [-a]       Print system information           ║
@@ -889,6 +904,8 @@ export default class Terminal {
   • Permissions: Unix-style chmod/chown
   • Symbolic Links: ln -s for creating links
   • File Watching: Monitor files/directories for changes
+  • Compression: gzip/gunzip for file compression
+  • Archives: tar for creating and extracting archives
 
 📝 Script Example:
   name="WebOS"
@@ -1877,5 +1894,185 @@ export default class Terminal {
     } catch (error) {
       return `❌ stat: ${error.message}`;
     }
+  }
+
+  // ========== PHASE 2.2: COMPRESSION & ARCHIVES ==========
+
+  /**
+   * Compress a file with gzip
+   */
+  async cmd_gzip(args) {
+    if (args.length === 0) {
+      return '❌ gzip: missing operand\n💡 Usage: gzip <file>\n   Example: gzip file.txt\n   Output: file.txt.gz';
+    }
+
+    const flags = args.filter(arg => arg.startsWith('-'));
+    const fileArgs = args.filter(arg => !arg.startsWith('-'));
+    const decompress = flags.includes('-d');
+
+    if (decompress) {
+      // Act like gunzip when -d flag is used
+      return await this.cmd_gunzip(fileArgs);
+    }
+
+    const sourcePath = this._resolvePath(fileArgs[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(sourcePath);
+
+      // Compress file
+      const result = await this.compressionManager.compressFile(sourcePath);
+
+      let output = `✅ Compressed: ${fileArgs[0]} → ${result.outputPath.split('/').pop()}\n`;
+      output += `📊 Original:   ${this._formatBytes(result.originalSize)}\n`;
+      output += `   Compressed: ${this._formatBytes(result.compressedSize)}\n`;
+      output += `   Ratio:      ${result.ratio} smaller\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ gzip: ${error.message}`;
+    }
+  }
+
+  /**
+   * Decompress a gzip file
+   */
+  async cmd_gunzip(args) {
+    if (args.length === 0) {
+      return '❌ gunzip: missing operand\n💡 Usage: gunzip <file.gz>\n   Example: gunzip file.txt.gz\n   Output: file.txt';
+    }
+
+    const sourcePath = this._resolvePath(args[0]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(sourcePath);
+
+      // Decompress file
+      const result = await this.compressionManager.decompressFile(sourcePath);
+
+      let output = `✅ Decompressed: ${args[0]} → ${result.outputPath.split('/').pop()}\n`;
+      output += `📊 Compressed:   ${this._formatBytes(result.compressedSize)}\n`;
+      output += `   Decompressed: ${this._formatBytes(result.decompressedSize)}\n`;
+
+      return output;
+    } catch (error) {
+      return `❌ gunzip: ${error.message}`;
+    }
+  }
+
+  /**
+   * Create and extract TAR archives
+   */
+  async cmd_tar(args) {
+    if (args.length === 0) {
+      return '❌ tar: missing operands\n💡 Usage:\n   Create:  tar -czf archive.tar.gz <files...>\n   Extract: tar -xzf archive.tar.gz [-C dir]\n   List:    tar -tzf archive.tar.gz\n   Examples:\n     tar -czf backup.tar.gz file1.txt file2.txt\n     tar -xzf backup.tar.gz\n     tar -xzf backup.tar.gz -C /dest/dir';
+    }
+
+    const flags = args.filter(arg => arg.startsWith('-'));
+    const fileArgs = args.filter(arg => !arg.startsWith('-'));
+
+    // Parse flags
+    const hasC = flags.some(f => f.includes('c')); // Create
+    const hasX = flags.some(f => f.includes('x')); // Extract
+    const hasT = flags.some(f => f.includes('t')); // List
+    const hasZ = flags.some(f => f.includes('z')); // Gzip compression
+    const hasF = flags.some(f => f.includes('f')); // File
+    const hasV = flags.some(f => f.includes('v')); // Verbose
+
+    if (!hasF) {
+      return '❌ tar: -f flag is required\n💡 Use: tar -czf archive.tar.gz <files>';
+    }
+
+    try {
+      if (hasC) {
+        // CREATE ARCHIVE
+        if (fileArgs.length < 2) {
+          return '❌ tar: missing archive name or files\n💡 Usage: tar -czf archive.tar.gz file1 file2 ...';
+        }
+
+        const archivePath = this._resolvePath(fileArgs[0]);
+        const filesToArchive = [];
+
+        for (let i = 1; i < fileArgs.length; i++) {
+          const filePath = this._resolvePath(fileArgs[i]);
+
+          try {
+            await this.context.fs.stat(filePath);
+            filesToArchive.push({
+              path: filePath,
+              name: fileArgs[i]
+            });
+          } catch (error) {
+            return `❌ tar: ${fileArgs[i]}: No such file or directory`;
+          }
+        }
+
+        let result;
+        if (hasZ) {
+          result = await this.compressionManager.createTarGz(filesToArchive, archivePath);
+        } else {
+          result = await this.compressionManager.createTar(filesToArchive, archivePath);
+        }
+
+        let output = `✅ Created archive: ${fileArgs[0]}\n`;
+        output += `📦 Files: ${result.fileCount}\n`;
+        output += `📊 Size: ${this._formatBytes(result.compressedSize || result.totalSize)}\n`;
+        if (result.ratio) {
+          output += `   Ratio: ${result.ratio} smaller\n`;
+        }
+
+        return output;
+
+      } else if (hasX) {
+        // EXTRACT ARCHIVE
+        if (fileArgs.length < 1) {
+          return '❌ tar: missing archive name\n💡 Usage: tar -xzf archive.tar.gz [-C destination]';
+        }
+
+        const archivePath = this._resolvePath(fileArgs[0]);
+
+        // Check for -C flag
+        const cIndex = args.indexOf('-C');
+        let destDir = this.currentDir;
+        if (cIndex >= 0 && args[cIndex + 1]) {
+          destDir = this._resolvePath(args[cIndex + 1]);
+        }
+
+        let result;
+        if (hasZ) {
+          result = await this.compressionManager.extractTarGz(archivePath, destDir);
+        } else {
+          result = await this.compressionManager.extractTar(archivePath, destDir);
+        }
+
+        let output = `✅ Extracted: ${fileArgs[0]}\n`;
+        output += `📂 Destination: ${destDir}\n`;
+        output += `📄 Files extracted: ${result.extractedFiles}\n`;
+
+        return output;
+
+      } else if (hasT) {
+        // LIST ARCHIVE CONTENTS
+        return '❌ tar: list mode (-t) not yet implemented\n💡 Use: tar -xzf archive.tar.gz to extract';
+
+      } else {
+        return '❌ tar: must specify one of -c, -x, or -t\n💡 See: tar -czf (create), tar -xzf (extract), tar -tzf (list)';
+      }
+    } catch (error) {
+      return `❌ tar: ${error.message}`;
+    }
+  }
+
+  /**
+   * Format bytes to human-readable string
+   */
+  _formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
   }
 }
