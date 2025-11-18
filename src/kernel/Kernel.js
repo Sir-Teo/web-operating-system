@@ -2,9 +2,12 @@ import ProcessManager from './ProcessManager.js';
 import Scheduler from './Scheduler.js';
 import IPC from './IPC.js';
 import VFS from '../filesystem/VFS.js';
-import PermissionManager from '../security/PermissionManager.js';
+import PermissionManager from './PermissionManager.js';
 import { eventBus } from '../utils/EventBus.js';
 import { Logger } from '../utils/Logger.js';
+import ThemeManager from '../system/themes/ThemeManager.js';
+import PluginManager from '../system/plugins/PluginManager.js';
+import UserManager from '../system/users/UserManager.js';
 
 class Kernel extends EventTarget {
   constructor() {
@@ -21,6 +24,11 @@ class Kernel extends EventTarget {
     this.eventBus = eventBus;
     this.logger = new Logger('Kernel');
     this.config = {};
+
+    // Phase 5 - System Enhancements
+    this.themeManager = ThemeManager;
+    this.pluginManager = null;  // Initialized in boot
+    this.userManager = null;    // Initialized in boot
   }
 
   async boot() {
@@ -33,6 +41,8 @@ class Kernel extends EventTarget {
       await this._initializeFileSystem();
       await this._initializeProcessManager();
       await this._initializeIPC();
+      await this._initializeUserManager();
+      await this._initializePluginManager();
       await this._loadSystemConfiguration();
       await this._startSystemServices();
 
@@ -105,6 +115,20 @@ class Kernel extends EventTarget {
     this.logger.info('Initializing IPC...');
     // IPC is already a singleton
     this.logger.info('IPC ready');
+  }
+
+  async _initializeUserManager() {
+    this.logger.info('Initializing user manager...');
+    this.userManager = new UserManager(this);
+    await this.userManager.init();
+    this.logger.info('User manager ready');
+  }
+
+  async _initializePluginManager() {
+    this.logger.info('Initializing plugin manager...');
+    this.pluginManager = new PluginManager(this);
+    await this.pluginManager.loadEnabledPlugins();
+    this.logger.info('Plugin manager ready');
   }
 
   async _loadSystemConfiguration() {
