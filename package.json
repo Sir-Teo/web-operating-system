@@ -37,7 +37,9 @@
   },
   "dependencies": {
     "idb": "^8.0.3",
+    "monaco-editor": "^0.50.0",
     "pako": "^2.1.0",
+    "vite-plugin-monaco-editor": "^1.1.0",
     "winbox": "^0.2.82"
   }
 }

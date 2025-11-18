@@ -8,6 +8,14 @@ import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
 import FileManagerV2 from './apps/file-manager/FileManagerV2.js';
 import TextEditor from './apps/text-editor/TextEditor.js';
+import CodeEditor from './apps/code-editor/CodeEditor.js';
+import Browser from './apps/browser/Browser.js';
+import PackageManager from './apps/package-manager/PackageManager.js';
+import Settings from './apps/settings/Settings.js';
+import './apps/code-editor/CodeEditor.css';
+import './apps/browser/Browser.css';
+import './apps/package-manager/PackageManager.css';
+import './apps/settings/Settings.css';
 
 class WebOS {
   constructor() {
@@ -101,32 +109,48 @@ class WebOS {
       Component: TextEditor
     });
 
-    // Register Settings (placeholder)
+    // Register Code Editor
+    AppRegistry.register({
+      id: 'code-editor',
+      name: 'Code Editor',
+      version: '1.0.0',
+      icon: '👨‍💻',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: CodeEditor
+    });
+
+    // Register Web Browser
+    AppRegistry.register({
+      id: 'browser',
+      name: 'Web Browser',
+      version: '1.0.0',
+      icon: '🌐',
+      type: 'web',
+      permissions: ['network.http'],
+      Component: Browser
+    });
+
+    // Register Package Manager
+    AppRegistry.register({
+      id: 'package-manager',
+      name: 'Package Manager',
+      version: '1.0.0',
+      icon: '📦',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: PackageManager
+    });
+
+    // Register Settings
     AppRegistry.register({
       id: 'settings',
       name: 'Settings',
-      version: '1.0.0',
+      version: '2.0.0',
       icon: '⚙️',
       type: 'web',
-      Component: class Settings {
-        constructor(context) {
-          this.context = context;
-        }
-        async init() {}
-        render() {
-          const container = document.createElement('div');
-          container.style.cssText = 'padding:20px;';
-          container.innerHTML = `
-            <h2>Settings</h2>
-            <p>System settings coming soon...</p>
-            <hr style="margin:20px 0;">
-            <h3>System Information</h3>
-            <pre>${JSON.stringify(this.context.process.constructor.constructor.getSystemInfo ?
-              Kernel.getSystemInfo() : {}, null, 2)}</pre>
-          `;
-          return container;
-        }
-      }
+      permissions: ['system.theme', 'system.user', 'system.plugin'],
+      Component: Settings
     });
   }
 
