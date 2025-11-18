@@ -460,7 +460,7 @@ export default class Terminal {
         return entries.map(e => {
           const icon = e.type === 'directory' ? '📁' : '📄';
           return `${icon} ${e.name}`;
-        }).join('  ');
+        }).join('\n');
       }
     } catch (error) {
       return `❌ ls: ${error.message}`;
@@ -768,7 +768,7 @@ export default class Terminal {
     pattern = nonFlags[0];
 
     // Get content from pipe or file
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length >= 2) {
       const filePath = this._resolvePath(nonFlags[1]);
@@ -887,7 +887,7 @@ export default class Terminal {
     }
 
     // Get content
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length > 0) {
       const filePath = this._resolvePath(nonFlags[0]);
@@ -918,7 +918,7 @@ export default class Terminal {
     let reverse = args.includes('-r');
     const nonFlags = args.filter(arg => !arg.startsWith('-'));
 
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length > 0) {
       const filePath = this._resolvePath(nonFlags[0]);
@@ -947,7 +947,7 @@ export default class Terminal {
     let count = args.includes('-c');
     const nonFlags = args.filter(arg => !arg.startsWith('-'));
 
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length > 0) {
       const filePath = this._resolvePath(nonFlags[0]);
@@ -961,25 +961,36 @@ export default class Terminal {
     }
 
     const lines = content.split('\n');
-    const unique = [];
-    const counts = {};
+    const result = [];
     let lastLine = null;
+    let lineCount = 0;
 
     for (const line of lines) {
-      if (line !== lastLine) {
-        if (count) {
-          counts[line] = (counts[line] || 0) + 1;
+      if (line === lastLine) {
+        lineCount++;
+      } else {
+        if (lastLine !== null) {
+          if (count) {
+            result.push(`${lineCount} ${lastLine}`);
+          } else {
+            result.push(lastLine);
+          }
         }
-        unique.push(line);
         lastLine = line;
+        lineCount = 1;
       }
     }
 
-    if (count) {
-      return unique.map(line => `${counts[line]} ${line}`).join('\n');
+    // Don't forget the last line
+    if (lastLine !== null) {
+      if (count) {
+        result.push(`${lineCount} ${lastLine}`);
+      } else {
+        result.push(lastLine);
+      }
     }
 
-    return unique.join('\n');
+    return result.join('\n');
   }
 
   async cmd_head(args, pipedInput = null) {
@@ -995,7 +1006,7 @@ export default class Terminal {
 
     const nonFlags = args.filter((arg, i) => !arg.startsWith('-') && args[i - 1] !== '-n');
 
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length > 0) {
       const filePath = this._resolvePath(nonFlags[0]);
@@ -1025,7 +1036,7 @@ export default class Terminal {
 
     const nonFlags = args.filter((arg, i) => !arg.startsWith('-') && args[i - 1] !== '-n');
 
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length > 0) {
       const filePath = this._resolvePath(nonFlags[0]);
@@ -1065,7 +1076,7 @@ export default class Terminal {
       args[i - 1] !== '-d'
     );
 
-    if (pipedInput) {
+    if (pipedInput !== null) {
       content = pipedInput;
     } else if (nonFlags.length > 0) {
       const filePath = this._resolvePath(nonFlags[0]);
