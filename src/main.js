@@ -9,7 +9,11 @@ import FileManager from './apps/file-manager/FileManager.js';
 import FileManagerV2 from './apps/file-manager/FileManagerV2.js';
 import TextEditor from './apps/text-editor/TextEditor.js';
 import CodeEditor from './apps/code-editor/CodeEditor.js';
+import Browser from './apps/browser/Browser.js';
+import PackageManager from './apps/package-manager/PackageManager.js';
 import './apps/code-editor/CodeEditor.css';
+import './apps/browser/Browser.css';
+import './apps/package-manager/PackageManager.css';
 
 class WebOS {
   constructor() {
@@ -112,6 +116,28 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: CodeEditor
+    });
+
+    // Register Web Browser
+    AppRegistry.register({
+      id: 'browser',
+      name: 'Web Browser',
+      version: '1.0.0',
+      icon: '🌐',
+      type: 'web',
+      permissions: ['network.http'],
+      Component: Browser
+    });
+
+    // Register Package Manager
+    AppRegistry.register({
+      id: 'package-manager',
+      name: 'Package Manager',
+      version: '1.0.0',
+      icon: '📦',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: PackageManager
     });
 
     // Register Settings (placeholder)
