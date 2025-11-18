@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A web-based operating system running in your browser">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'wasm-unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob:;
+    font-src 'self' data:;
+    connect-src 'self';
+    worker-src 'self' blob:;
+  ">
+
+  <title>WebOS - Browser Operating System</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/desktop.css">
+  <link rel="stylesheet" href="/styles/window.css">
+
+  <meta name="theme-color" content="#4285f4">
+</head>
+<body>
+  <!-- Boot Screen -->
+  <div id="boot-screen" class="boot-screen">
+    <div class="boot-logo">
+      <h1>WebOS</h1>
+      <div class="boot-progress">
+        <div class="boot-progress-bar"></div>
+      </div>
+      <p class="boot-message">Initializing system...</p>
+    </div>
+  </div>
+
+  <!-- Desktop -->
+  <div id="desktop" class="desktop" style="display: none;">
+    <!-- Desktop icons will be rendered here -->
+    <div id="desktop-icons" class="desktop-icons"></div>
+
+    <!-- Windows will be rendered here -->
+    <div id="windows-container"></div>
+  </div>
+
+  <!-- Taskbar -->
+  <div id="taskbar" class="taskbar" style="display: none;">
+    <div class="taskbar-start">
+      <button id="start-button" class="start-button">
+        <span class="icon">⊞</span>
+        <span class="text">Start</span>
+      </button>
+    </div>
+
+    <div id="taskbar-windows" class="taskbar-windows"></div>
+
+    <div class="taskbar-tray">
+      <div id="system-tray" class="system-tray">
+        <button class="tray-icon" id="network-status" title="Network">📶</button>
+        <button class="tray-icon" id="volume-control" title="Volume">🔊</button>
+        <div class="clock" id="clock">--:--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Menu (hidden by default) -->
+  <div id="start-menu" class="start-menu" style="display: none;">
+    <div class="start-menu-header">
+      <h3>Applications</h3>
+    </div>
+    <div id="start-menu-apps" class="start-menu-apps"></div>
+    <div class="start-menu-footer">
+      <button id="power-button" class="power-button">⏻ Power</button>
+    </div>
+  </div>
+
+  <!-- Context Menu (hidden by default) -->
+  <div id="context-menu" class="context-menu" style="display: none;"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

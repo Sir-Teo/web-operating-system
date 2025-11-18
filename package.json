@@ -1,0 +1,29 @@
+{
+  "name": "web-operating-system",
+  "version": "1.0.0",
+  "description": "A production-grade web-based operating system that runs entirely in your browser",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:37179/git/Sir-Teo/web-operating-system"
+  },
+  "keywords": ["webos", "operating-system", "browser", "pwa", "file-system"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "gh-pages": "^6.3.0",
+    "prettier": "^3.6.2",
+    "vite": "^7.2.2"
+  },
+  "dependencies": {
+    "idb": "^8.0.3",
+    "winbox": "^0.2.82"
+  }
+}
