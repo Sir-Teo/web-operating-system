@@ -2,6 +2,8 @@ import { ScriptParser } from './ScriptParser.js';
 import { ScriptExecutor } from './ScriptExecutor.js';
 import { JobManager } from './JobManager.js';
 import { terminalThemes, applyTheme, getCurrentTheme, getAvailableThemes } from './TerminalThemes.js';
+import { FileAttributes } from '../../filesystem/FileAttributes.js';
+import { FileWatcher } from '../../filesystem/FileWatcher.js';
 
 export default class Terminal {
   constructor(context) {
@@ -25,6 +27,11 @@ export default class Terminal {
     this.searchMode = false;
     this.searchResults = [];
     this.searchIndex = 0;
+
+    // Initialize file attributes and watcher
+    this.fileAttributes = new FileAttributes();
+    this.fileWatcher = new FileWatcher(context.fs);
+    this.activeWatchers = new Map();
   }
 
   async init() {
@@ -316,7 +323,7 @@ export default class Terminal {
         e.preventDefault();
         // Enhanced autocomplete
         const value = input.value;
-        const commands = ['cd', 'ls', 'pwd', 'cat', 'echo', 'mkdir', 'rm', 'touch', 'help', 'clear', 'ps', 'uname', 'date', 'whoami', 'tree', 'cp', 'mv', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail', 'cut', 'neofetch', 'script', 'theme', 'jobs', 'fg', 'bg', 'wait', 'kill'];
+        const commands = ['cd', 'ls', 'pwd', 'cat', 'echo', 'mkdir', 'rm', 'touch', 'help', 'clear', 'ps', 'uname', 'date', 'whoami', 'tree', 'cp', 'mv', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail', 'cut', 'neofetch', 'script', 'theme', 'jobs', 'fg', 'bg', 'wait', 'kill', 'chmod', 'chown', 'ln', 'readlink', 'watch', 'lsattr', 'chattr', 'stat', 'export', 'env', 'alias', 'history'];
         const matches = commands.filter(cmd => cmd.startsWith(value));
         if (matches.length === 1) {
           input.value = matches[0] + ' ';
@@ -447,7 +454,16 @@ export default class Terminal {
       export: this.cmd_export.bind(this),
       env: this.cmd_env.bind(this),
       alias: this.cmd_alias.bind(this),
-      history: this.cmd_history.bind(this)
+      history: this.cmd_history.bind(this),
+      // Phase 2.1: Advanced file operations
+      chmod: this.cmd_chmod.bind(this),
+      chown: this.cmd_chown.bind(this),
+      ln: this.cmd_ln.bind(this),
+      readlink: this.cmd_readlink.bind(this),
+      watch: this.cmd_watch.bind(this),
+      lsattr: this.cmd_lsattr.bind(this),
+      chattr: this.cmd_chattr.bind(this),
+      stat: this.cmd_stat.bind(this)
     };
 
     if (builtins[command]) {
@@ -805,6 +821,16 @@ export default class Terminal {
 ║    mv <src> <dst>   Move/rename file                   ║
 ║    find [path] [-name pattern]  Find files             ║
 ║                                                         ║
+║  🔐 File Attributes:                                    ║
+║    chmod <mode> <file>  Change permissions             ║
+║    chown <owner> <file> Change ownership               ║
+║    stat <file>          Display file statistics        ║
+║    ln -s <target> <link> Create symbolic link          ║
+║    readlink <link>      Read symbolic link target      ║
+║    lsattr [file]        List extended attributes       ║
+║    chattr +/-attr <file> Change extended attributes    ║
+║    watch <path>         Watch for file changes         ║
+║                                                         ║
 ║  💻 System:                                             ║
 ║    ps               List running processes             ║
 ║    uname [-a]       Print system information           ║
@@ -860,6 +886,9 @@ export default class Terminal {
   • Background: long_command &
   • Scripts: Support for variables, loops, conditionals, functions
   • Themes: matrix, dracula, solarized, nord, monokai, one-dark, etc.
+  • Permissions: Unix-style chmod/chown
+  • Symbolic Links: ln -s for creating links
+  • File Watching: Monitor files/directories for changes
 
 📝 Script Example:
   name="WebOS"
@@ -1564,6 +1593,289 @@ export default class Terminal {
     // Show first result
     if (this.searchResults.length > 0) {
       input.value = this.searchResults[0];
+    }
+  }
+
+  // ========== PHASE 2.1: ADVANCED FILE OPERATIONS ==========
+
+  /**
+   * Change file permissions (chmod)
+   */
+  async cmd_chmod(args) {
+    if (args.length < 2) {
+      return '❌ chmod: missing operands\n💡 Usage: chmod <mode> <file>\n   Examples: chmod 755 file.sh\n             chmod +x script.sh\n             chmod u+rw file.txt';
+    }
+
+    const mode = args[0];
+    const path = this._resolvePath(args[1]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(path);
+
+      // Change permissions
+      this.fileAttributes.chmod(path, mode);
+
+      const perms = this.fileAttributes.getPermissionString(path);
+      return `✅ Changed permissions of '${args[1]}': ${perms}`;
+    } catch (error) {
+      return `❌ chmod: ${error.message}`;
+    }
+  }
+
+  /**
+   * Change file owner (chown)
+   */
+  async cmd_chown(args) {
+    if (args.length < 2) {
+      return '❌ chown: missing operands\n💡 Usage: chown <owner[:group]> <file>\n   Examples: chown user file.txt\n             chown user:admin file.txt';
+    }
+
+    const ownerSpec = args[0];
+    const path = this._resolvePath(args[1]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(path);
+
+      // Parse owner:group
+      const [owner, group] = ownerSpec.split(':');
+
+      // Change ownership
+      this.fileAttributes.chown(path, owner, group);
+
+      return `✅ Changed ownership of '${args[1]}' to ${owner}${group ? ':' + group : ''}`;
+    } catch (error) {
+      return `❌ chown: ${error.message}`;
+    }
+  }
+
+  /**
+   * Create symbolic link (ln)
+   */
+  async cmd_ln(args) {
+    const isSymbolic = args.includes('-s');
+    const fileArgs = args.filter(arg => arg !== '-s');
+
+    if (fileArgs.length < 2) {
+      return '❌ ln: missing operands\n💡 Usage: ln -s <target> <link_name>\n   Example: ln -s /home/user/file.txt mylink';
+    }
+
+    const target = this._resolvePath(fileArgs[0]);
+    const linkName = this._resolvePath(fileArgs[1]);
+
+    if (!isSymbolic) {
+      return '❌ ln: hard links not supported yet\n💡 Use: ln -s <target> <link_name> for symbolic links';
+    }
+
+    try {
+      // Check if target exists
+      try {
+        await this.context.fs.stat(target);
+      } catch (e) {
+        return `❌ ln: target '${fileArgs[0]}' does not exist`;
+      }
+
+      // Create empty file for the link
+      await this.context.fs.writeFile(linkName, '', { encoding: 'utf8' });
+
+      // Create symbolic link metadata
+      this.fileAttributes.createSymlink(linkName, target);
+
+      return `✅ Created symbolic link: ${fileArgs[1]} → ${fileArgs[0]}`;
+    } catch (error) {
+      return `❌ ln: ${error.message}`;
+    }
+  }
+
+  /**
+   * Read symbolic link target (readlink)
+   */
+  async cmd_readlink(args) {
+    if (args.length === 0) {
+      return '❌ readlink: missing operand\n💡 Usage: readlink <link>\n   Example: readlink mylink';
+    }
+
+    const path = this._resolvePath(args[0]);
+
+    try {
+      if (!this.fileAttributes.isSymlink(path)) {
+        return `❌ readlink: '${args[0]}' is not a symbolic link`;
+      }
+
+      const target = this.fileAttributes.readSymlink(path);
+      return `📎 ${target}`;
+    } catch (error) {
+      return `❌ readlink: ${error.message}`;
+    }
+  }
+
+  /**
+   * Watch files/directories for changes
+   */
+  async cmd_watch(args) {
+    if (args.length === 0) {
+      // List active watchers
+      const watchers = this.fileWatcher.getActiveWatchers();
+      if (watchers.length === 0) {
+        return '👁️  No active watchers\n💡 Usage: watch <path>\n   Example: watch /home/user';
+      }
+
+      let output = '👁️  Active Watchers:\n\n';
+      watchers.forEach(w => {
+        output += `[${w.id}] ${w.path} (${w.recursive ? 'recursive' : 'non-recursive'})\n`;
+      });
+      output += '\n💡 Use Ctrl+C to stop watching';
+      return output;
+    }
+
+    const path = this._resolvePath(args[0]);
+    const recursive = args.includes('-r') || args.includes('--recursive');
+
+    try {
+      // Check if path exists
+      await this.context.fs.stat(path);
+
+      // Start watching
+      const watchId = this.fileWatcher.watch(path, {
+        recursive,
+        callback: (change) => {
+          console.log(`📢 File ${change.type}: ${change.path}`);
+        }
+      });
+
+      this.activeWatchers.set(watchId, path);
+
+      return `✅ Watching ${args[0]} (ID: ${watchId})\n💡 Changes will be logged to console`;
+    } catch (error) {
+      return `❌ watch: ${error.message}`;
+    }
+  }
+
+  /**
+   * List extended attributes (lsattr)
+   */
+  async cmd_lsattr(args) {
+    const path = args.length > 0 ? this._resolvePath(args[0]) : this.currentDir;
+
+    try {
+      const stat = await this.context.fs.stat(path);
+
+      if (stat.type === 'directory') {
+        // List attributes for all files in directory
+        const entries = await this.context.fs.readdir(path);
+        let output = '';
+
+        for (const entry of entries) {
+          const fullPath = `${path}/${entry.name}`;
+          const attrs = this.fileAttributes.getAttributes(fullPath);
+          const extendedAttrs = Object.keys(attrs.extended);
+          const flags = extendedAttrs.length > 0 ? extendedAttrs.join(',') : '-';
+          output += `${flags.padEnd(15)} ${entry.name}\n`;
+        }
+
+        return output || '(no files)';
+      } else {
+        // List attributes for single file
+        const attrs = this.fileAttributes.getAttributes(path);
+        const extendedAttrs = Object.keys(attrs.extended);
+
+        if (extendedAttrs.length === 0) {
+          return `📄 ${args[0]}: no extended attributes`;
+        }
+
+        let output = `📄 ${args[0]}:\n\n`;
+        for (const name of extendedAttrs) {
+          const value = attrs.extended[name];
+          output += `  ${name} = ${value}\n`;
+        }
+
+        return output;
+      }
+    } catch (error) {
+      return `❌ lsattr: ${error.message}`;
+    }
+  }
+
+  /**
+   * Change extended attributes (chattr)
+   */
+  async cmd_chattr(args) {
+    if (args.length < 2) {
+      return '❌ chattr: missing operands\n💡 Usage: chattr <+/-attr> <file>\n   Example: chattr +immutable file.txt\n             chattr -immutable file.txt';
+    }
+
+    const attrSpec = args[0];
+    const path = this._resolvePath(args[1]);
+
+    try {
+      // Check if file exists
+      await this.context.fs.stat(path);
+
+      // Parse attribute specification
+      const match = attrSpec.match(/^([+-])(\w+)$/);
+      if (!match) {
+        return '❌ chattr: invalid attribute specification\n💡 Use +attr or -attr';
+      }
+
+      const [, op, attr] = match;
+
+      if (op === '+') {
+        this.fileAttributes.setExtendedAttr(path, attr, true);
+        return `✅ Set attribute '${attr}' on ${args[1]}`;
+      } else {
+        this.fileAttributes.removeExtendedAttr(path, attr);
+        return `✅ Removed attribute '${attr}' from ${args[1]}`;
+      }
+    } catch (error) {
+      return `❌ chattr: ${error.message}`;
+    }
+  }
+
+  /**
+   * Display detailed file statistics (stat)
+   */
+  async cmd_stat(args) {
+    if (args.length === 0) {
+      return '❌ stat: missing operand\n💡 Usage: stat <file>\n   Example: stat file.txt';
+    }
+
+    const path = this._resolvePath(args[0]);
+
+    try {
+      const stat = await this.context.fs.stat(path);
+      const attrs = this.fileAttributes.getAttributes(path);
+      const perms = this.fileAttributes.getPermissionString(path);
+
+      let output = `📊 File: ${args[0]}\n`;
+      output += `${'='.repeat(50)}\n\n`;
+      output += `  Type:        ${attrs.type}\n`;
+      output += `  Size:        ${stat.size || attrs.size || 0} bytes\n`;
+      output += `  Permissions: ${perms} (${attrs.permissions.toString(8)})\n`;
+      output += `  Owner:       ${attrs.owner}:${attrs.group}\n`;
+      output += `  Inode:       ${attrs.inode}\n`;
+      output += `  Links:       ${attrs.links}\n`;
+
+      if (attrs.symlink) {
+        output += `  Symlink to:  ${attrs.symlink}\n`;
+      }
+
+      const created = new Date(attrs.created).toLocaleString();
+      const modified = new Date(attrs.modified || stat.modified || attrs.created).toLocaleString();
+      const accessed = new Date(attrs.accessed).toLocaleString();
+
+      output += `\n  Created:     ${created}\n`;
+      output += `  Modified:    ${modified}\n`;
+      output += `  Accessed:    ${accessed}\n`;
+
+      const extAttrs = Object.keys(attrs.extended);
+      if (extAttrs.length > 0) {
+        output += `\n  Extended attributes: ${extAttrs.join(', ')}\n`;
+      }
+
+      return output;
+    } catch (error) {
+      return `❌ stat: ${error.message}`;
     }
   }
 }
