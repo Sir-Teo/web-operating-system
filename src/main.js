@@ -8,6 +8,8 @@ import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
 import FileManagerV2 from './apps/file-manager/FileManagerV2.js';
 import TextEditor from './apps/text-editor/TextEditor.js';
+import CodeEditor from './apps/code-editor/CodeEditor.js';
+import './apps/code-editor/CodeEditor.css';
 
 class WebOS {
   constructor() {
@@ -99,6 +101,17 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: TextEditor
+    });
+
+    // Register Code Editor
+    AppRegistry.register({
+      id: 'code-editor',
+      name: 'Code Editor',
+      version: '1.0.0',
+      icon: '👨‍💻',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: CodeEditor
     });
 
     // Register Settings (placeholder)
