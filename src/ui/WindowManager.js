@@ -1,4 +1,4 @@
-import WinBox from 'winbox/src/js/winbox.js';
+import WinBox from 'winbox';
 
 class WindowManager extends EventTarget {
   constructor() {
@@ -21,15 +21,20 @@ class WindowManager extends EventTarget {
       minheight: 150,
       background: '#ffffff',
       border: 4,
-      // Explicitly enable window control buttons
-      close: true,
-      minimize: true,
-      maximize: true,
+      // Don't pass any "no-" classes to ensure control buttons are visible
+      class: config.class || [],
       onclose: (force) => {
         if (!force && config.onBeforeClose) {
-          return config.onBeforeClose();
+          const shouldClose = config.onBeforeClose();
+          if (!shouldClose) {
+            return false;
+          }
         }
-        this.closeWindow(windowId);
+        // Clean up our internal state when WinBox closes the window
+        this.windows.delete(windowId);
+        this.dispatchEvent(new CustomEvent('window-closed', {
+          detail: { windowId }
+        }));
         return true;
       },
       onfocus: () => {

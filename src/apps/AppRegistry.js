@@ -64,7 +64,7 @@ class Application {
       await app.init();
       return app.render();
     } else if (this.entry) {
-      const module = await import(this.entry);
+      const module = await import(/* @vite-ignore */ this.entry);
       const app = new module.default(context);
       await app.init();
       return app.render();
