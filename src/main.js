@@ -12,6 +12,7 @@ import TextEditor from './apps/text-editor/TextEditor.js';
 import CodeEditor from './apps/code-editor/CodeEditor.js';
 import Browser from './apps/browser/Browser.js';
 import PackageManager from './apps/package-manager/PackageManager.js';
+import PluginManager from './apps/plugin-manager/PluginManager.js';
 import Settings from './apps/settings/Settings.js';
 import SystemMonitor from './apps/system-monitor/SystemMonitor.js';
 import 'winbox/dist/css/winbox.min.css';
@@ -145,6 +146,17 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
       Component: PackageManager
+    });
+
+    // Register Plugin Manager
+    AppRegistry.register({
+      id: 'plugin-manager',
+      name: 'Plugin Manager',
+      version: '1.0.0',
+      icon: '🔌',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write', 'system.plugin'],
+      Component: PluginManager
     });
 
     // Register Settings

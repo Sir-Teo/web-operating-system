@@ -1,0 +1,14 @@
+{
+  "name": "Theme Customizer",
+  "version": "1.0.0",
+  "description": "Customize desktop colors and appearance with beautiful themes",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": [
+    "ui.notifications",
+    "storage"
+  ],
+  "engines": {
+    "webos": ">=2.0.0"
+  }
+}
