@@ -1,7 +1,7 @@
 {
   "name": "web-operating-system",
-  "version": "1.0.0",
-  "description": "A production-grade web-based operating system that runs entirely in your browser",
+  "version": "2.4.0",
+  "description": "A production-grade web-based operating system with AI capabilities that runs entirely in your browser",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,7 +21,10 @@
     "operating-system",
     "browser",
     "pwa",
-    "file-system"
+    "file-system",
+    "ai",
+    "machine-learning",
+    "llm"
   ],
   "author": "",
   "license": "MIT",
