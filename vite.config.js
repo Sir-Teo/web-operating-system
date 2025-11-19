@@ -16,7 +16,13 @@ export default defineConfig({
   },
   plugins: [
     monacoEditorPlugin({
-      languageWorkers: []
+      languageWorkers: [
+        'editorWorkerService',
+        'css',
+        'html',
+        'json',
+        'typescript'
+      ]
     })
   ],
   server: {
