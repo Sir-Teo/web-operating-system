@@ -1,0 +1,13 @@
+{
+  "name": "2048 Puzzle Game",
+  "version": "1.0.0",
+  "description": "Classic 2048 number puzzle game - combine tiles to reach 2048!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "puzzle", "2048"],
+  "category": "entertainment"
+}

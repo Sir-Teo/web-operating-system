@@ -1,0 +1,13 @@
+{
+  "name": "Simon Says",
+  "version": "1.0.0",
+  "description": "Memory sequence game - repeat the pattern!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "puzzle", "memory", "simon"],
+  "category": "entertainment"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Quick Notes",
+  "version": "1.0.0",
+  "description": "Sticky notes for quick reminders and tasks",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["notes", "sticky", "productivity"],
+  "category": "productivity"
+}

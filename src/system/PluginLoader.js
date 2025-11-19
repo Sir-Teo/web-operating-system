@@ -319,23 +319,67 @@ export class PluginLoader {
   /**
    * Install plugin from archive
    * @param {string} pluginId - Plugin ID
-   * @param {ArrayBuffer} archiveData - Plugin archive data
+   * @param {ArrayBuffer|Uint8Array} archiveData - Plugin archive data (.tar.gz or .tar)
+   * @param {string} archiveFormat - Archive format ('tar.gz' or 'tar')
    */
-  async installPlugin(pluginId, archiveData) {
+  async installPlugin(pluginId, archiveData, archiveFormat = 'tar.gz') {
     try {
+      console.log(`[PluginLoader] Installing plugin ${pluginId} from ${archiveFormat} archive`);
+
       // Create plugin directory
       const pluginPath = `${this.pluginDir}/${pluginId}`;
       await this.vfs.mkdir(pluginPath, { recursive: true });
 
-      // Extract archive (implementation depends on archive format)
-      // For now, just a placeholder
-      console.log(`[PluginLoader] Installing plugin ${pluginId}`);
+      // Write archive to temporary file
+      const tempArchivePath = `/tmp/${pluginId}_${Date.now()}.${archiveFormat}`;
+      const archiveBuffer = archiveData instanceof ArrayBuffer
+        ? new Uint8Array(archiveData)
+        : archiveData;
 
-      // TODO: Implement archive extraction
-      throw new Error('Plugin installation not yet implemented');
+      await this.vfs.writeFile(tempArchivePath, archiveBuffer);
+
+      // Extract archive using CompressionManager
+      const { CompressionManager } = await import('../filesystem/CompressionManager.js');
+      const compressionManager = new CompressionManager(this.vfs);
+
+      let result;
+      if (archiveFormat === 'tar.gz') {
+        result = await compressionManager.extractTarGz(tempArchivePath, pluginPath);
+      } else if (archiveFormat === 'tar') {
+        result = await compressionManager.extractTar(tempArchivePath, pluginPath);
+      } else {
+        throw new Error(`Unsupported archive format: ${archiveFormat}. Supported formats: tar, tar.gz`);
+      }
+
+      // Clean up temporary archive file
+      await this.vfs.unlink(tempArchivePath).catch(() => {});
+
+      // Verify plugin.json exists
+      const manifestPath = `${pluginPath}/plugin.json`;
+      try {
+        await this.vfs.stat(manifestPath);
+      } catch (error) {
+        throw new Error('plugin.json not found in archive. Invalid plugin package.');
+      }
+
+      console.log(`[PluginLoader] Plugin ${pluginId} installed successfully (${result.extractedFiles} files extracted)`);
+
+      return {
+        success: true,
+        pluginId,
+        filesExtracted: result.extractedFiles,
+        installPath: pluginPath
+      };
 
     } catch (error) {
       console.error(`[PluginLoader] Failed to install plugin ${pluginId}:`, error);
+      // Clean up on failure
+      try {
+        const pluginPath = `${this.pluginDir}/${pluginId}`;
+        await this.vfs.rmdir(pluginPath, { recursive: true });
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
       throw error;
     }
   }
@@ -358,6 +402,179 @@ export class PluginLoader {
       console.log(`[PluginLoader] Plugin ${pluginId} uninstalled`);
     } catch (error) {
       console.error(`[PluginLoader] Failed to uninstall plugin ${pluginId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Hot reload a plugin (unload and reload without losing state)
+   * @param {string} pluginId - Plugin ID
+   * @returns {Promise<Object>} Reloaded plugin instance
+   */
+  async reloadPlugin(pluginId) {
+    try {
+      console.log(`[PluginLoader] Hot reloading plugin: ${pluginId}`);
+
+      const plugin = this.loadedPlugins.get(pluginId);
+      if (!plugin) {
+        throw new Error(`Plugin ${pluginId} not loaded`);
+      }
+
+      // Store activation state
+      const wasEnabled = plugin.enabled;
+
+      // Try to save plugin state if it supports it
+      let savedState = null;
+      if (plugin.instance.saveState && typeof plugin.instance.saveState === 'function') {
+        try {
+          savedState = await plugin.instance.saveState();
+          console.log(`[PluginLoader] Saved state for plugin ${pluginId}`);
+        } catch (error) {
+          console.warn(`[PluginLoader] Failed to save plugin state:`, error);
+        }
+      }
+
+      // Unload the plugin
+      await this.unloadPlugin(pluginId);
+
+      // Reload the plugin
+      const reloadedPlugin = await this.loadPlugin(pluginId);
+
+      // Restore state if it was saved
+      if (savedState && reloadedPlugin.instance.restoreState &&
+          typeof reloadedPlugin.instance.restoreState === 'function') {
+        try {
+          await reloadedPlugin.instance.restoreState(savedState);
+          console.log(`[PluginLoader] Restored state for plugin ${pluginId}`);
+        } catch (error) {
+          console.warn(`[PluginLoader] Failed to restore plugin state:`, error);
+        }
+      }
+
+      // Re-activate if it was enabled before
+      if (wasEnabled) {
+        await this.activatePlugin(pluginId);
+      }
+
+      console.log(`[PluginLoader] Plugin ${pluginId} hot reloaded successfully`);
+      return reloadedPlugin;
+
+    } catch (error) {
+      console.error(`[PluginLoader] Failed to reload plugin ${pluginId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a plugin to a new version
+   * @param {string} pluginId - Plugin ID
+   * @param {ArrayBuffer|Uint8Array} archiveData - New plugin archive data
+   * @param {string} archiveFormat - Archive format ('tar.gz' or 'tar')
+   * @returns {Promise<Object>} Update result
+   */
+  async updatePlugin(pluginId, archiveData, archiveFormat = 'tar.gz') {
+    try {
+      console.log(`[PluginLoader] Updating plugin: ${pluginId}`);
+
+      // Check if plugin is installed
+      const pluginPath = `${this.pluginDir}/${pluginId}`;
+      try {
+        await this.vfs.stat(pluginPath);
+      } catch (error) {
+        throw new Error(`Plugin ${pluginId} is not installed`);
+      }
+
+      // Read old manifest for comparison
+      let oldVersion = 'unknown';
+      try {
+        const oldManifest = JSON.parse(
+          await this.vfs.readFile(`${pluginPath}/plugin.json`, 'utf8')
+        );
+        oldVersion = oldManifest.version || 'unknown';
+      } catch (error) {
+        console.warn(`[PluginLoader] Could not read old manifest:`, error);
+      }
+
+      // Backup old plugin data
+      const backupPath = `${this.pluginDir}/${pluginId}.backup_${Date.now()}`;
+      console.log(`[PluginLoader] Creating backup at ${backupPath}`);
+
+      // Copy directory to backup
+      const entries = await this.vfs.readdir(pluginPath);
+      await this.vfs.mkdir(backupPath, { recursive: true });
+
+      for (const entry of entries) {
+        if (!entry.isDirectory) {
+          const filePath = `${pluginPath}/${entry.name}`;
+          const data = await this.vfs.readFile(filePath);
+          await this.vfs.writeFile(`${backupPath}/${entry.name}`, data);
+        }
+      }
+
+      try {
+        // Unload if currently loaded
+        if (this.loadedPlugins.has(pluginId)) {
+          await this.unloadPlugin(pluginId);
+        }
+
+        // Remove old plugin files
+        await this.vfs.rmdir(pluginPath, { recursive: true });
+
+        // Install new version
+        const installResult = await this.installPlugin(pluginId, archiveData, archiveFormat);
+
+        // Read new manifest
+        const newManifest = JSON.parse(
+          await this.vfs.readFile(`${pluginPath}/plugin.json`, 'utf8')
+        );
+        const newVersion = newManifest.version || 'unknown';
+
+        // Remove backup on success
+        await this.vfs.rmdir(backupPath, { recursive: true }).catch(() => {});
+
+        console.log(`[PluginLoader] Plugin ${pluginId} updated from ${oldVersion} to ${newVersion}`);
+
+        return {
+          success: true,
+          pluginId,
+          oldVersion,
+          newVersion,
+          filesExtracted: installResult.filesExtracted
+        };
+
+      } catch (error) {
+        // Restore from backup on failure
+        console.error(`[PluginLoader] Update failed, restoring from backup:`, error);
+
+        try {
+          // Remove failed installation
+          await this.vfs.rmdir(pluginPath, { recursive: true }).catch(() => {});
+
+          // Restore backup
+          await this.vfs.mkdir(pluginPath, { recursive: true });
+          const backupEntries = await this.vfs.readdir(backupPath);
+
+          for (const entry of backupEntries) {
+            if (!entry.isDirectory) {
+              const filePath = `${backupPath}/${entry.name}`;
+              const data = await this.vfs.readFile(filePath);
+              await this.vfs.writeFile(`${pluginPath}/${entry.name}`, data);
+            }
+          }
+
+          // Clean up backup
+          await this.vfs.rmdir(backupPath, { recursive: true }).catch(() => {});
+
+          console.log(`[PluginLoader] Plugin ${pluginId} restored from backup`);
+        } catch (restoreError) {
+          console.error(`[PluginLoader] Failed to restore backup:`, restoreError);
+        }
+
+        throw error;
+      }
+
+    } catch (error) {
+      console.error(`[PluginLoader] Failed to update plugin ${pluginId}:`, error);
       throw error;
     }
   }

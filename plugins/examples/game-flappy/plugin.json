@@ -1,0 +1,13 @@
+{
+  "name": "Flappy Bird",
+  "version": "1.0.0",
+  "description": "Addictive side-scrolling game - tap to fly!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "arcade", "flappy", "casual"],
+  "category": "entertainment"
+}

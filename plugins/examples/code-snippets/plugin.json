@@ -1,0 +1,13 @@
+{
+  "name": "Code Snippets Manager",
+  "version": "1.0.0",
+  "description": "Manage and quickly insert code snippets",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": ["storage.read", "storage.write", "ui.widget"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["code", "snippets", "productivity", "development"],
+  "category": "development"
+}
