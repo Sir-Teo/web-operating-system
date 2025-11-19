@@ -1,7 +1,7 @@
 {
   "name": "web-operating-system",
-  "version": "2.5.0",
-  "description": "A production-grade web-based operating system with AI capabilities and developer tools that runs entirely in your browser",
+  "version": "2.6.0",
+  "description": "A production-grade web-based operating system with AI capabilities, developer tools, and advanced productivity features that runs entirely in your browser",
   "type": "module",
   "scripts": {
     "dev": "vite",

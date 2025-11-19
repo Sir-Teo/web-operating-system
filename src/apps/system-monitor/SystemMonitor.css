@@ -1,0 +1,391 @@
+/* System Monitor Styles */
+
+.system-monitor-app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.system-monitor-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Tabs */
+.monitor-tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 0 16px;
+}
+
+.monitor-tab {
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.monitor-tab:hover {
+  color: #333;
+  background: #f5f5f5;
+}
+
+.monitor-tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+/* Content */
+.monitor-content {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+.monitor-panel {
+  display: none;
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.monitor-panel.active {
+  display: block;
+}
+
+/* Overview Metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.metric-info {
+  margin-bottom: 12px;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+.metric-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.metric-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 4px;
+}
+
+/* System Info */
+.system-info {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.system-info h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.info-table tr {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.info-table tr:last-child {
+  border-bottom: none;
+}
+
+.info-table td {
+  padding: 12px 0;
+  font-size: 14px;
+}
+
+.info-table td:first-child {
+  color: #666;
+  width: 200px;
+}
+
+.info-table td:last-child {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Processes */
+.processes-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.process-search {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.process-search:focus {
+  border-color: #667eea;
+}
+
+.toolbar-btn {
+  padding: 10px 16px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toolbar-btn:hover {
+  background: #5568d3;
+}
+
+.processes-table-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.processes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.processes-table thead {
+  background: #f5f5f5;
+}
+
+.processes-table th {
+  padding: 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.processes-table td {
+  padding: 12px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.processes-table tr:last-child td {
+  border-bottom: none;
+}
+
+.processes-table tr:hover {
+  background: #f9f9f9;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-running {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-sleeping {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-stopped {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background: #c82333;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 40px !important;
+  font-style: italic;
+}
+
+/* Performance Charts */
+.chart-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.chart-container h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 200px;
+}
+
+/* Storage */
+.storage-overview {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.storage-overview h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.storage-bar-large {
+  width: 100%;
+  height: 32px;
+  background: #e0e0e0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  transition: width 0.5s ease, background-color 0.3s ease;
+}
+
+.storage-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  font-size: 14px;
+}
+
+.storage-details div {
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.storage-breakdown {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.storage-breakdown h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.loading {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+  font-style: italic;
+}
+
+/* Scrollbar */
+.monitor-content::-webkit-scrollbar,
+.processes-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.monitor-content::-webkit-scrollbar-track,
+.processes-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.monitor-content::-webkit-scrollbar-thumb,
+.processes-table-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.monitor-content::-webkit-scrollbar-thumb:hover,
+.processes-table-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

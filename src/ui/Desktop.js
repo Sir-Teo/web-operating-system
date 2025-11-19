@@ -32,6 +32,7 @@ export class Desktop {
       { name: 'Terminal', icon: '💻', appId: 'terminal' },
       { name: 'File Manager', icon: '📁', appId: 'file-manager' },
       { name: 'Text Editor', icon: '📝', appId: 'text-editor' },
+      { name: 'System Monitor', icon: '📊', appId: 'system-monitor' },
       { name: 'Settings', icon: '⚙️', appId: 'settings' }
     ];
 
