@@ -1,0 +1,13 @@
+{
+  "name": "Pomodoro Timer",
+  "version": "1.0.0",
+  "description": "Boost productivity with the Pomodoro technique timer",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": ["ui.widget", "notifications"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["pomodoro", "timer", "productivity"],
+  "category": "productivity"
+}

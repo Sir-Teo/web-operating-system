@@ -1,0 +1,13 @@
+{
+  "name": "Weather Widget",
+  "version": "1.0.0",
+  "description": "Display current weather and forecasts on your desktop",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": ["ui.widget", "network.http"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["weather", "widget", "forecast"],
+  "category": "utilities"
+}

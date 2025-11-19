@@ -60,6 +60,9 @@ export default class PluginManager {
         <div class="plugin-manager-header">
           <h2>Plugin Manager</h2>
           <div class="header-actions">
+            <button class="btn btn-primary" id="marketplace-btn">
+              🏪 Marketplace
+            </button>
             <button class="btn btn-primary" id="install-plugin-btn">
               📦 Install Plugin
             </button>
@@ -443,6 +446,11 @@ export default class PluginManager {
    * Setup event handlers
    */
   setupEventHandlers() {
+    // Marketplace button
+    this.container.querySelector('#marketplace-btn')?.addEventListener('click', () => {
+      this.showMarketplace();
+    });
+
     // Install plugin button
     this.container.querySelector('#install-plugin-btn')?.addEventListener('click', () => {
       this.showInstallDialog();
@@ -617,12 +625,18 @@ export default class PluginManager {
           <button class="btn btn-success" onclick="window.pluginManagerInstance.enablePlugin('${plugin.id}')">
             Enable Plugin
           </button>
+          <button class="btn btn-secondary" onclick="window.pluginManagerInstance.reloadPlugin('${plugin.id}')">
+            🔄 Reload
+          </button>
           <button class="btn btn-secondary" onclick="window.pluginManagerInstance.unloadPlugin('${plugin.id}')">
             Unload
           </button>
         ` : `
           <button class="btn btn-danger" onclick="window.pluginManagerInstance.disablePlugin('${plugin.id}')">
             Disable Plugin
+          </button>
+          <button class="btn btn-secondary" onclick="window.pluginManagerInstance.reloadPlugin('${plugin.id}')">
+            🔄 Reload
           </button>
         `}
         <button class="btn btn-danger" onclick="window.pluginManagerInstance.uninstallPlugin('${plugin.id}')">
@@ -848,6 +862,205 @@ module.exports = MyPlugin;'></textarea>
       notification.style.transition = 'opacity 0.3s';
       setTimeout(() => notification.remove(), 300);
     }, 3000);
+  }
+
+  /**
+   * Reload a plugin (hot reload)
+   * @param {string} pluginId - Plugin ID
+   */
+  async reloadPlugin(pluginId) {
+    try {
+      await this.pluginLoader.reloadPlugin(pluginId);
+      await this.loadPlugins();
+      this.selectPlugin(pluginId);
+      this.showNotification('Plugin reloaded successfully', 'success');
+    } catch (error) {
+      console.error('Error reloading plugin:', error);
+      this.showNotification(`Error: ${error.message}`, 'error');
+    }
+  }
+
+  /**
+   * Show marketplace browser
+   */
+  async showMarketplace() {
+    // Check if marketplace exists
+    if (!this.pluginManager || !this.pluginManager.marketplace) {
+      this.showNotification('Marketplace not available', 'error');
+      return;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'install-modal';
+    modal.innerHTML = `
+      <div class="modal-content" style="width: 700px; max-width: 95%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0;">Plugin Marketplace</h3>
+          <button class="close-modal-btn" style="background: none; border: none; color: #888; cursor: pointer; font-size: 20px;">×</button>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <input type="text" id="marketplace-search" placeholder="Search plugins..." style="
+            width: 100%;
+            padding: 8px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            color: #d4d4d4;
+            font-size: 14px;
+          ">
+        </div>
+
+        <div class="marketplace-content" style="max-height: 400px; overflow-y: auto;">
+          <div style="text-align: center; padding: 20px; color: #888;">Loading...</div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close button
+    modal.querySelector('.close-modal-btn').addEventListener('click', () => {
+      modal.remove();
+    });
+
+    // Load featured plugins
+    await this.loadMarketplacePlugins(modal);
+
+    // Search functionality
+    let searchTimeout;
+    modal.querySelector('#marketplace-search').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(async () => {
+        await this.loadMarketplacePlugins(modal, e.target.value);
+      }, 300);
+    });
+
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  }
+
+  /**
+   * Load marketplace plugins
+   */
+  async loadMarketplacePlugins(modal, searchQuery = '') {
+    const marketplace = this.pluginManager.marketplace;
+    const content = modal.querySelector('.marketplace-content');
+
+    try {
+      const plugins = searchQuery
+        ? await marketplace.searchPlugins(searchQuery)
+        : await marketplace.getFeaturedPlugins();
+
+      if (plugins.length === 0) {
+        content.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">No plugins found</div>';
+        return;
+      }
+
+      content.innerHTML = plugins.map(plugin => `
+        <div style="
+          padding: 16px;
+          background: #1e1e1e;
+          border: 1px solid #3e3e42;
+          border-radius: 4px;
+          margin-bottom: 12px;
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 24px;">${plugin.icon || '📦'}</span>
+                <div>
+                  <div style="font-weight: 600; font-size: 16px;">${plugin.name}</div>
+                  <div style="font-size: 12px; color: #888;">${plugin.author} • v${plugin.version}</div>
+                </div>
+              </div>
+              <div style="font-size: 14px; color: #d4d4d4; margin-bottom: 8px;">
+                ${plugin.description}
+              </div>
+              <div style="font-size: 12px; color: #666;">
+                ⬇ ${plugin.stats?.downloads || 0} downloads • ⭐ ${plugin.stats?.rating || 0}/5
+              </div>
+            </div>
+            <button class="install-from-marketplace" data-plugin-id="${plugin.id}" style="
+              padding: 8px 16px;
+              background: #28a745;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 14px;
+              white-space: nowrap;
+            ">
+              Install
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      // Add event listeners
+      content.querySelectorAll('.install-from-marketplace').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const pluginId = e.target.dataset.pluginId;
+          await this.installFromMarketplace(pluginId, modal);
+        });
+      });
+    } catch (error) {
+      console.error('Error loading marketplace plugins:', error);
+      content.innerHTML = '<div style="text-align: center; padding: 20px; color: #f48771;">Error loading plugins</div>';
+    }
+  }
+
+  /**
+   * Install plugin from marketplace
+   */
+  async installFromMarketplace(pluginId, modal) {
+    const marketplace = this.pluginManager.marketplace;
+
+    // Show progress
+    const progressModal = document.createElement('div');
+    progressModal.className = 'install-modal';
+    progressModal.innerHTML = `
+      <div class="modal-content" style="width: 400px;">
+        <h3>Installing Plugin</h3>
+        <div style="margin: 20px 0;">
+          <div style="color: #888; margin-bottom: 8px;">Installing ${pluginId}...</div>
+          <div style="background: #1e1e1e; border-radius: 4px; height: 6px; overflow: hidden;">
+            <div class="progress-bar" style="
+              background: #28a745;
+              height: 100%;
+              width: 0%;
+              transition: width 0.3s;
+            "></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(progressModal);
+
+    const progressBar = progressModal.querySelector('.progress-bar');
+
+    try {
+      // Simulate progress
+      progressBar.style.width = '30%';
+
+      await marketplace.installPluginFromMarketplace(pluginId);
+
+      progressBar.style.width = '100%';
+
+      setTimeout(async () => {
+        progressModal.remove();
+        modal.remove();
+        await this.loadPlugins();
+        this.showNotification(`${pluginId} installed successfully!`, 'success');
+      }, 500);
+    } catch (error) {
+      progressModal.remove();
+      this.showNotification(`Installation failed: ${error.message}`, 'error');
+    }
   }
 
   /**
