@@ -97,16 +97,18 @@ export class HistoryManager {
   /**
    * Search history
    * @param {string} query - Search query
+   * @param {number} limit - Max results to return
    * @returns {Array} Matching entries
    */
-  search(query) {
+  search(query, limit = 100) {
     const lowerQuery = query.toLowerCase();
     return this.history
       .filter(entry =>
         entry.title.toLowerCase().includes(lowerQuery) ||
         entry.url.toLowerCase().includes(lowerQuery)
       )
-      .reverse();
+      .reverse()
+      .slice(0, limit);
   }
 
   /**
