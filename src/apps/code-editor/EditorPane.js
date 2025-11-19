@@ -200,7 +200,7 @@ export class EditorPane {
    * @param {Object} position - Cursor position
    */
   updateStatusBar(position) {
-    const statusBar = document.getElementById('editor-status-bar');
+    const statusBar = document.querySelector('#editor-status-bar');
     if (statusBar && position) {
       const lineNumber = position.lineNumber;
       const column = position.column;
