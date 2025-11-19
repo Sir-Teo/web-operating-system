@@ -4,6 +4,7 @@ import { Desktop } from './ui/Desktop.js';
 import { Taskbar } from './ui/Taskbar.js';
 import { StartMenu } from './ui/StartMenu.js';
 import { WindowSnapping } from './ui/WindowSnapping.js';
+import { LoginScreen } from './ui/LoginScreen.js';
 import AppRegistry from './apps/AppRegistry.js';
 import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
@@ -15,6 +16,7 @@ import PackageManager from './apps/package-manager/PackageManager.js';
 import PluginManager from './apps/plugin-manager/PluginManager.js';
 import Settings from './apps/settings/Settings.js';
 import SystemMonitor from './apps/system-monitor/SystemMonitor.js';
+import UserManagerApp from './apps/user-manager/UserManagerApp.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -29,6 +31,7 @@ class WebOS {
     this.taskbar = null;
     this.startMenu = null;
     this.windowSnapping = null;
+    this.loginScreen = null;
   }
 
   async boot() {
@@ -56,11 +59,11 @@ class WebOS {
       // Register service worker
       await this.registerServiceWorker();
 
-      // Hide boot screen and show desktop
+      // Hide boot screen and show login screen
       this.updateBootMessage('Starting desktop environment...');
 
       setTimeout(() => {
-        this.showDesktop();
+        this.showLoginScreen();
         console.log('WebOS boot complete!');
       }, 500);
 
@@ -180,6 +183,17 @@ class WebOS {
       permissions: ['system.process', 'system.performance'],
       Component: SystemMonitor
     });
+
+    // Register User Manager
+    AppRegistry.register({
+      id: 'user-manager',
+      name: 'User Accounts',
+      version: '1.0.0',
+      icon: '👥',
+      type: 'web',
+      permissions: ['system.user'],
+      Component: UserManagerApp
+    });
   }
 
   async initializeUI() {
@@ -188,7 +202,7 @@ class WebOS {
     await this.desktop.init();
 
     // Create Taskbar
-    this.taskbar = new Taskbar();
+    this.taskbar = new Taskbar(this.kernel);
     this.taskbar.init();
 
     // Create Start Menu
@@ -237,10 +251,8 @@ class WebOS {
     }
   }
 
-  showDesktop() {
+  showLoginScreen() {
     const bootScreen = document.getElementById('boot-screen');
-    const desktop = document.getElementById('desktop');
-    const taskbar = document.getElementById('taskbar');
 
     if (bootScreen) {
       bootScreen.style.opacity = '0';
@@ -248,6 +260,25 @@ class WebOS {
       setTimeout(() => {
         bootScreen.style.display = 'none';
       }, 500);
+    }
+
+    // Create and show login screen
+    this.loginScreen = new LoginScreen(this.kernel);
+    this.loginScreen.show();
+
+    // Listen for successful login
+    window.addEventListener('login-success', () => {
+      this.showDesktop();
+    }, { once: true });
+  }
+
+  showDesktop() {
+    const desktop = document.getElementById('desktop');
+    const taskbar = document.getElementById('taskbar');
+
+    // Hide login screen if it exists
+    if (this.loginScreen) {
+      this.loginScreen.hide();
     }
 
     if (desktop) {
