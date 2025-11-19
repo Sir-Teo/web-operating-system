@@ -10,6 +10,7 @@ import { FileTree } from './FileTree.js';
 import { SearchPanel } from './SearchPanel.js';
 import { SettingsPanel } from './SettingsPanel.js';
 import { EditorPane } from './EditorPane.js';
+import { IntegratedTerminal } from './IntegratedTerminal.js';
 
 export default class CodeEditor {
   constructor(context) {
@@ -22,7 +23,10 @@ export default class CodeEditor {
     this.searchPanel = null;
     this.settingsPanel = null;
     this.editorPane = null;
+    this.integratedTerminal = null;
     this.container = null;
+    this.terminalVisible = true;
+    this.terminalHeight = 300; // pixels
   }
 
   /**
@@ -39,6 +43,9 @@ export default class CodeEditor {
     this.container.className = 'code-editor-app';
     this.container.innerHTML = this.getHTML();
 
+    // Apply additional styles for terminal layout
+    this.applyTerminalStyles();
+
     // Initialize Monaco theme manager
     this.themeManager = new ThemeManager(monaco);
 
@@ -51,6 +58,17 @@ export default class CodeEditor {
     this.editorPane.onChange((tabId, content) => {
       this.tabManager.updateTabContent(tabId, content);
       this.updateTabBar();
+    });
+
+    // Initialize integrated terminal
+    const terminalPanel = this.container.querySelector('#terminal-panel');
+    this.integratedTerminal = new IntegratedTerminal(this.vfs, this.context);
+    const terminalElement = this.integratedTerminal.render();
+    terminalPanel.appendChild(terminalElement);
+
+    // Listen for run file event from terminal
+    terminalElement.addEventListener('run-file', () => {
+      this.runCurrentFile();
     });
 
     // Initialize file tree
@@ -85,6 +103,9 @@ export default class CodeEditor {
 
     // Setup toolbar events
     this.setupToolbar();
+
+    // Setup panel resizer
+    this.setupPanelResizer();
 
     // Initial render
     this.updateTabBar();
@@ -124,6 +145,9 @@ export default class CodeEditor {
             </button>
           </div>
           <div class="toolbar-group">
+            <button class="toolbar-btn" id="toggle-terminal-btn" title="Toggle Terminal (Ctrl+\`)">
+              💻 Terminal
+            </button>
             <button class="toolbar-btn" id="settings-btn" title="Settings">
               ⚙️ Settings
             </button>
@@ -141,13 +165,22 @@ export default class CodeEditor {
             <div class="file-tree-container"></div>
           </div>
 
-          <!-- Editor area -->
+          <!-- Editor area with split panel -->
           <div class="code-editor-main">
-            <!-- Tab bar -->
-            <div class="code-editor-tabs" id="editor-tabs"></div>
+            <!-- Editor section -->
+            <div class="editor-section" id="editor-section">
+              <!-- Tab bar -->
+              <div class="code-editor-tabs" id="editor-tabs"></div>
 
-            <!-- Editor container -->
-            <div class="editor-container"></div>
+              <!-- Editor container -->
+              <div class="editor-container"></div>
+            </div>
+
+            <!-- Resizer -->
+            <div class="panel-resizer" id="panel-resizer" style="display: ${this.terminalVisible ? 'block' : 'none'}"></div>
+
+            <!-- Terminal panel -->
+            <div class="terminal-panel" id="terminal-panel" style="display: ${this.terminalVisible ? 'flex' : 'none'}; height: ${this.terminalHeight}px"></div>
 
             <!-- Status bar -->
             <div class="code-editor-status-bar" id="editor-status-bar">
@@ -203,6 +236,11 @@ export default class CodeEditor {
     this.container.querySelector('#refresh-tree-btn')?.addEventListener('click', async () => {
       await this.fileTree.refresh();
     });
+
+    // Toggle terminal
+    this.container.querySelector('#toggle-terminal-btn')?.addEventListener('click', () => {
+      this.toggleTerminal();
+    });
   }
 
   /**
@@ -253,6 +291,18 @@ export default class CodeEditor {
       if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
         this.settingsPanel.toggle();
+      }
+
+      // Ctrl+` - Toggle terminal
+      if (e.ctrlKey && e.key === '`') {
+        e.preventDefault();
+        this.toggleTerminal();
+      }
+
+      // Ctrl+Shift+R - Run file
+      if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        this.runCurrentFile();
       }
     });
   }
@@ -458,11 +508,153 @@ export default class CodeEditor {
   }
 
   /**
+   * Apply terminal styles
+   */
+  applyTerminalStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .code-editor-main {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .editor-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .panel-resizer {
+        height: 4px;
+        background: #3e3e42;
+        cursor: ns-resize;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+
+      .panel-resizer:hover {
+        background: #007acc;
+      }
+
+      .terminal-panel {
+        flex-shrink: 0;
+        overflow: hidden;
+      }
+
+      .code-editor-status-bar {
+        flex-shrink: 0;
+      }
+    `;
+    this.container.appendChild(style);
+  }
+
+  /**
+   * Setup panel resizer
+   */
+  setupPanelResizer() {
+    const resizer = this.container.querySelector('#panel-resizer');
+    const terminalPanel = this.container.querySelector('#terminal-panel');
+    const editorSection = this.container.querySelector('#editor-section');
+
+    if (!resizer || !terminalPanel || !editorSection) return;
+
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      startY = e.clientY;
+      startHeight = terminalPanel.offsetHeight;
+      document.body.style.cursor = 'ns-resize';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+
+      const delta = startY - e.clientY;
+      const newHeight = Math.max(100, Math.min(600, startHeight + delta));
+      this.terminalHeight = newHeight;
+      terminalPanel.style.height = `${newHeight}px`;
+
+      // Trigger Monaco editor resize
+      if (this.editorPane && this.editorPane.getEditor()) {
+        this.editorPane.getEditor().layout();
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+      }
+    });
+  }
+
+  /**
+   * Toggle terminal visibility
+   */
+  toggleTerminal() {
+    this.terminalVisible = !this.terminalVisible;
+    const terminalPanel = this.container.querySelector('#terminal-panel');
+    const resizer = this.container.querySelector('#panel-resizer');
+
+    if (terminalPanel && resizer) {
+      terminalPanel.style.display = this.terminalVisible ? 'flex' : 'none';
+      resizer.style.display = this.terminalVisible ? 'block' : 'none';
+
+      // Trigger Monaco editor resize
+      setTimeout(() => {
+        if (this.editorPane && this.editorPane.getEditor()) {
+          this.editorPane.getEditor().layout();
+        }
+      }, 0);
+
+      // Focus terminal if visible
+      if (this.terminalVisible && this.integratedTerminal) {
+        this.integratedTerminal.focus();
+      }
+    }
+  }
+
+  /**
+   * Run current file in terminal
+   */
+  async runCurrentFile() {
+    const activeTab = this.tabManager.getActiveTab();
+    if (!activeTab) {
+      alert('No file is open');
+      return;
+    }
+
+    // Ensure terminal is visible
+    if (!this.terminalVisible) {
+      this.toggleTerminal();
+    }
+
+    // Get file content and name
+    const content = activeTab.content;
+    const filename = activeTab.name;
+
+    // Run in terminal
+    if (this.integratedTerminal) {
+      await this.integratedTerminal.runFile(content, filename);
+    }
+  }
+
+  /**
    * Destroy the application
    */
   destroy() {
     if (this.editorPane) {
       this.editorPane.dispose();
+    }
+
+    if (this.integratedTerminal) {
+      this.integratedTerminal.destroy();
     }
 
     // Dispose all Monaco models

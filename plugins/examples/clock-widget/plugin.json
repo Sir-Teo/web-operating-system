@@ -1,0 +1,14 @@
+{
+  "name": "Clock Widget",
+  "version": "1.0.0",
+  "description": "A beautiful desktop clock widget that displays the current time and date",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": [
+    "ui.widget",
+    "ui.notifications"
+  ],
+  "engines": {
+    "webos": ">=2.0.0"
+  }
+}

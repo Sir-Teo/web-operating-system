@@ -1,0 +1,15 @@
+{
+  "name": "Auto Save",
+  "version": "1.0.0",
+  "description": "Automatically saves open files in code editor every 30 seconds",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": [
+    "filesystem.write",
+    "hooks.file",
+    "ui.notifications"
+  ],
+  "engines": {
+    "webos": ">=2.0.0"
+  }
+}
