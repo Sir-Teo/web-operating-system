@@ -1,0 +1,13 @@
+{
+  "name": "Sudoku",
+  "version": "1.0.0",
+  "description": "Classic number puzzle game - fill the 9x9 grid!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "puzzle", "sudoku", "numbers"],
+  "category": "entertainment"
+}

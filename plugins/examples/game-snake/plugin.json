@@ -1,0 +1,13 @@
+{
+  "name": "Snake Classic",
+  "version": "1.0.0",
+  "description": "Classic snake game - eat, grow, and don't hit yourself!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "classic", "snake", "arcade"],
+  "category": "entertainment"
+}

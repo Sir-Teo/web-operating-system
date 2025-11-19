@@ -1,0 +1,13 @@
+{
+  "name": "Space Invaders",
+  "version": "1.0.0",
+  "description": "Classic arcade space shooter - defend Earth from alien invaders!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "arcade", "shooter", "space"],
+  "category": "entertainment"
+}

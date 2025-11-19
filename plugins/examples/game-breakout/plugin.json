@@ -1,0 +1,13 @@
+{
+  "name": "Breakout",
+  "version": "1.0.0",
+  "description": "Classic brick breaking game - clear all the bricks!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "arcade", "breakout", "bricks"],
+  "category": "entertainment"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Checkers",
+  "version": "1.0.0",
+  "description": "Classic checkers/draughts board game - play against AI!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "board", "checkers", "strategy"],
+  "category": "entertainment"
+}

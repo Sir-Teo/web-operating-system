@@ -1,0 +1,13 @@
+{
+  "name": "Memory Match",
+  "version": "1.0.0",
+  "description": "Classic memory card matching game - find all the pairs!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget", "storage.read", "storage.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "puzzle", "memory"],
+  "category": "entertainment"
+}

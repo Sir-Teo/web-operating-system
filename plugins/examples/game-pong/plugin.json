@@ -1,0 +1,13 @@
+{
+  "name": "Pong Classic",
+  "version": "1.0.0",
+  "description": "Classic Pong game - play against AI!",
+  "main": "plugin.js",
+  "author": "WebOS Games",
+  "permissions": ["ui.widget"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["game", "classic", "pong", "arcade"],
+  "category": "entertainment"
+}
