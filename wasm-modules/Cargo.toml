@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "compression",
+    "crypto",
+    "text-processing"
+]
+resolver = "2"
+
+[profile.release]
+# Optimize for size and speed
+opt-level = "z"     # Optimize for size
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Better optimization, slower compile
+panic = "abort"     # Smaller binary size
+strip = true        # Strip symbols

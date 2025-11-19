@@ -1,11 +1,15 @@
 {
   "name": "web-operating-system",
-  "version": "3.1.0",
+  "version": "3.3.0",
   "description": "A production-grade web-based operating system with AI capabilities, multi-user support, developer tools, and advanced productivity features that runs entirely in your browser",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:wasm && vite build",
+    "build:wasm": "npm run build:wasm:compression && npm run build:wasm:crypto && npm run build:wasm:text",
+    "build:wasm:compression": "wasm-pack build wasm-modules/compression --target web --out-dir ../../public/wasm/compression",
+    "build:wasm:crypto": "wasm-pack build wasm-modules/crypto --target web --out-dir ../../public/wasm/crypto",
+    "build:wasm:text": "wasm-pack build wasm-modules/text-processing --target web --out-dir ../../public/wasm/text-processing",
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist",
     "test": "vitest",

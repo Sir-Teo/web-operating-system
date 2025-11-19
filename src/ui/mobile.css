@@ -1,0 +1,325 @@
+/**
+ * Mobile & Touch Optimization Styles
+ * Phase 14 - Responsive design for mobile devices
+ */
+
+/* CSS Variables for Mobile */
+:root {
+  --mobile-breakpoint: 768px;
+  --tablet-breakpoint: 1024px;
+  --touch-target-size: 44px;
+  --mobile-padding: 16px;
+  --mobile-header-height: 56px;
+  --mobile-bottom-nav-height: 60px;
+}
+
+/* Safe Area Insets for Notched Devices */
+@supports (padding: env(safe-area-inset-top)) {
+  .mobile-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .mobile-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .mobile-safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .mobile-safe-all {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+/* Mobile-Specific Styles */
+@media (max-width: 768px) {
+  /* Global adjustments */
+  body {
+    font-size: 16px; /* Prevent zoom on input focus */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Touch-friendly buttons */
+  button,
+  .button,
+  .clickable {
+    min-height: var(--touch-target-size);
+    min-width: var(--touch-target-size);
+    padding: 12px 20px;
+  }
+
+  /* Larger form inputs */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevent zoom */
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Desktop elements to hide on mobile */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Mobile-only elements */
+  .mobile-only {
+    display: block !important;
+  }
+
+  /* Window adjustments */
+  .window {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .window-titlebar {
+    height: 48px;
+    padding: 0 16px;
+  }
+
+  .window-title {
+    font-size: 18px;
+  }
+
+  .window-controls {
+    gap: 16px;
+  }
+
+  .window-control {
+    width: var(--touch-target-size);
+    height: var(--touch-target-size);
+    font-size: 24px;
+  }
+
+  /* App-specific optimizations */
+  .terminal {
+    font-size: 14px;
+  }
+
+  .file-manager {
+    grid-template-columns: 1fr; /* Single column on mobile */
+  }
+
+  .code-editor {
+    font-size: 13px;
+  }
+
+  /* Context menus */
+  .context-menu {
+    min-width: 200px;
+    border-radius: 12px;
+    padding: 8px;
+  }
+
+  .context-menu-item {
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+
+  /* Scrollbars - hide on mobile */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  /* Modals */
+  .modal {
+    margin: var(--mobile-padding);
+    max-width: calc(100% - 2 * var(--mobile-padding));
+    border-radius: 16px;
+  }
+
+  .modal-header {
+    padding: 20px;
+  }
+
+  .modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+/* Tablet Adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-only {
+    display: block !important;
+  }
+
+  /* Slightly smaller touch targets for tablets */
+  button,
+  .button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Reduce vertical spacing in landscape */
+  .window {
+    padding-top: 8px !important;
+  }
+
+  #mobile-bottom-nav {
+    height: 50px;
+  }
+
+  .mobile-nav-icon {
+    font-size: 20px;
+  }
+
+  .mobile-nav-label {
+    display: none; /* Hide labels in landscape */
+  }
+}
+
+/* Portrait Tablet */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  .window {
+    max-width: 90%;
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Sharper icons and graphics */
+  .icon {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Dark Mode Adjustments for Mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  body {
+    background: #000;
+  }
+
+  .window {
+    background: rgba(20, 20, 30, 0.95);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch-Specific Styles */
+.has-touch {
+  /* Remove hover effects on touch devices */
+  .hover-effect:hover {
+    transform: none;
+  }
+
+  /* Disable text selection for UI elements */
+  .ui-element {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Allow text selection in content areas */
+  .content,
+  .terminal,
+  .editor,
+  input,
+  textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
+
+/* iOS Specific */
+.ios {
+  /* Momentum scrolling */
+  .scrollable {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fix iOS input zoom */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Android Specific */
+.android {
+  /* Android tap highlight */
+  * {
+    -webkit-tap-highlight-color: rgba(74, 158, 255, 0.2);
+  }
+}
+
+/* PWA Specific Styles */
+.pwa {
+  /* Full height accounting for status bar */
+  height: 100vh;
+  height: -webkit-fill-available;
+}
+
+.pwa #desktop {
+  height: calc(100vh - var(--mobile-bottom-nav-height));
+  height: calc(-webkit-fill-available - var(--mobile-bottom-nav-height));
+}
+
+/* Utility Classes */
+.touch-none {
+  touch-action: none;
+}
+
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-pinch-zoom {
+  touch-action: pinch-zoom;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.allow-select {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Accessibility - Larger touch targets for accessibility */
+@media (pointer: coarse) {
+  button,
+  .button,
+  a,
+  .clickable {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  #mobile-bottom-nav,
+  #mobile-app-drawer,
+  .virtual-keyboard {
+    display: none !important;
+  }
+}
