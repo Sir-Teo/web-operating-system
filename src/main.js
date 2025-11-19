@@ -197,13 +197,24 @@ class WebOS {
   }
 
   async registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.register('/service-worker.js');
-        console.log('Service Worker registered:', registration);
-      } catch (error) {
-        console.warn('Service Worker registration failed:', error);
-      }
+    if (!('serviceWorker' in navigator)) {
+      return;
+    }
+
+    const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
+
+    if (isDev) {
+      // Ensure any previously registered service workers are removed during development
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      registrations.forEach((registration) => registration.unregister());
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      console.log('Service Worker registered:', registration);
+    } catch (error) {
+      console.warn('Service Worker registration failed:', error);
     }
   }
 

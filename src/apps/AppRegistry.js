@@ -2,6 +2,7 @@ import ProcessManager from '../kernel/ProcessManager.js';
 import WindowManager from '../ui/WindowManager.js';
 import VFS from '../filesystem/VFS.js';
 import IPC from '../kernel/IPC.js';
+import Kernel from '../kernel/Kernel.js';
 
 class Application {
   constructor(manifest) {
@@ -25,6 +26,7 @@ class Application {
       process,
       fs: VFS,
       ipc: IPC,
+      kernel: Kernel,
       args
     };
 

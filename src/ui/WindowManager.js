@@ -6,6 +6,7 @@ class WindowManager extends EventTarget {
     this.windows = new Map();
     this.zIndexCounter = 1000;
     this.activeWindow = null;
+    this.closingWindows = new Set();
   }
 
   createWindow(config) {
@@ -24,18 +25,16 @@ class WindowManager extends EventTarget {
       // Don't pass any "no-" classes to ensure control buttons are visible
       class: config.class || [],
       onclose: (force) => {
-        if (!force && config.onBeforeClose) {
+        if (!force && typeof config.onBeforeClose === 'function') {
           const shouldClose = config.onBeforeClose();
-          if (!shouldClose) {
-            return false;
+          if (shouldClose === false) {
+            // Returning true tells WinBox to cancel the close action
+            return true;
           }
         }
-        // Clean up our internal state when WinBox closes the window
-        this.windows.delete(windowId);
-        this.dispatchEvent(new CustomEvent('window-closed', {
-          detail: { windowId }
-        }));
-        return true;
+        this._finalizeWindowClose(windowId);
+        // Returning false lets WinBox continue its default close behavior
+        return false;
       },
       onfocus: () => {
         this.activeWindow = windowId;
@@ -71,13 +70,36 @@ class WindowManager extends EventTarget {
   closeWindow(windowId) {
     const window = this.windows.get(windowId);
     if (window) {
-      window.winbox.close(true);
-      this.windows.delete(windowId);
+      if (this.closingWindows.has(windowId)) {
+        return;
+      }
 
-      this.dispatchEvent(new CustomEvent('window-closed', {
-        detail: { windowId }
-      }));
+      this.closingWindows.add(windowId);
+      try {
+        window.winbox.close(true);
+        // In case the WinBox instance doesn't trigger onclose, ensure cleanup
+        if (this.windows.has(windowId)) {
+          this._finalizeWindowClose(windowId);
+        }
+      } finally {
+        this.closingWindows.delete(windowId);
+      }
     }
+  }
+
+  _finalizeWindowClose(windowId) {
+    if (!this.windows.has(windowId)) {
+      return;
+    }
+
+    this.windows.delete(windowId);
+    if (this.activeWindow === windowId) {
+      this.activeWindow = null;
+    }
+
+    this.dispatchEvent(new CustomEvent('window-closed', {
+      detail: { windowId }
+    }));
   }
 
   minimizeWindow(windowId) {

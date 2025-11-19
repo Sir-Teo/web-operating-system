@@ -1,8 +1,8 @@
-const CACHE_NAME = 'webos-v1';
+const CACHE_NAME = 'webos-v2';
 const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json'
+  '/',
+  '/index.html',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -32,27 +32,45 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+
+  // Only handle same-origin HTTP(S) requests for our known static assets
+  if (
+    requestUrl.origin !== self.location.origin ||
+    (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:')
+  ) {
+    return;
+  }
+
+  const path = requestUrl.pathname === '/' ? '/' : requestUrl.pathname;
+  if (!STATIC_ASSETS.includes(path)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
         return response;
       }
 
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (!networkResponse || networkResponse.status !== 200) {
+            return networkResponse;
+          }
 
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
 
-        return response;
-      }).catch(() => {
-        // Return offline page if available
-        return caches.match('./index.html');
-      });
+          return networkResponse;
+        })
+        .catch(() => caches.match('/index.html'));
     })
   );
 });
