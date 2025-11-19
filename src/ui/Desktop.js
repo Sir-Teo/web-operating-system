@@ -28,17 +28,27 @@ export class Desktop {
   }
 
   async _loadIcons() {
-    const defaultIcons = [
-      { name: 'Terminal', icon: '💻', appId: 'terminal' },
-      { name: 'File Manager', icon: '📁', appId: 'file-manager' },
-      { name: 'Text Editor', icon: '📝', appId: 'text-editor' },
-      { name: 'System Monitor', icon: '📊', appId: 'system-monitor' },
-      { name: 'Settings', icon: '⚙️', appId: 'settings' }
-    ];
+    if (!this.iconsContainer) {
+      return;
+    }
 
-    defaultIcons.forEach((iconData, index) => {
-      this._createIcon(iconData, index);
-    });
+    this.iconsContainer.innerHTML = '';
+    this.icons = [];
+
+    try {
+      const { default: AppRegistry } = await import('../apps/AppRegistry.js');
+      const apps = AppRegistry.listApps();
+
+      apps.forEach((app, index) => {
+        this._createIcon({
+          name: app.name,
+          icon: app.icon || '🧩',
+          appId: app.id
+        }, index);
+      });
+    } catch (error) {
+      console.error('Failed to load desktop icons:', error);
+    }
   }
 
   _createIcon(data, index) {
