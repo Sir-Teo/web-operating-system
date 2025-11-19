@@ -1,6 +1,6 @@
 /**
  * Browser Tab Manager
- * Manages browser tabs with history
+ * Manages browser tabs with history, pinning, and grouping
  */
 export class BrowserTabManager {
   constructor() {
@@ -8,14 +8,17 @@ export class BrowserTabManager {
     this.activeTab = null;
     this.nextId = 1;
     this.changeListeners = [];
+    this.tabGroups = new Map(); // groupId -> {name, color}
+    this.nextGroupId = 1;
   }
 
   /**
    * Create a new tab
    * @param {string} url - Initial URL
+   * @param {Object} options - Tab options {pinned, groupId, incognito}
    * @returns {Object} Created tab
    */
-  createTab(url = 'about:blank') {
+  createTab(url = 'about:blank', options = {}) {
     const tab = {
       id: this.nextId++,
       url,
@@ -25,7 +28,11 @@ export class BrowserTabManager {
       canGoBack: false,
       canGoForward: false,
       history: [url],
-      historyIndex: 0
+      historyIndex: 0,
+      pinned: options.pinned || false,
+      groupId: options.groupId || null,
+      incognito: options.incognito || false,
+      createdAt: Date.now()
     };
 
     this.tabs.push(tab);
@@ -186,5 +193,110 @@ export class BrowserTabManager {
    */
   notifyChange() {
     this.changeListeners.forEach(callback => callback());
+  }
+
+  /**
+   * Pin/unpin tab
+   * @param {number} tabId - Tab ID
+   */
+  togglePin(tabId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    tab.pinned = !tab.pinned;
+
+    // Move pinned tabs to the front
+    if (tab.pinned) {
+      const index = this.tabs.findIndex(t => t.id === tabId);
+      this.tabs.splice(index, 1);
+      const lastPinnedIndex = this.tabs.findIndex(t => !t.pinned);
+      this.tabs.splice(lastPinnedIndex === -1 ? this.tabs.length : lastPinnedIndex, 0, tab);
+    }
+
+    this.notifyChange();
+  }
+
+  /**
+   * Duplicate tab
+   * @param {number} tabId - Tab ID
+   * @returns {Object} Duplicated tab
+   */
+  duplicateTab(tabId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return null;
+
+    return this.createTab(tab.url, {
+      pinned: false,
+      groupId: tab.groupId,
+      incognito: tab.incognito
+    });
+  }
+
+  /**
+   * Create tab group
+   * @param {string} name - Group name
+   * @param {string} color - Group color
+   * @returns {number} Group ID
+   */
+  createGroup(name, color) {
+    const groupId = this.nextGroupId++;
+    this.tabGroups.set(groupId, { name, color });
+    this.notifyChange();
+    return groupId;
+  }
+
+  /**
+   * Add tab to group
+   * @param {number} tabId - Tab ID
+   * @param {number} groupId - Group ID
+   */
+  addToGroup(tabId, groupId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (tab) {
+      tab.groupId = groupId;
+      this.notifyChange();
+    }
+  }
+
+  /**
+   * Remove tab from group
+   * @param {number} tabId - Tab ID
+   */
+  removeFromGroup(tabId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (tab) {
+      tab.groupId = null;
+      this.notifyChange();
+    }
+  }
+
+  /**
+   * Get group info
+   * @param {number} groupId - Group ID
+   * @returns {Object} Group info
+   */
+  getGroup(groupId) {
+    return this.tabGroups.get(groupId);
+  }
+
+  /**
+   * Get tabs by group
+   * @param {number} groupId - Group ID
+   * @returns {Array} Tabs in group
+   */
+  getTabsByGroup(groupId) {
+    return this.tabs.filter(t => t.groupId === groupId);
+  }
+
+  /**
+   * Mute/unmute tab
+   * @param {number} tabId - Tab ID
+   */
+  toggleMute(tabId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (tab) {
+      tab.muted = !tab.muted;
+      this.notifyChange();
+    }
   }
 }

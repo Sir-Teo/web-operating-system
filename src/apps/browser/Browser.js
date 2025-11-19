@@ -1,10 +1,12 @@
 /**
- * Web Browser Application
- * Basic browser with iframe sandbox, bookmarks, and history
+ * Next-Generation Web Browser Application
+ * Advanced browser with tabs, groups, downloads, dev tools, and more
  */
 import { BrowserTabManager } from './BrowserTabManager.js';
 import { BookmarkManager } from './BookmarkManager.js';
 import { HistoryManager } from './HistoryManager.js';
+import { DownloadManager } from './DownloadManager.js';
+import { RecentlyClosedManager } from './RecentlyClosedManager.js';
 
 export default class Browser {
   constructor(context) {
@@ -12,11 +14,22 @@ export default class Browser {
     this.tabManager = new BrowserTabManager();
     this.bookmarkManager = new BookmarkManager();
     this.historyManager = new HistoryManager();
+    this.downloadManager = new DownloadManager();
+    this.recentlyClosedManager = new RecentlyClosedManager();
     this.container = null;
     this.currentIframe = null;
     this._isUpdatingUI = false;
     this._currentLoadedUrl = null;
     this._currentLoadedTabId = null;
+    this.searchSuggestions = [];
+    this.searchEngines = {
+      google: 'https://www.google.com/search?q=',
+      duckduckgo: 'https://duckduckgo.com/?q=',
+      bing: 'https://www.bing.com/search?q='
+    };
+    this.currentSearchEngine = 'google';
+    this.devToolsOpen = false;
+    this.readingMode = false;
   }
 
   /**
@@ -59,26 +72,99 @@ export default class Browser {
 
         <!-- Navigation bar -->
         <div class="browser-navbar">
-          <button class="nav-btn" id="back-btn" title="Back">←</button>
-          <button class="nav-btn" id="forward-btn" title="Forward">→</button>
-          <button class="nav-btn" id="reload-btn" title="Reload">⟳</button>
+          <button class="nav-btn" id="back-btn" title="Back (Alt+←)">←</button>
+          <button class="nav-btn" id="forward-btn" title="Forward (Alt+→)">→</button>
+          <button class="nav-btn" id="reload-btn" title="Reload (Ctrl+R)">⟳</button>
           <button class="nav-btn" id="home-btn" title="Home">🏠</button>
-          <input type="text" id="url-input" class="url-input" placeholder="Enter URL or search..." />
-          <button class="nav-btn" id="go-btn" title="Go">→</button>
-          <button class="nav-btn" id="bookmark-btn" title="Bookmark">⭐</button>
-          <button class="nav-btn" id="bookmarks-btn" title="Bookmarks">📚</button>
-          <button class="nav-btn" id="history-btn" title="History">🕒</button>
+
+          <div class="url-bar-container">
+            <div class="url-security-indicator" id="security-indicator">🔒</div>
+            <input type="text" id="url-input" class="url-input" placeholder="Search or enter address" autocomplete="off" />
+            <div class="url-suggestions" id="url-suggestions" style="display: none;"></div>
+          </div>
+
+          <button class="nav-btn" id="bookmark-btn" title="Bookmark this page">☆</button>
+          <button class="nav-btn" id="download-btn" title="Downloads">⬇</button>
+          <button class="nav-btn" id="tools-btn" title="Tools & More">⋮</button>
+        </div>
+
+        <!-- Toolbar with additional features -->
+        <div class="browser-toolbar" id="browser-toolbar" style="display: none;">
+          <button class="tool-btn" id="reading-mode-btn" title="Reading Mode">📖</button>
+          <button class="tool-btn" id="screenshot-btn" title="Take Screenshot">📷</button>
+          <button class="tool-btn" id="dev-tools-btn" title="Developer Tools">🔧</button>
+          <button class="tool-btn" id="find-btn" title="Find in Page">🔍</button>
+          <button class="tool-btn" id="print-btn" title="Print">🖨️</button>
         </div>
 
         <!-- Browser view -->
         <div class="browser-view-container">
           <div class="browser-view" id="browser-view"></div>
+
+          <!-- Developer Tools -->
+          <div class="dev-tools-panel" id="dev-tools-panel" style="display: none;">
+            <div class="dev-tools-header">
+              <div class="dev-tools-tabs">
+                <button class="dev-tab active" data-tab="console">Console</button>
+                <button class="dev-tab" data-tab="elements">Elements</button>
+                <button class="dev-tab" data-tab="network">Network</button>
+                <button class="dev-tab" data-tab="storage">Storage</button>
+              </div>
+              <button class="dev-tools-close" id="dev-tools-close">✕</button>
+            </div>
+            <div class="dev-tools-content" id="dev-tools-content">
+              <div class="dev-tools-output" id="dev-tools-output"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tools Menu -->
+        <div class="browser-menu" id="tools-menu" style="display: none;">
+          <div class="menu-section">
+            <button class="menu-item" id="new-tab-menu">
+              <span class="menu-icon">➕</span>
+              <span>New Tab</span>
+              <span class="menu-shortcut">Ctrl+T</span>
+            </button>
+            <button class="menu-item" id="new-incognito-menu">
+              <span class="menu-icon">🕶️</span>
+              <span>New Incognito Tab</span>
+              <span class="menu-shortcut">Ctrl+Shift+N</span>
+            </button>
+            <button class="menu-item" id="reopen-closed-menu">
+              <span class="menu-icon">↩️</span>
+              <span>Reopen Closed Tab</span>
+              <span class="menu-shortcut">Ctrl+Shift+T</span>
+            </button>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-section">
+            <button class="menu-item" id="bookmarks-menu">
+              <span class="menu-icon">📚</span>
+              <span>Bookmarks</span>
+            </button>
+            <button class="menu-item" id="history-menu">
+              <span class="menu-icon">🕒</span>
+              <span>History</span>
+            </button>
+            <button class="menu-item" id="downloads-menu">
+              <span class="menu-icon">⬇️</span>
+              <span>Downloads</span>
+            </button>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-section">
+            <button class="menu-item" id="search-engine-menu">
+              <span class="menu-icon">🔍</span>
+              <span>Search Engine: <span id="current-engine">${this.currentSearchEngine}</span></span>
+            </button>
+          </div>
         </div>
 
         <!-- Bookmarks panel -->
         <div class="browser-panel" id="bookmarks-panel" style="display: none;">
           <div class="panel-header">
-            <h3>Bookmarks</h3>
+            <h3>📚 Bookmarks</h3>
             <button class="panel-close" data-panel="bookmarks">✕</button>
           </div>
           <div class="panel-content" id="bookmarks-content"></div>
@@ -87,15 +173,37 @@ export default class Browser {
         <!-- History panel -->
         <div class="browser-panel" id="history-panel" style="display: none;">
           <div class="panel-header">
-            <h3>History</h3>
+            <h3>🕒 History</h3>
             <button class="panel-close" data-panel="history">✕</button>
           </div>
           <div class="panel-content" id="history-content"></div>
         </div>
 
+        <!-- Downloads panel -->
+        <div class="browser-panel" id="downloads-panel" style="display: none;">
+          <div class="panel-header">
+            <h3>⬇️ Downloads</h3>
+            <button class="panel-close" data-panel="downloads">✕</button>
+          </div>
+          <div class="panel-content" id="downloads-content"></div>
+        </div>
+
+        <!-- Tab context menu -->
+        <div class="context-menu" id="tab-context-menu" style="display: none;">
+          <button class="context-menu-item" data-action="reload">Reload</button>
+          <button class="context-menu-item" data-action="pin">Pin Tab</button>
+          <button class="context-menu-item" data-action="duplicate">Duplicate</button>
+          <button class="context-menu-item" data-action="mute">Mute Tab</button>
+          <div class="menu-divider"></div>
+          <button class="context-menu-item" data-action="close">Close Tab</button>
+          <button class="context-menu-item" data-action="close-others">Close Other Tabs</button>
+          <button class="context-menu-item" data-action="close-right">Close Tabs to the Right</button>
+        </div>
+
         <!-- Status bar -->
         <div class="browser-status-bar" id="browser-status">
           <span id="status-text">Ready</span>
+          <span id="status-info"></span>
         </div>
       </div>
     `;
@@ -105,40 +213,45 @@ export default class Browser {
    * Attach event listeners
    */
   attachEventListeners() {
-    // Back button
+    // Navigation buttons
     this.container.querySelector('#back-btn')?.addEventListener('click', () => {
       const tab = this.tabManager.getActiveTab();
       if (tab) this.tabManager.goBack(tab.id);
     });
 
-    // Forward button
     this.container.querySelector('#forward-btn')?.addEventListener('click', () => {
       const tab = this.tabManager.getActiveTab();
       if (tab) this.tabManager.goForward(tab.id);
     });
 
-    // Reload button
     this.container.querySelector('#reload-btn')?.addEventListener('click', () => {
       const tab = this.tabManager.getActiveTab();
       if (tab) this.tabManager.reload(tab.id);
     });
 
-    // Home button
     this.container.querySelector('#home-btn')?.addEventListener('click', () => {
       this.navigateTo('about:home');
     });
 
-    // URL input
+    // URL input with autocomplete
     const urlInput = this.container.querySelector('#url-input');
+    urlInput?.addEventListener('input', (e) => {
+      this.showUrlSuggestions(e.target.value);
+    });
+
     urlInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         this.navigateTo(urlInput.value);
+        this.hideUrlSuggestions();
+      } else if (e.key === 'Escape') {
+        this.hideUrlSuggestions();
       }
     });
 
-    // Go button
-    this.container.querySelector('#go-btn')?.addEventListener('click', () => {
-      this.navigateTo(urlInput.value);
+    urlInput?.addEventListener('focus', () => {
+      if (urlInput.value) {
+        this.showUrlSuggestions(urlInput.value);
+      }
     });
 
     // Bookmark button
@@ -146,14 +259,71 @@ export default class Browser {
       this.toggleBookmark();
     });
 
-    // Bookmarks button
-    this.container.querySelector('#bookmarks-btn')?.addEventListener('click', () => {
+    // Download button
+    this.container.querySelector('#download-btn')?.addEventListener('click', () => {
+      this.togglePanel('downloads');
+    });
+
+    // Tools button
+    this.container.querySelector('#tools-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleToolsMenu();
+    });
+
+    // Toolbar buttons
+    this.container.querySelector('#reading-mode-btn')?.addEventListener('click', () => {
+      this.toggleReadingMode();
+    });
+
+    this.container.querySelector('#screenshot-btn')?.addEventListener('click', () => {
+      this.takeScreenshot();
+    });
+
+    this.container.querySelector('#dev-tools-btn')?.addEventListener('click', () => {
+      this.toggleDevTools();
+    });
+
+    this.container.querySelector('#dev-tools-close')?.addEventListener('click', () => {
+      this.toggleDevTools();
+    });
+
+    // Tools menu items
+    this.container.querySelector('#new-tab-menu')?.addEventListener('click', () => {
+      this.tabManager.createTab('about:home');
+    });
+
+    this.container.querySelector('#new-incognito-menu')?.addEventListener('click', () => {
+      this.createIncognitoTab();
+    });
+
+    this.container.querySelector('#reopen-closed-menu')?.addEventListener('click', () => {
+      this.reopenClosedTab();
+    });
+
+    this.container.querySelector('#bookmarks-menu')?.addEventListener('click', () => {
       this.togglePanel('bookmarks');
     });
 
-    // History button
-    this.container.querySelector('#history-btn')?.addEventListener('click', () => {
+    this.container.querySelector('#history-menu')?.addEventListener('click', () => {
       this.togglePanel('history');
+    });
+
+    this.container.querySelector('#downloads-menu')?.addEventListener('click', () => {
+      this.togglePanel('downloads');
+    });
+
+    this.container.querySelector('#search-engine-menu')?.addEventListener('click', () => {
+      this.cycleSearchEngine();
+    });
+
+    // Tab context menu
+    this.container.querySelectorAll('.context-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        if (action) {
+          this.handleTabContextAction(action);
+        }
+      });
     });
 
     // Panel close buttons
@@ -161,6 +331,57 @@ export default class Browser {
       btn.addEventListener('click', (e) => {
         this.togglePanel(e.target.dataset.panel);
       });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+T: New tab
+      if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        this.tabManager.createTab('about:home');
+      }
+      // Ctrl+W: Close tab
+      else if (e.ctrlKey && e.key === 'w') {
+        e.preventDefault();
+        const tab = this.tabManager.getActiveTab();
+        if (tab) {
+          this.recentlyClosedManager.addClosedTab(tab);
+          this.tabManager.closeTab(tab.id);
+        }
+      }
+      // Ctrl+Shift+T: Reopen closed tab
+      else if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        this.reopenClosedTab();
+      }
+      // Ctrl+Shift+N: New incognito tab
+      else if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+        e.preventDefault();
+        this.createIncognitoTab();
+      }
+      // Ctrl+R or F5: Reload
+      else if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+        e.preventDefault();
+        const tab = this.tabManager.getActiveTab();
+        if (tab) this.tabManager.reload(tab.id);
+      }
+      // Alt+Left: Back
+      else if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const tab = this.tabManager.getActiveTab();
+        if (tab) this.tabManager.goBack(tab.id);
+      }
+      // Alt+Right: Forward
+      else if (e.altKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        const tab = this.tabManager.getActiveTab();
+        if (tab) this.tabManager.goForward(tab.id);
+      }
+      // F12: Toggle dev tools
+      else if (e.key === 'F12') {
+        e.preventDefault();
+        this.toggleDevTools();
+      }
     });
   }
 
@@ -188,8 +409,8 @@ export default class Browser {
 
     // Check if it's a valid URL
     if (!this.isValidURL(url)) {
-      // Treat as search query
-      url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+      // Treat as search query using current search engine
+      url = this.searchEngines[this.currentSearchEngine] + encodeURIComponent(url);
     } else {
       // Add https if no protocol
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -359,19 +580,43 @@ export default class Browser {
     const activeTab = this.tabManager.getActiveTab();
 
     tabBar.innerHTML = tabs.map(tab => `
-      <div class="browser-tab ${tab.id === activeTab?.id ? 'active' : ''}" data-tab-id="${tab.id}">
+      <div class="browser-tab ${tab.id === activeTab?.id ? 'active' : ''} ${tab.pinned ? 'pinned' : ''} ${tab.incognito ? 'incognito' : ''}"
+           data-tab-id="${tab.id}"
+           title="${tab.url}">
+        ${tab.pinned ? '<span class="tab-pin-indicator">📌</span>' : ''}
+        ${tab.incognito ? '<span class="tab-incognito-indicator">🕶️</span>' : ''}
         <span class="tab-icon">${tab.loading ? '⟳' : tab.icon}</span>
         <span class="tab-title">${tab.title}</span>
-        <button class="tab-close" data-tab-id="${tab.id}">✕</button>
+        ${!tab.pinned ? `<button class="tab-close" data-tab-id="${tab.id}">✕</button>` : ''}
       </div>
-    `).join('') + '<button class="new-tab-btn" id="new-tab-btn">+</button>';
+    `).join('') + '<button class="new-tab-btn" id="new-tab-btn" title="New Tab (Ctrl+T)">+</button>';
 
     // Attach tab event listeners
     tabBar.querySelectorAll('.browser-tab').forEach(tabEl => {
       const tabId = parseInt(tabEl.dataset.tabId);
+
+      // Left click to switch tab
       tabEl.addEventListener('click', (e) => {
         if (!e.target.classList.contains('tab-close')) {
           this.tabManager.setActiveTab(tabId);
+        }
+      });
+
+      // Right click for context menu
+      tabEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        this.showTabContextMenu(tabId, e.clientX, e.clientY);
+      });
+
+      // Middle click to close tab
+      tabEl.addEventListener('mousedown', (e) => {
+        if (e.button === 1) { // Middle mouse button
+          e.preventDefault();
+          const tab = tabs.find(t => t.id === tabId);
+          if (tab) {
+            this.recentlyClosedManager.addClosedTab(tab);
+            this.tabManager.closeTab(tabId);
+          }
         }
       });
     });
@@ -380,7 +625,11 @@ export default class Browser {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const tabId = parseInt(btn.dataset.tabId);
-        this.tabManager.closeTab(tabId);
+        const tab = tabs.find(t => t.id === tabId);
+        if (tab) {
+          this.recentlyClosedManager.addClosedTab(tab);
+          this.tabManager.closeTab(tabId);
+        }
       });
     });
 
@@ -465,6 +714,14 @@ export default class Browser {
     if (!panel) return;
 
     const isVisible = panel.style.display !== 'none';
+
+    // Close all other panels
+    this.container.querySelectorAll('.browser-panel').forEach(p => {
+      if (p.id !== `${panelName}-panel`) {
+        p.style.display = 'none';
+      }
+    });
+
     panel.style.display = isVisible ? 'none' : 'block';
 
     if (!isVisible) {
@@ -472,6 +729,8 @@ export default class Browser {
         this.renderBookmarks();
       } else if (panelName === 'history') {
         this.renderHistory();
+      } else if (panelName === 'downloads') {
+        this.renderDownloads();
       }
     }
   }
@@ -583,6 +842,354 @@ export default class Browser {
     const statusText = this.container.querySelector('#status-text');
     if (statusText) {
       statusText.textContent = message;
+    }
+  }
+
+  /**
+   * Render downloads panel
+   */
+  renderDownloads() {
+    const content = this.container.querySelector('#downloads-content');
+    if (!content) return;
+
+    const downloads = this.downloadManager.getAllDownloads();
+
+    if (downloads.length === 0) {
+      content.innerHTML = '<div class="empty-state">No downloads yet</div>';
+      return;
+    }
+
+    content.innerHTML = `
+      <div class="downloads-actions">
+        <button id="clear-downloads">Clear All</button>
+      </div>
+      <div class="downloads-list">
+        ${downloads.map(dl => `
+          <div class="download-item ${dl.status}">
+            <div class="download-icon">${this.getDownloadIcon(dl.status)}</div>
+            <div class="download-info">
+              <div class="download-filename">${dl.filename}</div>
+              <div class="download-details">
+                ${dl.size > 0 ? this.downloadManager.formatSize(dl.size) : 'Unknown size'} •
+                ${dl.status === 'completed' ? 'Completed' : dl.status}
+                ${dl.error ? ` • ${dl.error}` : ''}
+              </div>
+              ${dl.status === 'downloading' ? `
+                <div class="download-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${dl.progress}%"></div>
+                  </div>
+                  <span>${dl.progress}%</span>
+                </div>
+              ` : ''}
+            </div>
+            <button class="download-remove" data-id="${dl.id}">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    content.querySelector('#clear-downloads')?.addEventListener('click', () => {
+      this.downloadManager.clearAll();
+      this.renderDownloads();
+    });
+
+    content.querySelectorAll('.download-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        this.downloadManager.removeDownload(id);
+        this.renderDownloads();
+      });
+    });
+  }
+
+  /**
+   * Get download icon based on status
+   */
+  getDownloadIcon(status) {
+    const icons = {
+      downloading: '⬇️',
+      completed: '✅',
+      failed: '❌',
+      paused: '⏸️'
+    };
+    return icons[status] || '📄';
+  }
+
+  /**
+   * Toggle developer tools
+   */
+  toggleDevTools() {
+    this.devToolsOpen = !this.devToolsOpen;
+    const panel = this.container.querySelector('#dev-tools-panel');
+    if (panel) {
+      panel.style.display = this.devToolsOpen ? 'flex' : 'none';
+      if (this.devToolsOpen) {
+        this.initDevTools();
+      }
+    }
+  }
+
+  /**
+   * Initialize developer tools
+   */
+  initDevTools() {
+    const output = this.container.querySelector('#dev-tools-output');
+    if (!output) return;
+
+    const tab = this.tabManager.getActiveTab();
+    if (!tab) return;
+
+    output.innerHTML = `
+      <div class="dev-console">
+        <div class="console-header">Console</div>
+        <div class="console-messages">
+          <div class="console-message info">
+            <span class="console-icon">ℹ️</span>
+            <span>Developer Console - Tab: ${tab.title}</span>
+          </div>
+          <div class="console-message">
+            <span class="console-icon">▶️</span>
+            <span>URL: ${tab.url}</span>
+          </div>
+          <div class="console-message">
+            <span class="console-icon">⏱️</span>
+            <span>Created: ${new Date(tab.createdAt).toLocaleString()}</span>
+          </div>
+          ${tab.incognito ? '<div class="console-message warn"><span class="console-icon">🕶️</span><span>Incognito Mode Active</span></div>' : ''}
+        </div>
+        <div class="console-input">
+          <input type="text" placeholder="Enter JavaScript..." id="console-input" />
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Toggle reading mode
+   */
+  toggleReadingMode() {
+    this.readingMode = !this.readingMode;
+    const viewContainer = this.container.querySelector('#browser-view');
+    if (viewContainer) {
+      viewContainer.classList.toggle('reading-mode', this.readingMode);
+    }
+    this.updateStatus(this.readingMode ? 'Reading mode enabled' : 'Reading mode disabled');
+  }
+
+  /**
+   * Take screenshot
+   */
+  async takeScreenshot() {
+    try {
+      const viewContainer = this.container.querySelector('#browser-view');
+      if (!viewContainer) return;
+
+      // For iframe content, we can't directly capture due to CORS
+      // Instead, we'll notify the user
+      this.updateStatus('Screenshot feature - Content capture limited by browser security');
+
+      // In a real implementation, you'd use APIs like html2canvas or similar
+      alert('Screenshot functionality would require additional libraries like html2canvas');
+    } catch (error) {
+      this.updateStatus('Screenshot failed: ' + error.message);
+    }
+  }
+
+  /**
+   * Show tab context menu
+   */
+  showTabContextMenu(tabId, x, y) {
+    const menu = this.container.querySelector('#tab-context-menu');
+    if (!menu) return;
+
+    this.contextMenuTabId = tabId;
+    menu.style.display = 'block';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    // Update menu items based on tab state
+    const tab = this.tabManager.getAllTabs().find(t => t.id === tabId);
+    if (tab) {
+      const pinItem = menu.querySelector('[data-action="pin"]');
+      if (pinItem) pinItem.textContent = tab.pinned ? 'Unpin Tab' : 'Pin Tab';
+
+      const muteItem = menu.querySelector('[data-action="mute"]');
+      if (muteItem) muteItem.textContent = tab.muted ? 'Unmute Tab' : 'Mute Tab';
+    }
+
+    // Close menu on click outside
+    setTimeout(() => {
+      document.addEventListener('click', () => {
+        menu.style.display = 'none';
+      }, { once: true });
+    }, 0);
+  }
+
+  /**
+   * Handle tab context menu action
+   */
+  handleTabContextAction(action) {
+    const tabId = this.contextMenuTabId;
+    if (!tabId) return;
+
+    switch (action) {
+      case 'reload':
+        this.tabManager.reload(tabId);
+        break;
+      case 'pin':
+        this.tabManager.togglePin(tabId);
+        break;
+      case 'duplicate':
+        this.tabManager.duplicateTab(tabId);
+        break;
+      case 'mute':
+        this.tabManager.toggleMute(tabId);
+        break;
+      case 'close':
+        const tab = this.tabManager.getAllTabs().find(t => t.id === tabId);
+        if (tab) {
+          this.recentlyClosedManager.addClosedTab(tab);
+          this.tabManager.closeTab(tabId);
+        }
+        break;
+      case 'close-others':
+        this.tabManager.getAllTabs().forEach(t => {
+          if (t.id !== tabId) {
+            this.recentlyClosedManager.addClosedTab(t);
+            this.tabManager.closeTab(t.id);
+          }
+        });
+        break;
+      case 'close-right':
+        const tabs = this.tabManager.getAllTabs();
+        const index = tabs.findIndex(t => t.id === tabId);
+        tabs.slice(index + 1).forEach(t => {
+          this.recentlyClosedManager.addClosedTab(t);
+          this.tabManager.closeTab(t.id);
+        });
+        break;
+    }
+  }
+
+  /**
+   * Reopen last closed tab
+   */
+  reopenClosedTab() {
+    const recentlyClosed = this.recentlyClosedManager.getRecentlyClosed(1);
+    if (recentlyClosed.length > 0) {
+      const tab = recentlyClosed[0];
+      this.tabManager.createTab(tab.url, {
+        pinned: tab.pinned,
+        groupId: tab.groupId,
+        incognito: tab.incognito
+      });
+      this.recentlyClosedManager.removeEntry(0);
+      this.updateStatus('Reopened tab');
+    }
+  }
+
+  /**
+   * Create incognito tab
+   */
+  createIncognitoTab() {
+    this.tabManager.createTab('about:blank', { incognito: true });
+    this.updateStatus('Incognito tab created');
+  }
+
+  /**
+   * Toggle tools menu
+   */
+  toggleToolsMenu() {
+    const menu = this.container.querySelector('#tools-menu');
+    if (!menu) return;
+
+    const isVisible = menu.style.display !== 'none';
+    menu.style.display = isVisible ? 'none' : 'block';
+
+    if (!isVisible) {
+      // Close on click outside
+      setTimeout(() => {
+        document.addEventListener('click', (e) => {
+          if (!menu.contains(e.target)) {
+            menu.style.display = 'none';
+          }
+        }, { once: true });
+      }, 0);
+    }
+  }
+
+  /**
+   * Cycle search engine
+   */
+  cycleSearchEngine() {
+    const engines = Object.keys(this.searchEngines);
+    const currentIndex = engines.indexOf(this.currentSearchEngine);
+    const nextIndex = (currentIndex + 1) % engines.length;
+    this.currentSearchEngine = engines[nextIndex];
+
+    const engineSpan = this.container.querySelector('#current-engine');
+    if (engineSpan) {
+      engineSpan.textContent = this.currentSearchEngine;
+    }
+
+    this.updateStatus(`Search engine: ${this.currentSearchEngine}`);
+  }
+
+  /**
+   * Show URL suggestions
+   */
+  showUrlSuggestions(query) {
+    if (!query || query.length < 2) {
+      this.hideUrlSuggestions();
+      return;
+    }
+
+    const suggestionsDiv = this.container.querySelector('#url-suggestions');
+    if (!suggestionsDiv) return;
+
+    // Get suggestions from bookmarks and history
+    const bookmarks = this.bookmarkManager.search(query);
+    const history = this.historyManager.search(query, 5);
+
+    const suggestions = [
+      ...bookmarks.slice(0, 3).map(b => ({ type: 'bookmark', ...b })),
+      ...history.slice(0, 3).map(h => ({ type: 'history', ...h }))
+    ];
+
+    if (suggestions.length === 0) {
+      this.hideUrlSuggestions();
+      return;
+    }
+
+    suggestionsDiv.innerHTML = suggestions.map(s => `
+      <div class="suggestion-item" data-url="${s.url}">
+        <span class="suggestion-icon">${s.type === 'bookmark' ? '⭐' : '🕒'}</span>
+        <div class="suggestion-info">
+          <div class="suggestion-title">${s.title}</div>
+          <div class="suggestion-url">${s.url}</div>
+        </div>
+      </div>
+    `).join('');
+
+    suggestionsDiv.style.display = 'block';
+
+    // Add click handlers
+    suggestionsDiv.querySelectorAll('.suggestion-item').forEach(item => {
+      item.addEventListener('click', () => {
+        this.navigateTo(item.dataset.url);
+        this.hideUrlSuggestions();
+      });
+    });
+  }
+
+  /**
+   * Hide URL suggestions
+   */
+  hideUrlSuggestions() {
+    const suggestionsDiv = this.container.querySelector('#url-suggestions');
+    if (suggestionsDiv) {
+      suggestionsDiv.style.display = 'none';
     }
   }
 
