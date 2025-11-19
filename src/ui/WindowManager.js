@@ -25,9 +25,16 @@ class WindowManager extends EventTarget {
       class: config.class || [],
       onclose: (force) => {
         if (!force && config.onBeforeClose) {
-          return config.onBeforeClose();
+          const shouldClose = config.onBeforeClose();
+          if (!shouldClose) {
+            return false;
+          }
         }
-        this.closeWindow(windowId);
+        // Clean up our internal state when WinBox closes the window
+        this.windows.delete(windowId);
+        this.dispatchEvent(new CustomEvent('window-closed', {
+          detail: { windowId }
+        }));
         return true;
       },
       onfocus: () => {
