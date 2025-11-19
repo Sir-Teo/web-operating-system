@@ -1,0 +1,99 @@
+.spreadsheet-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.spreadsheet-menu-bar {
+  user-select: none;
+}
+
+.spreadsheet-toolbar {
+  flex-wrap: wrap;
+}
+
+.spreadsheet-grid {
+  font-family: Arial, sans-serif;
+}
+
+.spreadsheet-grid > div {
+  min-width: fit-content;
+}
+
+.spreadsheet-grid [data-cell-id] {
+  transition: background 0.1s ease, border 0.1s ease;
+}
+
+.spreadsheet-grid [data-cell-id]:hover {
+  background: #f0f0f0;
+}
+
+.spreadsheet-grid [data-cell-id]:focus {
+  background: #e0f0ff;
+  border: 2px solid #0066cc;
+  z-index: 1;
+  position: relative;
+}
+
+/* Formula bar styling */
+.spreadsheet-container input[type="text"] {
+  transition: border-color 0.2s ease;
+}
+
+.spreadsheet-container input[type="text"]:focus {
+  border-color: #0066cc;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+}
+
+/* Toolbar button hover effects */
+.spreadsheet-toolbar button {
+  transition: all 0.2s ease;
+}
+
+.spreadsheet-toolbar button:active {
+  transform: scale(0.95);
+}
+
+/* File menu dropdown animation */
+.file-menu-dropdown {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Status bar */
+.spreadsheet-container > div:last-child {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Scrollbar styling */
+.spreadsheet-container > div:nth-child(4) {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f0f0f0;
+}
+
+.spreadsheet-container > div:nth-child(4)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.spreadsheet-container > div:nth-child(4)::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.spreadsheet-container > div:nth-child(4)::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.spreadsheet-container > div:nth-child(4)::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

@@ -17,12 +17,18 @@ import PluginManager from './apps/plugin-manager/PluginManager.js';
 import Settings from './apps/settings/Settings.js';
 import SystemMonitor from './apps/system-monitor/SystemMonitor.js';
 import UserManagerApp from './apps/user-manager/UserManagerApp.js';
+import WordProcessor from './apps/word-processor/WordProcessor.js';
+import Spreadsheet from './apps/spreadsheet/Spreadsheet.js';
+import Presentation from './apps/presentation/Presentation.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
 import './apps/package-manager/PackageManager.css';
 import './apps/settings/Settings.css';
 import './apps/system-monitor/SystemMonitor.css';
+import './apps/word-processor/WordProcessor.css';
+import './apps/spreadsheet/Spreadsheet.css';
+import './apps/presentation/Presentation.css';
 
 class WebOS {
   constructor() {
@@ -193,6 +199,39 @@ class WebOS {
       type: 'web',
       permissions: ['system.user'],
       Component: UserManagerApp
+    });
+
+    // Register Word Processor
+    AppRegistry.register({
+      id: 'word-processor',
+      name: 'Word Processor',
+      version: '1.0.0',
+      icon: '📄',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: WordProcessor
+    });
+
+    // Register Spreadsheet
+    AppRegistry.register({
+      id: 'spreadsheet',
+      name: 'Spreadsheet',
+      version: '1.0.0',
+      icon: '📊',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Spreadsheet
+    });
+
+    // Register Presentation
+    AppRegistry.register({
+      id: 'presentation',
+      name: 'Presentation',
+      version: '1.0.0',
+      icon: '📽️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Presentation
     });
   }
 
