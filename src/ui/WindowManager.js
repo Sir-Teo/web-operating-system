@@ -21,10 +21,8 @@ class WindowManager extends EventTarget {
       minheight: 150,
       background: '#ffffff',
       border: 4,
-      // Explicitly enable window control buttons
-      close: true,
-      minimize: true,
-      maximize: true,
+      // Don't pass any "no-" classes to ensure control buttons are visible
+      class: config.class || [],
       onclose: (force) => {
         if (!force && config.onBeforeClose) {
           return config.onBeforeClose();
