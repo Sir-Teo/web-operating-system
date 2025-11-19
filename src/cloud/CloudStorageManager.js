@@ -1,4 +1,7 @@
 import { WebDAVProvider, MockCloudProvider } from './CloudProvider.js';
+import { GoogleDriveProvider } from './GoogleDriveProvider.js';
+import { DropboxProvider } from './DropboxProvider.js';
+import { OneDriveProvider } from './OneDriveProvider.js';
 import { SyncEngine } from './SyncEngine.js';
 
 /**
@@ -37,7 +40,7 @@ export class CloudStorageManager {
 
   /**
    * Connect to a cloud provider
-   * @param {string} providerType - Type of provider (webdav, mock, etc.)
+   * @param {string} providerType - Type of provider (webdav, google-drive, dropbox, onedrive, mock)
    * @param {Object} config - Provider configuration
    * @returns {Promise<string>} Provider ID
    */
@@ -47,6 +50,19 @@ export class CloudStorageManager {
     switch (providerType.toLowerCase()) {
       case 'webdav':
         provider = new WebDAVProvider(config);
+        break;
+
+      case 'google-drive':
+      case 'googledrive':
+        provider = new GoogleDriveProvider(config);
+        break;
+
+      case 'dropbox':
+        provider = new DropboxProvider(config);
+        break;
+
+      case 'onedrive':
+        provider = new OneDriveProvider(config);
         break;
 
       case 'mock':

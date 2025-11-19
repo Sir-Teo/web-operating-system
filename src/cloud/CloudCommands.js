@@ -29,10 +29,20 @@ export function registerCloudCommands(terminal, cloudManager) {
           return await this.upload(args.slice(1), context);
         case 'download':
           return await this.download(args.slice(1), context);
+        case 'mount':
+          return await this.mount(args.slice(1), context);
+        case 'unmount':
+          return await this.unmount(args.slice(1), context);
+        case 'sync':
+          return await this.sync(args.slice(1), context);
+        case 'mounts':
+          return this.mounts();
         case 'providers':
           return this.providers();
         case 'status':
           return this.status();
+        case 'help':
+          return this.showHelp();
         default:
           return `Unknown subcommand: ${subcommand}\nUse 'cloud help' for usage.`;
       }
@@ -40,22 +50,35 @@ export function registerCloudCommands(terminal, cloudManager) {
 
     showHelp() {
       return `Cloud Storage Commands:
-  cloud connect <type> <url> <username> <password>  - Connect to cloud provider
+  cloud connect <type> [options...]                  - Connect to cloud provider
   cloud disconnect <provider-id>                     - Disconnect from provider
   cloud list <provider-id> <path>                    - List cloud files
   cloud upload <local-path> <provider-id> <cloud-path> - Upload file
   cloud download <provider-id> <cloud-path> <local-path> - Download file
+  cloud mount <provider-id> <cloud-path> <local-path> - Mount cloud path locally
+  cloud unmount <local-path>                         - Unmount cloud path
+  cloud sync <local-path>                            - Sync a mounted path
+  cloud mounts                                       - List active mounts
   cloud providers                                    - List connected providers
   cloud status                                       - Show cloud status
 
 Supported provider types:
-  webdav    - WebDAV server
-  mock      - Mock provider (for testing)
+  webdav        - WebDAV server (basic auth)
+  google-drive  - Google Drive (OAuth)
+  dropbox       - Dropbox (OAuth)
+  onedrive      - Microsoft OneDrive (OAuth)
+  mock          - Mock provider (for testing)
 
 Examples:
   cloud connect webdav https://dav.example.com user pass
+  cloud connect google-drive
+  cloud mount provider-123 / /mnt/cloud
+  cloud sync /mnt/cloud
   cloud list provider-123 /documents
-  cloud upload /home/user/file.txt provider-123 /backup/file.txt`;
+  cloud upload /home/user/file.txt provider-123 /backup/file.txt
+
+Note: OAuth providers (Google Drive, Dropbox, OneDrive) require configuration
+      through the Cloud Storage application for OAuth credentials.`;
     },
 
     async connect(args, context) {
@@ -149,6 +172,85 @@ Examples:
       } catch (error) {
         return `Error: ${error.message}`;
       }
+    },
+
+    async mount(args, context) {
+      if (args.length < 3) {
+        return 'Usage: cloud mount <provider-id> <cloud-path> <local-path>';
+      }
+
+      const [providerId, cloudPath, localPath] = args;
+
+      try {
+        const result = await cloudManager.mount(providerId, cloudPath, localPath, {
+          sync: true
+        });
+        return `Mounted ${cloudPath} to ${localPath} (syncing enabled)`;
+      } catch (error) {
+        return `Error: ${error.message}`;
+      }
+    },
+
+    async unmount(args, context) {
+      if (args.length < 1) {
+        return 'Usage: cloud unmount <local-path>';
+      }
+
+      const [localPath] = args;
+
+      try {
+        await cloudManager.unmount(localPath);
+        return `Unmounted ${localPath}`;
+      } catch (error) {
+        return `Error: ${error.message}`;
+      }
+    },
+
+    async sync(args, context) {
+      if (args.length < 1) {
+        return 'Usage: cloud sync <local-path>';
+      }
+
+      const [localPath] = args;
+
+      try {
+        const mount = cloudManager.getMountInfo(localPath);
+        if (!mount) {
+          return `Error: No mount found at ${localPath}`;
+        }
+
+        const result = await cloudManager.sync(
+          mount.localPath,
+          mount.providerId,
+          mount.cloudPath
+        );
+
+        return `Sync complete:
+  Uploaded: ${result.uploaded} files
+  Downloaded: ${result.downloaded} files
+  Conflicts: ${result.conflicts}`;
+      } catch (error) {
+        return `Error: ${error.message}`;
+      }
+    },
+
+    mounts() {
+      const mounts = cloudManager.getMounts();
+
+      if (mounts.length === 0) {
+        return 'No active mounts';
+      }
+
+      let output = 'Active Mounts:\n';
+      for (const mount of mounts) {
+        output += `  ${mount.mountPoint}\n`;
+        output += `    Cloud Path: ${mount.cloudPath}\n`;
+        output += `    Provider: ${mount.providerId}\n`;
+        const elapsed = Math.floor((Date.now() - mount.mounted) / 1000);
+        output += `    Mounted: ${elapsed}s ago\n`;
+      }
+
+      return output.trimEnd();
     },
 
     providers() {

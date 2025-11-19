@@ -15,6 +15,16 @@ export class SyncEngine {
     this.offlineQueue = [];
     this.isOnline = navigator.onLine;
 
+    // Bandwidth throttling settings
+    this.bandwidthLimit = 0; // bytes per second (0 = unlimited)
+    this.transferredBytes = 0;
+    this.transferStartTime = Date.now();
+    this.throttleDelay = 100; // ms between throttle checks
+
+    // Selective sync settings
+    this.selectiveSyncRules = new Map(); // Map of syncId -> rules
+    this.excludePatterns = []; // Global exclude patterns (e.g., ['.git', 'node_modules'])
+
     // Listen to online/offline events
     window.addEventListener('online', () => {
       this.isOnline = true;
@@ -277,6 +287,9 @@ export class SyncEngine {
       // Read local file
       const data = await this.vfs.readFile(localPath);
 
+      // Apply bandwidth throttling
+      await this.applyThrottle(data.length);
+
       // Upload to cloud
       await this.cloud.writeFile(cloudPath, data);
 
@@ -305,6 +318,9 @@ export class SyncEngine {
 
       // Download from cloud
       const data = await this.cloud.readFile(cloudPath);
+
+      // Apply bandwidth throttling
+      await this.applyThrottle(data.length);
 
       // Write to local
       await this.vfs.writeFile(localPath, data);
@@ -495,6 +511,134 @@ export class SyncEngine {
   }
 
   /**
+   * Set bandwidth limit for transfers
+   * @param {number} bytesPerSecond - Bandwidth limit (0 = unlimited)
+   */
+  setBandwidthLimit(bytesPerSecond) {
+    this.bandwidthLimit = Math.max(0, bytesPerSecond);
+    this.transferredBytes = 0;
+    this.transferStartTime = Date.now();
+  }
+
+  /**
+   * Apply bandwidth throttling
+   * @param {number} bytes - Number of bytes transferred
+   */
+  async applyThrottle(bytes) {
+    if (this.bandwidthLimit === 0) {
+      return; // No throttling
+    }
+
+    this.transferredBytes += bytes;
+    const elapsedSeconds = (Date.now() - this.transferStartTime) / 1000;
+    const currentRate = this.transferredBytes / elapsedSeconds;
+
+    if (currentRate > this.bandwidthLimit) {
+      // Calculate delay needed to stay within limit
+      const targetTime = this.transferredBytes / this.bandwidthLimit;
+      const delayMs = (targetTime - elapsedSeconds) * 1000;
+
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    // Reset counter periodically to prevent overflow
+    if (elapsedSeconds > 60) {
+      this.transferredBytes = 0;
+      this.transferStartTime = Date.now();
+    }
+  }
+
+  /**
+   * Set global exclude patterns for selective sync
+   * @param {Array<string>} patterns - Patterns to exclude (e.g., ['.git', 'node_modules'])
+   */
+  setExcludePatterns(patterns) {
+    this.excludePatterns = patterns || [];
+  }
+
+  /**
+   * Set selective sync rules for a sync pair
+   * @param {string} syncId - Sync pair ID
+   * @param {Object} rules - Selective sync rules
+   */
+  setSelectiveSyncRules(syncId, rules) {
+    this.selectiveSyncRules.set(syncId, {
+      includeFolders: rules.includeFolders || [], // Only sync these folders
+      excludeFolders: rules.excludeFolders || [], // Exclude these folders
+      includeExtensions: rules.includeExtensions || [], // Only sync these file types
+      excludeExtensions: rules.excludeExtensions || [], // Exclude these file types
+      maxFileSize: rules.maxFileSize || 0, // Max file size (0 = unlimited)
+      ...rules
+    });
+  }
+
+  /**
+   * Check if a file should be synced based on selective sync rules
+   * @param {string} relativePath - Relative file path
+   * @param {Object} fileInfo - File information
+   * @param {string} syncId - Sync pair ID
+   * @returns {boolean} True if file should be synced
+   */
+  shouldSyncFile(relativePath, fileInfo, syncId) {
+    // Check global exclude patterns
+    for (const pattern of this.excludePatterns) {
+      if (relativePath.includes(pattern)) {
+        return false;
+      }
+    }
+
+    // Check sync-specific rules
+    const rules = this.selectiveSyncRules.get(syncId);
+    if (!rules) {
+      return true; // No rules = sync everything
+    }
+
+    // Check include folders (if specified, only sync files in these folders)
+    if (rules.includeFolders && rules.includeFolders.length > 0) {
+      const inIncludedFolder = rules.includeFolders.some(folder =>
+        relativePath.startsWith(folder)
+      );
+      if (!inIncludedFolder) {
+        return false;
+      }
+    }
+
+    // Check exclude folders
+    if (rules.excludeFolders && rules.excludeFolders.length > 0) {
+      const inExcludedFolder = rules.excludeFolders.some(folder =>
+        relativePath.startsWith(folder)
+      );
+      if (inExcludedFolder) {
+        return false;
+      }
+    }
+
+    // Check file extensions
+    const ext = relativePath.substring(relativePath.lastIndexOf('.'));
+
+    if (rules.includeExtensions && rules.includeExtensions.length > 0) {
+      if (!rules.includeExtensions.includes(ext)) {
+        return false;
+      }
+    }
+
+    if (rules.excludeExtensions && rules.excludeExtensions.length > 0) {
+      if (rules.excludeExtensions.includes(ext)) {
+        return false;
+      }
+    }
+
+    // Check file size
+    if (rules.maxFileSize > 0 && fileInfo.size > rules.maxFileSize) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
    * Get sync status
    * @returns {Object}
    */
@@ -505,9 +649,13 @@ export class SyncEngine {
       offlineQueue: this.offlineQueue.length,
       isOnline: this.isOnline,
       conflictStrategy: this.conflictStrategy,
+      bandwidthLimit: this.bandwidthLimit,
+      transferredBytes: this.transferredBytes,
+      excludePatterns: this.excludePatterns,
       syncPairs: Array.from(this.syncPairs.entries()).map(([id, pair]) => ({
         id,
-        ...pair
+        ...pair,
+        selectiveRules: this.selectiveSyncRules.get(id)
       }))
     };
   }
