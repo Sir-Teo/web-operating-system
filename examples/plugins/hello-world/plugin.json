@@ -1,0 +1,22 @@
+{
+  "id": "com.webos.hello-world",
+  "name": "Hello World Plugin",
+  "version": "1.0.0",
+  "description": "A simple example plugin that demonstrates basic plugin functionality",
+  "author": {
+    "name": "WebOS Team",
+    "email": "team@webos.dev",
+    "url": "https://webos.dev"
+  },
+  "main": "index.js",
+  "icon": "icon.png",
+  "permissions": [
+    "ui.notifications"
+  ],
+  "engines": {
+    "webos": ">=2.6.0"
+  },
+  "categories": ["example", "demo"],
+  "keywords": ["hello", "example", "demo"],
+  "license": "MIT"
+}

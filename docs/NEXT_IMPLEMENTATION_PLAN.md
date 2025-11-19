@@ -1,764 +1,953 @@
-# Next Implementation Phases - Technical Plan
+# Next Implementation Plan - Phase 11: Plugin System
 
-**Document Version:** 1.0
-**Date:** November 18, 2025
+**Document Version:** 2.0
+**Date:** November 19, 2025
 **Status:** Planning Phase
+**Target Version:** v3.0.0
 
 ---
 
 ## 📊 Current Status Summary
 
-### ✅ Completed Phases (v1.3.0)
+### ✅ Completed Phases (v2.6.0)
 
-#### Phase 2.3: File Encryption & Security
-**Status:** ✅ Complete
-**Lines of Code:** ~500 LOC
-**Commit:** `4b02f62`
+WebOS has successfully completed **10 major development phases**:
 
-**Implemented Features:**
-- FileEncryption class with AES-256-GCM encryption
-- Password-based key derivation (PBKDF2, 100K iterations)
-- Cryptographic hashing (MD5, SHA-256, SHA-512)
-- Secure file deletion with multi-pass overwriting
-- Terminal commands: `encrypt`, `decrypt`, `md5sum`, `sha256sum`, `sha512sum`, `shred`
-
-#### Phase 2.4: Advanced File Manager
-**Status:** ✅ Complete
-**Lines of Code:** ~1960 LOC
-**Commit:** `d5d51ab`
-
-**Implemented Components:**
-- **FilePane.js** (590 LOC) - Dual-pane file browsing with list/grid views
-- **PreviewPane.js** (235 LOC) - Image and text file previews
-- **FileSearch.js** (250 LOC) - Recursive search with filters
-- **BookmarkManager.js** (215 LOC) - Quick access bookmarks
-- **FileManagerV2.js** (670 LOC) - Main orchestrator with toolbar
-
-**Key Features:**
-- Dual-pane layout with independent navigation
-- Drag and drop between panes
-- Multi-select with bulk operations
-- File properties dialog
-- Search with filters (name, type, size, content)
-- Bookmarks with localStorage persistence
-
-#### Phase 3: Networking Stack
-**Status:** ✅ Complete
-**Lines of Code:** ~1476 LOC
-**Commit:** `1991a7d`
-
-**Implemented Components:**
-- **NetworkStack.js** (451 LOC) - Virtual networking layer
-- **DNSResolver.js** (256 LOC) - DNS resolution with caching
-- **Firewall.js** (390 LOC) - Rule-based security filtering
-- **Terminal Commands** (379 LOC) - 11 network commands
-
-**Key Features:**
-- HTTP/HTTPS fetch with firewall integration
-- DNS resolution with 5-minute caching
-- Ping and traceroute functionality
-- Network statistics and monitoring
-- Firewall with rule management
-- Commands: `ping`, `curl`, `wget`, `netstat`, `ifconfig`, `route`, `nslookup`, `dig`, `traceroute`, `iptables`
+- **Phase 1**: Advanced Terminal & Shell ✅
+- **Phase 2**: Enhanced File System (compression, encryption, advanced file manager) ✅
+- **Phase 3**: Networking Stack (HTTP, DNS, Firewall) ✅
+- **Phase 4**: Advanced Applications (Code Editor, Browser, Package Manager) ✅
+- **Phase 5.1**: Themes & Customization ✅ (partial)
+- **Phase 7**: Cloud & Sync ✅ (design complete)
+- **Phase 8**: AI & ML Integration ✅
+- **Phase 9**: Developer Tools & Debugging ✅
+- **Phase 10**: System Monitor & Productivity ✅
 
 ### 📦 Current System Capabilities
 
-**File System:**
-- Virtual File System (OPFS, IndexedDB, Memory)
-- Advanced file operations (chmod, chown, symlinks)
-- File attributes and watching
-- Compression (gzip, tar, tar.gz)
-- Encryption (AES-256-GCM)
-- Secure deletion
+**Applications (10+):**
+- Terminal (66+ commands, 8 themes, scripting)
+- File Explorer (dual-pane, search, bookmarks)
+- Code Editor (Monaco, 80+ languages)
+- Web Browser (iframe sandbox)
+- Package Manager (npm integration)
+- System Monitor (real-time stats)
+- DevTools (console, profiler, network inspector)
+- AI Assistant
+- Settings
+- Text Editor
 
-**User Interface:**
-- Glassmorphism design with animations
-- Window management system
-- Dual-pane file manager with preview
-- Terminal with 50+ commands
+**Core Features:**
+- VFS with OPFS, IndexedDB, Memory drivers
+- File encryption (AES-256-GCM)
+- File compression (gzip, tar)
+- Network stack with firewall
+- Window management with snapping
+- Process management
+- AI/ML capabilities
 
-**Networking:**
-- Virtual network stack
-- DNS resolution and caching
-- HTTP/HTTPS requests
-- Firewall with rule-based filtering
-- Network diagnostics tools
-
-**Development:**
-- Total codebase: ~10,000+ LOC
+**Codebase:**
+- 10,000+ LOC
 - 47 modules
-- Bundle size: 230.76 KB (66.12 KB gzipped)
+- 941 KB gzipped bundle
 - Zero build errors
 
 ---
 
-## 🎯 Next Implementation Phases
+## 🎯 Phase 11: Plugin System & Extensibility (v3.0.0)
 
-### Phase 4: Advanced Applications (v2.0.0)
+**Priority:** 🔴 High
+**Complexity:** ⚠️ High
+**Duration:** 6-8 weeks
+**Impact:** 🚀 Massive - Enables third-party ecosystem
 
-**Priority:** High
-**Estimated Duration:** 6-8 weeks
-**Complexity:** Very High
-**Impact:** Transform WebOS into professional development environment
+### Overview
+
+The plugin system will transform WebOS from a standalone OS into an extensible platform. This is a **critical milestone** that will:
+
+1. Enable third-party developers to extend WebOS
+2. Create a marketplace/ecosystem
+3. Allow user customization without forking
+4. Provide a secure sandbox for untrusted code
+5. Establish WebOS as a platform, not just an application
 
 ---
 
-## 📝 Phase 4.1: Code Editor with Monaco
+## 📝 Technical Specification
 
-### Overview
-Integrate Monaco Editor (VS Code's editor) to provide a professional code editing experience with syntax highlighting, IntelliSense, and multi-tab support.
+### Architecture Overview
 
-### Technical Specification
+```
+┌─────────────────────────────────────────┐
+│         Plugin Marketplace UI           │
+│  (Browse, Install, Configure Plugins)   │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│         Plugin Manager Service          │
+│  - Load/Unload plugins                  │
+│  - Lifecycle management                 │
+│  - Dependency resolution                │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│           Plugin Sandbox                │
+│  - Isolated execution context           │
+│  - Permission checks                    │
+│  - Resource limits                      │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│            Plugin API                   │
+│  - UI hooks (menus, widgets, panels)    │
+│  - FS access (read/write with perms)    │
+│  - Network access (with firewall)       │
+│  - App lifecycle hooks                  │
+└─────────────────────────────────────────┘
+```
 
-#### Dependencies
+---
+
+## 🔧 Implementation Plan
+
+### Week 1-2: Foundation & Core Architecture
+
+#### 1.1 Plugin Manifest Format
+
+Create a standardized manifest format for plugins:
+
 ```json
 {
-  "monaco-editor": "^0.50.0",
-  "monaco-editor-webpack-plugin": "^7.1.0"
+  "id": "com.example.myplugin",
+  "name": "My Awesome Plugin",
+  "version": "1.0.0",
+  "description": "Does amazing things",
+  "author": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "url": "https://example.com"
+  },
+  "main": "index.js",
+  "icon": "icon.png",
+  "permissions": [
+    "filesystem.read",
+    "filesystem.write",
+    "network.fetch",
+    "ui.menu",
+    "ui.widget"
+  ],
+  "dependencies": {
+    "another-plugin": "^1.2.0"
+  },
+  "engines": {
+    "webos": ">=2.6.0"
+  },
+  "categories": ["productivity", "development"],
+  "keywords": ["editor", "tools", "helper"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/example/myplugin"
+  }
 }
 ```
 
-#### Architecture
+**File**: `src/system/PluginManifest.js` (~200 LOC)
 
-```
-src/apps/code-editor/
-├── CodeEditor.js           (Main editor component - 400 LOC)
-├── EditorPane.js          (Individual editor instance - 250 LOC)
-├── TabManager.js          (Tab management - 200 LOC)
-├── FileTree.js            (File explorer sidebar - 300 LOC)
-├── SearchPanel.js         (Find/replace functionality - 150 LOC)
-├── SettingsPanel.js       (Editor settings - 150 LOC)
-├── ThemeManager.js        (Editor themes - 100 LOC)
-└── LanguageDetector.js    (Language detection - 100 LOC)
+#### 1.2 Plugin Loader
 
-Total estimated: ~1,650 LOC
-```
+**File**: `src/system/PluginLoader.js` (~400 LOC)
 
-#### Core Features
-
-**1. Monaco Editor Integration**
 ```javascript
-// src/apps/code-editor/CodeEditor.js
-import * as monaco from 'monaco-editor';
+export class PluginLoader {
+  constructor(vfs, permissionManager) {
+    this.vfs = vfs;
+    this.permissionManager = permissionManager;
+    this.loadedPlugins = new Map();
+    this.pluginDir = '/home/user/.webos/plugins';
+  }
 
-export default class CodeEditor {
+  /**
+   * Load a plugin from directory
+   */
+  async loadPlugin(pluginId) {
+    // 1. Read manifest
+    const manifestPath = `${this.pluginDir}/${pluginId}/plugin.json`;
+    const manifest = JSON.parse(await this.vfs.readFile(manifestPath, 'utf8'));
+
+    // 2. Validate manifest
+    this.validateManifest(manifest);
+
+    // 3. Check version compatibility
+    if (!this.isCompatible(manifest.engines.webos)) {
+      throw new Error(`Plugin requires WebOS ${manifest.engines.webos}`);
+    }
+
+    // 4. Load dependencies
+    await this.loadDependencies(manifest.dependencies);
+
+    // 5. Create sandbox
+    const sandbox = this.createSandbox(manifest.permissions);
+
+    // 6. Load plugin code
+    const pluginCode = await this.vfs.readFile(
+      `${this.pluginDir}/${pluginId}/${manifest.main}`,
+      'utf8'
+    );
+
+    // 7. Execute in sandbox
+    const PluginClass = await this.executeInSandbox(pluginCode, sandbox);
+
+    // 8. Create plugin API instance
+    const api = new PluginAPI(pluginId, manifest.permissions);
+
+    // 9. Instantiate plugin
+    const plugin = new PluginClass(api);
+
+    // 10. Store reference
+    this.loadedPlugins.set(pluginId, {
+      manifest,
+      instance: plugin,
+      sandbox,
+      api
+    });
+
+    return plugin;
+  }
+
+  /**
+   * Create isolated sandbox for plugin
+   */
+  createSandbox(permissions) {
+    // Use iframe or Web Worker for isolation
+    return new PluginSandbox(permissions);
+  }
+
+  /**
+   * Execute plugin code in sandbox
+   */
+  async executeInSandbox(code, sandbox) {
+    // Create isolated scope
+    const module = { exports: {} };
+    const require = this.createRequire(sandbox);
+
+    // Execute code
+    const fn = new Function('module', 'exports', 'require', code);
+    fn(module, module.exports, require);
+
+    return module.exports.default || module.exports;
+  }
+
+  /**
+   * Unload plugin
+   */
+  async unloadPlugin(pluginId) {
+    const plugin = this.loadedPlugins.get(pluginId);
+    if (!plugin) return;
+
+    // Call deactivate hook
+    if (plugin.instance.deactivate) {
+      await plugin.instance.deactivate();
+    }
+
+    // Destroy sandbox
+    plugin.sandbox.destroy();
+
+    // Remove from loaded plugins
+    this.loadedPlugins.delete(pluginId);
+  }
+}
+```
+
+#### 1.3 Plugin Sandbox
+
+**File**: `src/system/PluginSandbox.js` (~350 LOC)
+
+```javascript
+export class PluginSandbox {
+  constructor(permissions) {
+    this.permissions = new Set(permissions);
+    this.iframe = null;
+    this.worker = null;
+    this.resourceLimits = {
+      maxMemory: 50 * 1024 * 1024, // 50MB
+      maxCPUTime: 5000, // 5 seconds
+      maxNetworkRequests: 100
+    };
+    this.stats = {
+      memoryUsed: 0,
+      cpuTime: 0,
+      networkRequests: 0
+    };
+  }
+
+  /**
+   * Create isolated execution context
+   */
+  async createContext() {
+    // Option 1: Use iframe for DOM access
+    this.iframe = document.createElement('iframe');
+    this.iframe.sandbox = 'allow-scripts';
+    this.iframe.style.display = 'none';
+    document.body.appendChild(this.iframe);
+
+    // Option 2: Use Web Worker for background tasks
+    this.worker = new Worker('/plugin-worker.js');
+
+    return this.iframe.contentWindow;
+  }
+
+  /**
+   * Check resource limits
+   */
+  checkLimits() {
+    if (this.stats.memoryUsed > this.resourceLimits.maxMemory) {
+      throw new Error('Plugin exceeded memory limit');
+    }
+    if (this.stats.cpuTime > this.resourceLimits.maxCPUTime) {
+      throw new Error('Plugin exceeded CPU time limit');
+    }
+    if (this.stats.networkRequests > this.resourceLimits.maxNetworkRequests) {
+      throw new Error('Plugin exceeded network request limit');
+    }
+  }
+
+  /**
+   * Destroy sandbox
+   */
+  destroy() {
+    if (this.iframe) {
+      this.iframe.remove();
+    }
+    if (this.worker) {
+      this.worker.terminate();
+    }
+  }
+}
+```
+
+---
+
+### Week 3-4: Plugin API & Permission System
+
+#### 2.1 Plugin API
+
+**File**: `src/system/PluginAPI.js` (~600 LOC)
+
+```javascript
+export class PluginAPI {
+  constructor(pluginId, permissions) {
+    this.pluginId = pluginId;
+    this.permissions = new Set(permissions);
+  }
+
+  /**
+   * File System API
+   */
+  get fs() {
+    return {
+      readFile: async (path) => {
+        this.requirePermission('filesystem.read');
+        return await VFS.readFile(path);
+      },
+
+      writeFile: async (path, data) => {
+        this.requirePermission('filesystem.write');
+        return await VFS.writeFile(path, data);
+      },
+
+      readdir: async (path) => {
+        this.requirePermission('filesystem.read');
+        return await VFS.readdir(path);
+      },
+
+      mkdir: async (path) => {
+        this.requirePermission('filesystem.write');
+        return await VFS.mkdir(path);
+      },
+
+      unlink: async (path) => {
+        this.requirePermission('filesystem.write');
+        return await VFS.unlink(path);
+      }
+    };
+  }
+
+  /**
+   * UI API
+   */
+  get ui() {
+    return {
+      // Add menu item
+      addMenuItem: (config) => {
+        this.requirePermission('ui.menu');
+        return MenuManager.addItem({
+          ...config,
+          pluginId: this.pluginId
+        });
+      },
+
+      // Create widget
+      createWidget: (config) => {
+        this.requirePermission('ui.widget');
+        return WidgetManager.create({
+          ...config,
+          pluginId: this.pluginId
+        });
+      },
+
+      // Show notification
+      notify: (message, options) => {
+        this.requirePermission('ui.notifications');
+        return NotificationManager.show(message, {
+          ...options,
+          source: this.pluginId
+        });
+      },
+
+      // Create panel
+      createPanel: (config) => {
+        this.requirePermission('ui.panel');
+        return PanelManager.create({
+          ...config,
+          pluginId: this.pluginId
+        });
+      },
+
+      // Show dialog
+      showDialog: (config) => {
+        this.requirePermission('ui.dialog');
+        return DialogManager.show({
+          ...config,
+          pluginId: this.pluginId
+        });
+      }
+    };
+  }
+
+  /**
+   * Network API
+   */
+  get network() {
+    return {
+      fetch: async (url, options) => {
+        this.requirePermission('network.fetch');
+        return await NetworkStack.fetch(url, options);
+      },
+
+      ws: (url) => {
+        this.requirePermission('network.websocket');
+        return new WebSocket(url);
+      }
+    };
+  }
+
+  /**
+   * Storage API (plugin-specific storage)
+   */
+  get storage() {
+    return {
+      get: async (key) => {
+        const data = await VFS.readFile(
+          `/home/user/.webos/plugins/${this.pluginId}/storage.json`,
+          'utf8'
+        );
+        const storage = JSON.parse(data || '{}');
+        return storage[key];
+      },
+
+      set: async (key, value) => {
+        const path = `/home/user/.webos/plugins/${this.pluginId}/storage.json`;
+        const data = await VFS.readFile(path, 'utf8').catch(() => '{}');
+        const storage = JSON.parse(data);
+        storage[key] = value;
+        await VFS.writeFile(path, JSON.stringify(storage));
+      },
+
+      delete: async (key) => {
+        const path = `/home/user/.webos/plugins/${this.pluginId}/storage.json`;
+        const data = await VFS.readFile(path, 'utf8');
+        const storage = JSON.parse(data);
+        delete storage[key];
+        await VFS.writeFile(path, JSON.stringify(storage));
+      },
+
+      clear: async () => {
+        const path = `/home/user/.webos/plugins/${this.pluginId}/storage.json`;
+        await VFS.writeFile(path, '{}');
+      }
+    };
+  }
+
+  /**
+   * App Lifecycle Hooks
+   */
+  get hooks() {
+    return {
+      onAppLaunch: (callback) => {
+        this.requirePermission('hooks.app');
+        AppRegistry.on('app-launch', callback);
+      },
+
+      onAppClose: (callback) => {
+        this.requirePermission('hooks.app');
+        AppRegistry.on('app-close', callback);
+      },
+
+      onFileOpen: (callback) => {
+        this.requirePermission('hooks.file');
+        VFS.on('file-open', callback);
+      },
+
+      onFileSave: (callback) => {
+        this.requirePermission('hooks.file');
+        VFS.on('file-save', callback);
+      }
+    };
+  }
+
+  /**
+   * Check if plugin has permission
+   */
+  requirePermission(permission) {
+    if (!this.permissions.has(permission)) {
+      throw new Error(
+        `Plugin ${this.pluginId} does not have permission: ${permission}`
+      );
+    }
+  }
+}
+```
+
+#### 2.2 Permission Manager Enhancement
+
+**File**: `src/security/PermissionManager.js` (add plugin support)
+
+```javascript
+// Add plugin permission types
+const PLUGIN_PERMISSIONS = {
+  'filesystem.read': 'Read files and directories',
+  'filesystem.write': 'Write and delete files',
+  'network.fetch': 'Make HTTP/HTTPS requests',
+  'network.websocket': 'Create WebSocket connections',
+  'ui.menu': 'Add menu items',
+  'ui.widget': 'Create desktop widgets',
+  'ui.panel': 'Create sidebar panels',
+  'ui.dialog': 'Show dialogs',
+  'ui.notifications': 'Show notifications',
+  'hooks.app': 'Hook into app lifecycle',
+  'hooks.file': 'Hook into file operations',
+  'system.process': 'Access process information',
+  'system.theme': 'Modify system theme'
+};
+```
+
+---
+
+### Week 5-6: Plugin Manager UI & Marketplace
+
+#### 3.1 Plugin Manager Application
+
+**File**: `src/apps/plugin-manager/PluginManager.js` (~700 LOC)
+
+```javascript
+export default class PluginManager {
   constructor(context) {
     this.context = context;
-    this.editors = new Map();
-    this.activeEditor = null;
-    this.theme = 'vs-dark';
+    this.pluginLoader = context.pluginLoader;
+    this.installedPlugins = [];
+    this.availablePlugins = [];
   }
 
   async init() {
-    // Configure Monaco
-    monaco.editor.defineTheme('webos-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'comment', foreground: '6A9955' },
-        { token: 'keyword', foreground: 'C586C0' },
-        { token: 'string', foreground: 'CE9178' }
-      ],
-      colors: {
-        'editor.background': '#1e1e1e',
-        'editor.foreground': '#d4d4d4'
-      }
-    });
-  }
-
-  createEditor(container, file) {
-    const editor = monaco.editor.create(container, {
-      value: file.content,
-      language: this.detectLanguage(file.name),
-      theme: this.theme,
-      automaticLayout: true,
-      minimap: { enabled: true },
-      fontSize: 14,
-      lineNumbers: 'on',
-      renderWhitespace: 'selection',
-      scrollBeyondLastLine: false,
-      wordWrap: 'on',
-      tabSize: 2,
-      insertSpaces: true,
-      formatOnPaste: true,
-      formatOnType: true,
-      suggestOnTriggerCharacters: true,
-      quickSuggestions: {
-        other: true,
-        comments: false,
-        strings: false
-      }
-    });
-
-    return editor;
-  }
-}
-```
-
-**2. File Tree Navigation**
-```javascript
-// src/apps/code-editor/FileTree.js
-export class FileTree {
-  constructor(vfs, onFileSelect) {
-    this.vfs = vfs;
-    this.onFileSelect = onFileSelect;
-    this.rootPath = '/home/user';
-    this.expandedDirs = new Set();
-  }
-
-  async render() {
-    // Render tree structure
-    const tree = await this.buildTree(this.rootPath);
-    return this.renderTree(tree);
-  }
-
-  async buildTree(path) {
-    const entries = await this.vfs.readdir(path);
-    return entries.map(entry => ({
-      name: entry.name,
-      path: `${path}/${entry.name}`,
-      type: entry.type,
-      children: entry.type === 'directory' ? [] : null
-    }));
-  }
-}
-```
-
-**3. Multi-Tab Management**
-```javascript
-// src/apps/code-editor/TabManager.js
-export class TabManager {
-  constructor() {
-    this.tabs = [];
-    this.activeTab = null;
-  }
-
-  openTab(file) {
-    const existing = this.tabs.find(t => t.path === file.path);
-    if (existing) {
-      this.activeTab = existing;
-      return existing;
-    }
-
-    const tab = {
-      id: Date.now(),
-      path: file.path,
-      name: file.name,
-      content: file.content,
-      modified: false,
-      language: this.detectLanguage(file.name)
-    };
-
-    this.tabs.push(tab);
-    this.activeTab = tab;
-    return tab;
-  }
-
-  closeTab(tabId) {
-    const index = this.tabs.findIndex(t => t.id === tabId);
-    if (index >= 0) {
-      // Check if modified
-      if (this.tabs[index].modified) {
-        if (!confirm('File has unsaved changes. Close anyway?')) {
-          return false;
-        }
-      }
-      this.tabs.splice(index, 1);
-      if (this.tabs.length > 0) {
-        this.activeTab = this.tabs[Math.max(0, index - 1)];
-      } else {
-        this.activeTab = null;
-      }
-    }
-    return true;
-  }
-}
-```
-
-**4. Language Support**
-- JavaScript/TypeScript
-- HTML/CSS
-- Python
-- JSON/YAML
-- Markdown
-- Shell scripts
-- 50+ languages via Monaco
-
-**5. Editor Features**
-- ✅ Syntax highlighting
-- ✅ Auto-completion
-- ✅ Code folding
-- ✅ Multi-cursor editing
-- ✅ Find/Replace with regex
-- ✅ Go to line
-- ✅ Command palette (Ctrl+Shift+P)
-- ✅ Bracket matching
-- ✅ Auto-indentation
-- ✅ Code formatting (Prettier integration planned)
-
-#### Implementation Tasks
-
-**Week 1: Core Editor Setup**
-- [ ] Install and configure Monaco Editor
-- [ ] Create CodeEditor main component
-- [ ] Implement basic file loading and saving
-- [ ] Add syntax highlighting
-- [ ] Create editor container and layout
-
-**Week 2: File Management**
-- [ ] Implement FileTree component
-- [ ] Add file/folder navigation
-- [ ] Create TabManager for multi-file editing
-- [ ] Implement tab close/save logic
-- [ ] Add unsaved changes indicator
-
-**Week 3: Advanced Features**
-- [ ] Add find/replace panel
-- [ ] Implement keyboard shortcuts
-- [ ] Add command palette
-- [ ] Create settings panel
-- [ ] Implement theme switching
-
-**Week 4: Polish & Integration**
-- [ ] Add file icon indicators
-- [ ] Implement auto-save
-- [ ] Add split view support
-- [ ] Create status bar with info
-- [ ] Write documentation
-
-#### Testing Checklist
-- [ ] Open/edit/save files
-- [ ] Multi-tab functionality
-- [ ] Find/replace operations
-- [ ] Keyboard shortcuts
-- [ ] Theme switching
-- [ ] Large file handling (100K+ lines)
-- [ ] Syntax highlighting for all languages
-- [ ] Auto-save functionality
-
----
-
-## 📝 Phase 4.2: Web Browser
-
-### Overview
-Build a basic web browser using iframe with security sandboxing, bookmark management, and developer tools.
-
-### Technical Specification
-
-#### Architecture
-
-```
-src/apps/browser/
-├── Browser.js             (Main browser component - 500 LOC)
-├── TabManager.js          (Browser tabs - 200 LOC)
-├── NavigationBar.js       (URL bar and controls - 150 LOC)
-├── BookmarkManager.js     (Bookmark management - 200 LOC)
-├── HistoryManager.js      (Browsing history - 150 LOC)
-├── DownloadManager.js     (Download tracking - 150 LOC)
-├── DevTools.js            (Developer tools - 300 LOC)
-└── SecurityManager.js     (Security features - 150 LOC)
-
-Total estimated: ~1,800 LOC
-```
-
-#### Core Features
-
-**1. Browser Window**
-```javascript
-// src/apps/browser/Browser.js
-export default class Browser {
-  constructor(context) {
-    this.context = context;
-    this.tabs = [];
-    this.activeTab = null;
-    this.history = new HistoryManager();
-    this.bookmarks = new BookmarkManager();
-    this.downloads = new DownloadManager();
+    await this.loadInstalledPlugins();
+    await this.fetchAvailablePlugins();
   }
 
   render() {
-    return html`
-      <div class="browser">
-        <div class="tabs">
-          ${this.tabs.map(tab => this.renderTab(tab))}
-          <button @click=${() => this.newTab()}>+</button>
+    return `
+      <div class="plugin-manager">
+        <!-- Header -->
+        <div class="pm-header">
+          <h1>🔌 Plugin Manager</h1>
+          <div class="pm-tabs">
+            <button class="tab active" data-tab="installed">Installed</button>
+            <button class="tab" data-tab="available">Available</button>
+            <button class="tab" data-tab="updates">Updates</button>
+          </div>
+          <div class="pm-search">
+            <input type="search" placeholder="Search plugins..." />
+          </div>
         </div>
 
-        <div class="navigation-bar">
-          <button @click=${() => this.back()}>←</button>
-          <button @click=${() => this.forward()}>→</button>
-          <button @click=${() => this.reload()}>⟳</button>
-          <input type="url"
-                 .value=${this.activeTab?.url}
-                 @keydown=${(e) => this.navigate(e)} />
-          <button @click=${() => this.bookmark()}>★</button>
+        <!-- Installed Plugins Tab -->
+        <div class="pm-content" data-content="installed">
+          ${this.renderInstalledPlugins()}
         </div>
 
-        <iframe src=${this.activeTab?.url}
-                sandbox="allow-scripts allow-forms allow-same-origin"
-                class="browser-view"></iframe>
+        <!-- Available Plugins Tab -->
+        <div class="pm-content hidden" data-content="available">
+          ${this.renderAvailablePlugins()}
+        </div>
 
-        ${this.devToolsOpen ? this.renderDevTools() : ''}
+        <!-- Updates Tab -->
+        <div class="pm-content hidden" data-content="updates">
+          ${this.renderUpdates()}
+        </div>
       </div>
     `;
   }
 
-  async navigate(url) {
-    // Validate and sanitize URL
-    if (!this.isValidURL(url)) {
-      url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
-    }
+  renderInstalledPlugins() {
+    return this.installedPlugins.map(plugin => `
+      <div class="plugin-card">
+        <img src="${plugin.icon}" class="plugin-icon" />
+        <div class="plugin-info">
+          <h3>${plugin.name}</h3>
+          <p class="plugin-description">${plugin.description}</p>
+          <div class="plugin-meta">
+            <span class="version">v${plugin.version}</span>
+            <span class="author">by ${plugin.author.name}</span>
+          </div>
+          <div class="plugin-permissions">
+            ${plugin.permissions.map(p => `
+              <span class="permission">${p}</span>
+            `).join('')}
+          </div>
+        </div>
+        <div class="plugin-actions">
+          <button class="btn-toggle" data-plugin="${plugin.id}">
+            ${plugin.enabled ? 'Disable' : 'Enable'}
+          </button>
+          <button class="btn-settings" data-plugin="${plugin.id}">
+            Settings
+          </button>
+          <button class="btn-uninstall" data-plugin="${plugin.id}">
+            Uninstall
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
 
-    // Check security
-    if (!this.securityManager.isSafe(url)) {
-      return this.showSecurityWarning(url);
-    }
+  async installPlugin(pluginId) {
+    // Download plugin
+    const pluginData = await this.downloadPlugin(pluginId);
 
-    this.activeTab.url = url;
-    this.history.add(url);
-    this.updateView();
+    // Extract to plugin directory
+    await this.extractPlugin(pluginId, pluginData);
+
+    // Load plugin
+    await this.pluginLoader.loadPlugin(pluginId);
+
+    // Add to installed list
+    await this.loadInstalledPlugins();
+  }
+
+  async uninstallPlugin(pluginId) {
+    // Unload plugin
+    await this.pluginLoader.unloadPlugin(pluginId);
+
+    // Remove files
+    await this.vfs.rmdir(`/home/user/.webos/plugins/${pluginId}`, {
+      recursive: true
+    });
+
+    // Update list
+    await this.loadInstalledPlugins();
   }
 }
 ```
 
-**2. Tab Management**
-- Multiple tabs support
-- Tab switching
-- New tab / close tab
-- Tab history (back/forward)
+#### 3.2 Plugin Marketplace API
 
-**3. Bookmarks**
-- Add/remove bookmarks
-- Organize in folders
-- Bookmark bar
-- Import/export
+**File**: `src/system/PluginMarketplace.js` (~300 LOC)
 
-**4. Developer Tools**
-- Console output
-- Network requests
-- DOM inspector (limited)
-- Storage viewer
-
-**5. Security**
-- Sandboxed iframes
-- CSP headers
-- Mixed content warnings
-- Phishing detection
-
-#### Implementation Tasks
-
-**Week 1: Core Browser**
-- [ ] Create Browser component
-- [ ] Implement iframe sandboxing
-- [ ] Add URL bar and navigation
-- [ ] Create tab management
-
-**Week 2: Features**
-- [ ] Add bookmark system
-- [ ] Implement history tracking
-- [ ] Create download manager
-- [ ] Add security checks
-
-**Week 3: Developer Tools**
-- [ ] Build console panel
-- [ ] Add network monitor
-- [ ] Create storage viewer
-- [ ] Implement DOM inspector
-
-**Week 4: Polish**
-- [ ] Add keyboard shortcuts
-- [ ] Implement private browsing
-- [ ] Create settings page
-- [ ] Write documentation
-
----
-
-## 📝 Phase 4.3: Package Manager
-
-### Overview
-Create a package manager for installing JavaScript packages and WebOS applications.
-
-### Technical Specification
-
-#### Architecture
-
-```
-src/apps/package-manager/
-├── PackageManager.js      (Main PM component - 400 LOC)
-├── Registry.js            (Package registry - 200 LOC)
-├── Installer.js           (Package installation - 300 LOC)
-├── DependencyResolver.js  (Dependency resolution - 250 LOC)
-├── PackageCache.js        (Package caching - 150 LOC)
-└── PackageUI.js           (UI components - 200 LOC)
-
-Total estimated: ~1,500 LOC
-```
-
-#### Core Features
-
-**1. Package Installation**
 ```javascript
-// src/apps/package-manager/PackageManager.js
-export class PackageManager {
-  constructor(vfs) {
-    this.vfs = vfs;
-    this.registry = 'https://registry.npmjs.org';
-    this.installedPackages = new Map();
-    this.cacheDir = '/home/user/.npm-cache';
+export class PluginMarketplace {
+  constructor() {
+    this.registryUrl = 'https://plugins.webos.dev/api';
   }
 
-  async install(packageName, version = 'latest') {
-    // Fetch package metadata
-    const metadata = await this.fetchMetadata(packageName);
-    const packageVersion = version === 'latest'
-      ? metadata['dist-tags'].latest
-      : version;
+  /**
+   * Search for plugins
+   */
+  async search(query, options = {}) {
+    const params = new URLSearchParams({
+      q: query,
+      category: options.category || '',
+      sort: options.sort || 'downloads',
+      page: options.page || 1
+    });
 
-    // Resolve dependencies
-    const deps = await this.resolveDependencies(
-      metadata.versions[packageVersion].dependencies
+    const response = await fetch(`${this.registryUrl}/search?${params}`);
+    return await response.json();
+  }
+
+  /**
+   * Get plugin details
+   */
+  async getPlugin(pluginId) {
+    const response = await fetch(`${this.registryUrl}/plugins/${pluginId}`);
+    return await response.json();
+  }
+
+  /**
+   * Download plugin
+   */
+  async downloadPlugin(pluginId, version = 'latest') {
+    const response = await fetch(
+      `${this.registryUrl}/plugins/${pluginId}/download/${version}`
     );
-
-    // Install dependencies first
-    for (const [depName, depVersion] of Object.entries(deps)) {
-      await this.install(depName, depVersion);
-    }
-
-    // Download and extract
-    const tarballUrl = metadata.versions[packageVersion].dist.tarball;
-    await this.downloadAndExtract(tarballUrl, packageName);
-
-    // Update package.json
-    await this.updatePackageJson(packageName, packageVersion);
-
-    return { package: packageName, version: packageVersion };
+    return await response.arrayBuffer();
   }
 
-  async search(query) {
-    const url = `${this.registry}/-/v1/search?text=${query}&size=20`;
-    const response = await fetch(url);
-    const data = await response.json();
-    return data.objects.map(obj => obj.package);
+  /**
+   * Get featured plugins
+   */
+  async getFeatured() {
+    const response = await fetch(`${this.registryUrl}/featured`);
+    return await response.json();
+  }
+
+  /**
+   * Get plugin categories
+   */
+  async getCategories() {
+    const response = await fetch(`${this.registryUrl}/categories`);
+    return await response.json();
   }
 }
 ```
 
-**2. Features**
-- Install npm packages
-- Dependency resolution
-- Version management
-- Package search
-- Local cache
-- App store integration
-
-**3. Terminal Commands**
-```bash
-npm install <package>
-npm uninstall <package>
-npm update [package]
-npm list
-npm search <query>
-npm info <package>
-```
-
-#### Implementation Tasks
-
-**Week 1: Core Functionality**
-- [ ] Create PackageManager class
-- [ ] Implement npm registry API
-- [ ] Add package installation
-- [ ] Create dependency resolver
-
-**Week 2: Features**
-- [ ] Add package caching
-- [ ] Implement version management
-- [ ] Create search functionality
-- [ ] Add package.json management
-
-**Week 3: UI & Commands**
-- [ ] Build package manager UI
-- [ ] Add terminal commands
-- [ ] Create app store interface
-- [ ] Implement update checks
-
-**Week 4: Testing & Docs**
-- [ ] Test various packages
-- [ ] Add error handling
-- [ ] Create documentation
-- [ ] Implement security checks
-
 ---
 
-## 📊 Implementation Timeline
+### Week 7-8: Testing, Documentation & Examples
 
-### Phase 4 Complete Timeline (8 weeks)
+#### 4.1 Example Plugins
 
-**Weeks 1-4: Code Editor**
-- Week 1: Monaco integration, basic editor
-- Week 2: File tree, tab management
-- Week 3: Advanced features, search
-- Week 4: Polish, testing, documentation
+Create example plugins to demonstrate the API:
 
-**Weeks 5-6: Web Browser**
-- Week 5: Core browser, navigation, tabs
-- Week 6: Bookmarks, dev tools, security
+**Example 1: Clock Widget**
 
-**Weeks 7-8: Package Manager**
-- Week 7: Core functionality, npm integration
-- Week 8: UI, commands, testing
-
-### Concurrent Development Approach
-
-If multiple developers:
-- **Developer A**: Code Editor (Weeks 1-4)
-- **Developer B**: Web Browser (Weeks 1-3) → Package Manager (Weeks 4-6)
-- **Timeline**: 6 weeks total with 2 developers
-
----
-
-## 📋 Dependencies & Requirements
-
-### External Libraries
-
-**Code Editor:**
-```json
-{
-  "monaco-editor": "^0.50.0",
-  "monaco-editor-webpack-plugin": "^7.1.0"
-}
-```
-
-**Build Configuration:**
 ```javascript
-// vite.config.js update needed
-import monacoEditorPlugin from 'vite-plugin-monaco-editor';
+// plugins/clock-widget/index.js
+export default class ClockWidget {
+  constructor(api) {
+    this.api = api;
+    this.widget = null;
+  }
 
-export default {
-  plugins: [
-    monacoEditorPlugin({
-      languageWorkers: ['typescript', 'json', 'css', 'html']
-    })
-  ]
+  async activate() {
+    // Create widget
+    this.widget = this.api.ui.createWidget({
+      position: 'top-right',
+      width: 200,
+      height: 100
+    });
+
+    // Update time every second
+    this.interval = setInterval(() => {
+      const now = new Date();
+      this.widget.setContent(`
+        <div class="clock-widget">
+          <div class="time">${now.toLocaleTimeString()}</div>
+          <div class="date">${now.toLocaleDateString()}</div>
+        </div>
+      `);
+    }, 1000);
+  }
+
+  async deactivate() {
+    clearInterval(this.interval);
+    this.widget.remove();
+  }
 }
 ```
 
-### Browser Compatibility
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+**Example 2: Auto-Save Plugin**
 
-### Performance Targets
-- Code Editor: <100ms startup
-- Browser: <200ms page load
-- Package Manager: <500ms search
+```javascript
+// plugins/auto-save/index.js
+export default class AutoSave {
+  constructor(api) {
+    this.api = api;
+  }
+
+  async activate() {
+    // Hook into file save events
+    this.api.hooks.onFileOpen((file) => {
+      console.log('File opened:', file.path);
+
+      // Start auto-save timer
+      const interval = setInterval(async () => {
+        if (file.modified) {
+          await this.api.fs.writeFile(file.path, file.content);
+          this.api.ui.notify(`Auto-saved: ${file.name}`);
+        }
+      }, 30000); // Every 30 seconds
+
+      // Store interval
+      this.api.storage.set(`autosave-${file.path}`, interval);
+    });
+  }
+
+  async deactivate() {
+    // Clear all intervals
+    const keys = await this.api.storage.getAll();
+    for (const key of Object.keys(keys)) {
+      if (key.startsWith('autosave-')) {
+        clearInterval(keys[key]);
+      }
+    }
+  }
+}
+```
+
+#### 4.2 Plugin Developer Documentation
+
+**File**: `docs/PLUGIN_DEVELOPMENT_GUIDE.md`
+
+Create comprehensive documentation covering:
+- Getting started
+- Plugin structure
+- API reference
+- Best practices
+- Security guidelines
+- Publishing to marketplace
+- Testing plugins
+- Debugging
+
+#### 4.3 Plugin Development CLI
+
+**File**: `tools/plugin-cli.js`
+
+Create a CLI tool for plugin developers:
+
+```bash
+# Create new plugin
+webos-plugin create my-plugin
+
+# Develop with hot reload
+webos-plugin dev my-plugin
+
+# Test plugin
+webos-plugin test my-plugin
+
+# Build plugin for distribution
+webos-plugin build my-plugin
+
+# Publish to marketplace
+webos-plugin publish my-plugin
+```
 
 ---
 
-## 🔬 Testing Strategy
+## 📋 Implementation Checklist
+
+### Foundation (Week 1-2)
+- [ ] Design plugin manifest format
+- [ ] Implement PluginLoader
+- [ ] Create PluginSandbox
+- [ ] Set up plugin directory structure
+- [ ] Implement plugin lifecycle (load, activate, deactivate, unload)
+
+### API & Permissions (Week 3-4)
+- [ ] Design and implement PluginAPI
+- [ ] Add permission system for plugins
+- [ ] Create UI hooks (menus, widgets, panels)
+- [ ] Add filesystem API with permissions
+- [ ] Add network API with permissions
+- [ ] Implement plugin storage API
+- [ ] Add app lifecycle hooks
+
+### UI & Marketplace (Week 5-6)
+- [ ] Build Plugin Manager application
+- [ ] Create plugin cards UI
+- [ ] Implement install/uninstall flows
+- [ ] Build plugin marketplace API client
+- [ ] Add plugin search functionality
+- [ ] Create plugin settings UI
+- [ ] Implement plugin updates
+
+### Polish & Launch (Week 7-8)
+- [ ] Write comprehensive documentation
+- [ ] Create 5+ example plugins
+- [ ] Build plugin development CLI
+- [ ] Test security boundaries
+- [ ] Performance testing
+- [ ] Create plugin submission process
+- [ ] Launch beta program
+
+---
+
+## 🧪 Testing Strategy
 
 ### Unit Tests
-- Component rendering
-- File operations
-- Package installation
-- Dependency resolution
+- Plugin loader functionality
+- Permission system
+- Sandbox isolation
+- API methods
 
 ### Integration Tests
-- Editor + File System
-- Browser + Network Stack
-- Package Manager + npm registry
+- Plugin lifecycle
+- Inter-plugin communication
+- Resource limits
+- Error handling
+
+### Security Tests
+- Permission bypass attempts
+- Sandbox escape attempts
+- Resource exhaustion
+- Malicious code execution
 
 ### Performance Tests
-- Large file editing (>10MB)
-- Multiple tabs (>20 tabs)
-- Package installation (>100 packages)
-
-### User Acceptance Tests
-- Complete workflows
-- Error scenarios
-- Edge cases
+- Plugin load time
+- Memory usage
+- CPU usage
+- Multiple plugins running
 
 ---
 
-## 📈 Success Metrics
+## 📊 Success Metrics
 
-### Code Editor
-- ✅ Support 50+ languages
-- ✅ <100ms file opening time
-- ✅ >95% uptime
-- ✅ Zero data loss
+### Technical
+- ✅ Plugin load time: < 100ms
+- ✅ Sandbox overhead: < 5% CPU
+- ✅ Memory per plugin: < 50MB
+- ✅ Zero security vulnerabilities
+- ✅ 99.9% plugin API uptime
 
-### Browser
-- ✅ Load 90% of websites
-- ✅ Secure sandbox operation
-- ✅ <500ms navigation time
-
-### Package Manager
-- ✅ Install npm packages
-- ✅ Resolve dependencies correctly
-- ✅ 99% installation success rate
+### Ecosystem
+- 🎯 Launch with 10+ example plugins
+- 🎯 50+ plugins in marketplace (3 months)
+- 🎯 100+ plugin developers (6 months)
+- 🎯 500+ plugins installed (1 year)
+- 🎯 95% user satisfaction
 
 ---
 
-## 🚀 Post-Phase 4 Roadmap
+## 🚀 Post-Phase 11 Roadmap
 
-### Phase 5: System Enhancements (v2.1.0)
-- Theme customization system
-- Plugin architecture
-- Multi-user support
-- Advanced permissions
+### Phase 12: Multi-User System (v3.1.0)
+- User accounts and authentication
+- Per-user profiles and settings
+- Fast user switching
+- Guest mode
 
-### Phase 6: Performance & Mobile (v2.2.0)
-- WebAssembly for critical paths
-- Mobile-optimized UI
-- PWA enhancements
-- Offline capabilities
+### Phase 13: WebAssembly Optimization (v3.2.0)
+- Port compression to WASM
+- Port crypto to WASM
+- 5-10x performance improvements
 
-### Phase 7: Cloud & Sync (v2.3.0)
-- Cloud storage integration (Google Drive, Dropbox)
-- Real-time sync
-- Conflict resolution
-- Backup & restore
-
----
-
-## 💡 Development Best Practices
-
-### Code Quality
-- TypeScript for type safety (future consideration)
-- ESLint for code consistency
-- Prettier for formatting
-- JSDoc for documentation
-
-### Version Control
-- Feature branches for each component
-- Pull requests with code review
-- Semantic versioning
-- Changelog maintenance
-
-### Documentation
-- API documentation
-- User guides
-- Developer tutorials
-- Architecture diagrams
-
----
-
-## 📞 Support & Resources
-
-### Documentation
-- API Reference: `/docs/API_REFERENCE.md`
-- Architecture Guide: `/docs/WEB_OS_ARCHITECTURE.md`
-- Development Guide: `/docs/APP_DEVELOPMENT_GUIDE.md`
-
-### Community
-- GitHub Issues: For bug reports
-- Discussions: For feature requests
-- Wiki: For tutorials and guides
+### Phase 14: Mobile & Touch Optimization (v3.3.0)
+- Touch-optimized UI
+- Mobile layouts
+- Gesture support
 
 ---
 
 **Document End**
 
-*Last Updated: November 18, 2025*
-*Next Review: After Phase 4.1 completion*
+*Last Updated: November 19, 2025*
+*Next Review: After Phase 11 completion*
