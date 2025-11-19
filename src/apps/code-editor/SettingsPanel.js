@@ -152,7 +152,7 @@ export class SettingsPanel {
    * @param {HTMLElement} container - Container element
    */
   initialize(container) {
-    container.innerHTML += this.createPanel();
+    container.insertAdjacentHTML('beforeend', this.createPanel());
     this.attachEventListeners();
     this.applySettings();
   }

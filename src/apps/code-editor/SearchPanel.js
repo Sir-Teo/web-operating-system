@@ -54,7 +54,7 @@ export class SearchPanel {
    */
   initialize(container) {
     this.container = container;
-    container.innerHTML += this.createPanel();
+    container.insertAdjacentHTML('beforeend', this.createPanel());
     this.attachEventListeners();
   }
 
