@@ -11,6 +11,9 @@ import { SearchPanel } from './SearchPanel.js';
 import { SettingsPanel } from './SettingsPanel.js';
 import { EditorPane } from './EditorPane.js';
 import { IntegratedTerminal } from './IntegratedTerminal.js';
+import { CommandPalette } from './CommandPalette.js';
+import { QuickOpen } from './QuickOpen.js';
+import { GitPanel } from './GitPanel.js';
 
 export default class CodeEditor {
   constructor(context) {
@@ -24,10 +27,18 @@ export default class CodeEditor {
     this.settingsPanel = null;
     this.editorPane = null;
     this.integratedTerminal = null;
+    this.commandPalette = null;
+    this.quickOpen = null;
+    this.gitPanel = null;
     this.container = null;
     this.terminalVisible = true;
     this.terminalHeight = 300; // pixels
     this.keyboardShortcutsHandler = null; // Store reference for cleanup
+    this.zenMode = false;
+    this.minimapEnabled = true;
+    this.breadcrumbsEnabled = true;
+    this.wordWrap = 'off';
+    this.fontSize = 14;
   }
 
   /**
@@ -89,6 +100,18 @@ export default class CodeEditor {
     // Initialize settings panel
     this.settingsPanel = new SettingsPanel(this.editorPane.getEditor(), this.themeManager);
     this.settingsPanel.initialize(this.container);
+
+    // Initialize command palette
+    this.commandPalette = new CommandPalette(this.editorPane.getEditor(), this);
+    this.commandPalette.initialize(this.container);
+
+    // Initialize quick open
+    this.quickOpen = new QuickOpen(this.vfs, (file) => this.openFile(file));
+    await this.quickOpen.initialize(this.container);
+
+    // Initialize git panel
+    this.gitPanel = new GitPanel(this.vfs, this.context.kernel);
+    this.gitPanel.initialize(this.container);
 
     // Apply saved settings
     this.settingsPanel.applySettings();
@@ -355,6 +378,58 @@ export default class CodeEditor {
       if (e.ctrlKey && e.shiftKey && e.key === 'R') {
         e.preventDefault();
         this.runCurrentFile();
+      }
+
+      // Ctrl+Shift+P - Command Palette
+      if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        this.commandPalette.toggle();
+      }
+
+      // Ctrl+P - Quick Open
+      if (e.ctrlKey && e.key === 'p' && !e.shiftKey) {
+        e.preventDefault();
+        this.quickOpen.toggle();
+      }
+
+      // Ctrl+Shift+G - Git panel
+      if (e.ctrlKey && e.shiftKey && e.key === 'G') {
+        e.preventDefault();
+        this.gitPanel.toggle();
+      }
+
+      // Alt+Z - Toggle word wrap
+      if (e.altKey && e.key === 'z') {
+        e.preventDefault();
+        this.toggleWordWrap();
+      }
+
+      // Ctrl+= - Increase font size
+      if (e.ctrlKey && e.key === '=') {
+        e.preventDefault();
+        this.changeFontSize(1);
+      }
+
+      // Ctrl+- - Decrease font size
+      if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        this.changeFontSize(-1);
+      }
+
+      // Ctrl+K Z - Zen mode (two-key sequence)
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        // Wait for next key
+        const zenHandler = (e2) => {
+          if (e2.key === 'z' || e2.key === 'Z') {
+            e2.preventDefault();
+            this.toggleZenMode();
+          }
+          document.removeEventListener('keydown', zenHandler);
+        };
+        setTimeout(() => {
+          document.addEventListener('keydown', zenHandler, { once: true });
+        }, 100);
       }
     };
 
@@ -700,6 +775,128 @@ export default class CodeEditor {
   }
 
   /**
+   * Toggle minimap
+   */
+  toggleMinimap() {
+    this.minimapEnabled = !this.minimapEnabled;
+    const editor = this.editorPane?.getEditor();
+    if (editor) {
+      editor.updateOptions({
+        minimap: { enabled: this.minimapEnabled }
+      });
+      this.showStatusMessage(`Minimap ${this.minimapEnabled ? 'enabled' : 'disabled'}`);
+    }
+  }
+
+  /**
+   * Toggle breadcrumbs
+   */
+  toggleBreadcrumbs() {
+    this.breadcrumbsEnabled = !this.breadcrumbsEnabled;
+    const editor = this.editorPane?.getEditor();
+    if (editor) {
+      editor.updateOptions({
+        'breadcrumbs.enabled': this.breadcrumbsEnabled
+      });
+      this.showStatusMessage(`Breadcrumbs ${this.breadcrumbsEnabled ? 'enabled' : 'disabled'}`);
+    }
+  }
+
+  /**
+   * Toggle zen mode
+   */
+  toggleZenMode() {
+    this.zenMode = !this.zenMode;
+
+    // Toggle sidebar and toolbar visibility
+    const sidebar = this.container.querySelector('.code-editor-sidebar');
+    const toolbar = this.container.querySelector('.code-editor-toolbar');
+    const windowControls = this.container.querySelector('.window-controls-bar');
+    const tabs = this.container.querySelector('.code-editor-tabs');
+
+    if (this.zenMode) {
+      // Enter zen mode
+      if (sidebar) sidebar.style.display = 'none';
+      if (toolbar) toolbar.style.display = 'none';
+      if (windowControls) windowControls.style.display = 'none';
+      if (tabs) tabs.style.display = 'none';
+
+      // Hide terminal if visible
+      if (this.terminalVisible) {
+        this.toggleTerminal();
+      }
+
+      this.showStatusMessage('Zen Mode enabled - Press Ctrl+K Z to exit');
+    } else {
+      // Exit zen mode
+      if (sidebar) sidebar.style.display = 'flex';
+      if (toolbar) toolbar.style.display = 'flex';
+      if (windowControls) windowControls.style.display = 'flex';
+      if (tabs) tabs.style.display = 'flex';
+
+      this.showStatusMessage('Zen Mode disabled');
+    }
+
+    // Trigger editor resize
+    setTimeout(() => {
+      const editor = this.editorPane?.getEditor();
+      if (editor) editor.layout();
+    }, 100);
+  }
+
+  /**
+   * Toggle word wrap
+   */
+  toggleWordWrap() {
+    this.wordWrap = this.wordWrap === 'off' ? 'on' : 'off';
+    const editor = this.editorPane?.getEditor();
+    if (editor) {
+      editor.updateOptions({
+        wordWrap: this.wordWrap
+      });
+      this.showStatusMessage(`Word wrap ${this.wordWrap === 'on' ? 'enabled' : 'disabled'}`);
+    }
+  }
+
+  /**
+   * Change font size
+   * @param {number} delta - Change amount (+1 or -1)
+   */
+  changeFontSize(delta) {
+    this.fontSize = Math.max(8, Math.min(32, this.fontSize + delta));
+    const editor = this.editorPane?.getEditor();
+    if (editor) {
+      editor.updateOptions({
+        fontSize: this.fontSize
+      });
+      this.showStatusMessage(`Font size: ${this.fontSize}px`);
+    }
+  }
+
+  /**
+   * Show git panel
+   */
+  showGitPanel() {
+    if (this.gitPanel) {
+      this.gitPanel.show();
+    }
+  }
+
+  /**
+   * Git commit shortcut
+   */
+  async gitCommit() {
+    if (this.gitPanel) {
+      this.gitPanel.show();
+      // Trigger commit action
+      const commitBtn = this.container.querySelector('#git-commit-btn');
+      if (commitBtn) {
+        commitBtn.click();
+      }
+    }
+  }
+
+  /**
    * Destroy the application
    */
   destroy() {
@@ -727,6 +924,21 @@ export default class CodeEditor {
     // Destroy settings panel
     if (this.settingsPanel) {
       this.settingsPanel.destroy?.();
+    }
+
+    // Destroy command palette
+    if (this.commandPalette) {
+      this.commandPalette.destroy?.();
+    }
+
+    // Destroy quick open
+    if (this.quickOpen) {
+      this.quickOpen.destroy?.();
+    }
+
+    // Destroy git panel
+    if (this.gitPanel) {
+      this.gitPanel.destroy?.();
     }
 
     // Dispose all Monaco models
