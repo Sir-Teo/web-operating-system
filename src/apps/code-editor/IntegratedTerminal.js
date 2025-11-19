@@ -667,9 +667,24 @@ sys.stderr = StringIO()
    * Destroy the terminal
    */
   destroy() {
-    // Cleanup
+    // Clear history
+    this.history = [];
+    this.historyIndex = 0;
+
+    // Clear Pyodide instance
     if (this.pyodide) {
-      // Pyodide cleanup if needed
+      // Pyodide doesn't have a built-in destroy method
+      // but we can clear the reference to allow garbage collection
+      this.pyodide = null;
+      this.pythonReady = false;
     }
+
+    // Clear DOM element references
+    this.output = null;
+    this.input = null;
+    this.container = null;
+
+    // Reset environment
+    this.currentDir = '/home/user';
   }
 }

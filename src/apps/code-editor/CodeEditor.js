@@ -27,6 +27,7 @@ export default class CodeEditor {
     this.container = null;
     this.terminalVisible = true;
     this.terminalHeight = 300; // pixels
+    this.keyboardShortcutsHandler = null; // Store reference for cleanup
   }
 
   /**
@@ -101,6 +102,9 @@ export default class CodeEditor {
     // Setup keyboard shortcuts
     this.setupKeyboardShortcuts();
 
+    // Setup window controls
+    this.setupWindowControls();
+
     // Setup toolbar events
     this.setupToolbar();
 
@@ -120,6 +124,19 @@ export default class CodeEditor {
   getHTML() {
     return `
       <div class="code-editor-layout">
+        <!-- Window Controls Bar -->
+        <div class="window-controls-bar">
+          <div class="window-title">
+            <span class="window-icon">📝</span>
+            <span class="window-title-text">Code Editor</span>
+          </div>
+          <div class="window-controls">
+            <button class="window-control-btn minimize-btn" id="minimize-btn" title="Minimize">−</button>
+            <button class="window-control-btn maximize-btn" id="maximize-btn" title="Maximize">□</button>
+            <button class="window-control-btn close-btn" id="close-btn" title="Close">×</button>
+          </div>
+        </div>
+
         <!-- Toolbar -->
         <div class="code-editor-toolbar">
           <div class="toolbar-group">
@@ -193,6 +210,41 @@ export default class CodeEditor {
   }
 
   /**
+   * Setup window controls event handlers
+   */
+  setupWindowControls() {
+    // Close button
+    this.container.querySelector('#close-btn')?.addEventListener('click', () => {
+      if (this.context && this.context.closeWindow) {
+        this.context.closeWindow();
+      } else {
+        // Fallback: emit close event
+        this.container.dispatchEvent(new CustomEvent('close-window'));
+      }
+    });
+
+    // Minimize button
+    this.container.querySelector('#minimize-btn')?.addEventListener('click', () => {
+      if (this.context && this.context.minimizeWindow) {
+        this.context.minimizeWindow();
+      } else {
+        // Fallback: emit minimize event
+        this.container.dispatchEvent(new CustomEvent('minimize-window'));
+      }
+    });
+
+    // Maximize button
+    this.container.querySelector('#maximize-btn')?.addEventListener('click', () => {
+      if (this.context && this.context.maximizeWindow) {
+        this.context.maximizeWindow();
+      } else {
+        // Fallback: emit maximize event
+        this.container.dispatchEvent(new CustomEvent('maximize-window'));
+      }
+    });
+  }
+
+  /**
    * Setup toolbar event handlers
    */
   setupToolbar() {
@@ -247,7 +299,7 @@ export default class CodeEditor {
    * Setup keyboard shortcuts
    */
   setupKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
+    this.keyboardShortcutsHandler = (e) => {
       // Ctrl+N - New file
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
@@ -304,7 +356,9 @@ export default class CodeEditor {
         e.preventDefault();
         this.runCurrentFile();
       }
-    });
+    };
+
+    document.addEventListener('keydown', this.keyboardShortcutsHandler);
   }
 
   /**
@@ -649,12 +703,30 @@ export default class CodeEditor {
    * Destroy the application
    */
   destroy() {
+    // Remove keyboard shortcuts listener
+    if (this.keyboardShortcutsHandler) {
+      document.removeEventListener('keydown', this.keyboardShortcutsHandler);
+      this.keyboardShortcutsHandler = null;
+    }
+
+    // Dispose editor pane
     if (this.editorPane) {
       this.editorPane.dispose();
     }
 
+    // Destroy terminal
     if (this.integratedTerminal) {
       this.integratedTerminal.destroy();
+    }
+
+    // Destroy search panel
+    if (this.searchPanel) {
+      this.searchPanel.destroy?.();
+    }
+
+    // Destroy settings panel
+    if (this.settingsPanel) {
+      this.settingsPanel.destroy?.();
     }
 
     // Dispose all Monaco models
