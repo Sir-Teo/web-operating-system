@@ -450,7 +450,7 @@ export default class Browser {
     const viewContainer = this.container.querySelector('#browser-view');
     if (!viewContainer) return;
 
-    // Remove existing iframe
+    // Remove existing iframe and error overlay
     viewContainer.innerHTML = '';
 
     // Create new iframe
@@ -459,19 +459,33 @@ export default class Browser {
     iframe.className = 'browser-iframe';
     iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
 
+    let loadSuccessful = false;
+    let loadTimeout = null;
+
     // Loading handlers
     iframe.addEventListener('load', () => {
+      loadSuccessful = true;
+      clearTimeout(loadTimeout);
+
       const tab = this.tabManager.getActiveTab();
       if (tab) {
+        // Try to access iframe content to verify it loaded successfully
+        let title = url;
+        try {
+          title = iframe.contentDocument?.title || url;
+        } catch (e) {
+          // Cross-origin - can't access title, but iframe loaded
+        }
+
         this.tabManager.updateTabInfo(tab.id, {
           loading: false,
-          title: iframe.contentDocument?.title || url
+          title: title
         });
 
         // Add to history
         this.historyManager.addEntry({
           url,
-          title: iframe.contentDocument?.title || url
+          title: title
         });
 
         this.updateStatus('Loaded');
@@ -479,16 +493,118 @@ export default class Browser {
     });
 
     iframe.addEventListener('error', () => {
-      const tab = this.tabManager.getActiveTab();
-      if (tab) {
-        this.tabManager.updateTabInfo(tab.id, { loading: false });
-      }
-      this.updateStatus('Error loading page');
+      loadSuccessful = true; // Prevent timeout from also showing error
+      clearTimeout(loadTimeout);
+      this.showIframeError(url, 'Failed to load the page');
     });
+
+    // Set a timeout to detect if iframe fails to load
+    // This catches X-Frame-Options and CSP violations which don't trigger error events
+    loadTimeout = setTimeout(() => {
+      if (!loadSuccessful) {
+        // Check if iframe is still blank/unloaded
+        try {
+          // Try to access iframe location
+          const iframeLocation = iframe.contentWindow?.location?.href;
+          if (!iframeLocation || iframeLocation === 'about:blank') {
+            this.showIframeError(url, 'Unable to display this page in a frame');
+          }
+        } catch (e) {
+          // Cross-origin error - might indicate the page is trying to load but blocked
+          this.showIframeError(url, 'This website cannot be displayed in a frame');
+        }
+      }
+    }, 5000); // 5 second timeout
 
     viewContainer.appendChild(iframe);
     this.currentIframe = iframe;
     this.updateStatus('Loading...');
+  }
+
+  /**
+   * Show iframe error overlay
+   * @param {string} url - URL that failed to load
+   * @param {string} message - Error message
+   */
+  showIframeError(url, message) {
+    const viewContainer = this.container.querySelector('#browser-view');
+    if (!viewContainer) return;
+
+    const tab = this.tabManager.getActiveTab();
+    if (tab) {
+      this.tabManager.updateTabInfo(tab.id, { loading: false });
+    }
+
+    // Create error overlay
+    const errorOverlay = document.createElement('div');
+    errorOverlay.className = 'iframe-error-overlay';
+    errorOverlay.innerHTML = `
+      <div class="iframe-error-content">
+        <div class="iframe-error-icon">🚫</div>
+        <h2 class="iframe-error-title">Cannot Display Page</h2>
+        <p class="iframe-error-message">${message}</p>
+        <p class="iframe-error-url">${this.escapeHtml(url)}</p>
+        <div class="iframe-error-explanation">
+          <p><strong>Why is this happening?</strong></p>
+          <p>This website has security settings (X-Frame-Options or Content Security Policy) that prevent it from being displayed in an iframe.</p>
+        </div>
+        <div class="iframe-error-actions">
+          <button class="iframe-error-btn primary" id="open-new-tab-btn">
+            Open in New Browser Tab
+          </button>
+          <button class="iframe-error-btn secondary" id="copy-url-btn">
+            Copy URL
+          </button>
+          <button class="iframe-error-btn secondary" id="go-back-btn">
+            Go Back
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add to view container
+    viewContainer.appendChild(errorOverlay);
+
+    // Attach event listeners
+    errorOverlay.querySelector('#open-new-tab-btn')?.addEventListener('click', () => {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
+
+    errorOverlay.querySelector('#copy-url-btn')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(url).then(() => {
+        this.updateStatus('URL copied to clipboard');
+        const btn = errorOverlay.querySelector('#copy-url-btn');
+        if (btn) {
+          const originalText = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => {
+            btn.textContent = originalText;
+          }, 2000);
+        }
+      });
+    });
+
+    errorOverlay.querySelector('#go-back-btn')?.addEventListener('click', () => {
+      const tab = this.tabManager.getActiveTab();
+      if (tab && tab.canGoBack) {
+        this.tabManager.goBack(tab.id);
+      } else {
+        this.navigateTo('about:home');
+      }
+    });
+
+    this.updateStatus('Failed to load page');
+  }
+
+  /**
+   * Escape HTML to prevent XSS
+   * @param {string} text - Text to escape
+   * @returns {string} Escaped text
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   /**

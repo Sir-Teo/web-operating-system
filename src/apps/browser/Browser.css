@@ -1022,6 +1022,177 @@
   outline-offset: 2px;
 }
 
+/* Iframe Error Overlay */
+.iframe-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.iframe-error-content {
+  max-width: 600px;
+  padding: 48px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iframe-error-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.iframe-error-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 16px 0;
+}
+
+.iframe-error-message {
+  font-size: 16px;
+  color: #666;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.iframe-error-url {
+  font-size: 13px;
+  color: #999;
+  margin: 0 0 24px 0;
+  word-break: break-all;
+  padding: 12px;
+  background: #f8f8f8;
+  border-radius: 6px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.iframe-error-explanation {
+  margin: 24px 0;
+  padding: 20px;
+  background: #f0f7ff;
+  border-left: 4px solid #007acc;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.iframe-error-explanation p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.iframe-error-explanation p:last-child {
+  margin-bottom: 0;
+}
+
+.iframe-error-explanation strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.iframe-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.iframe-error-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: none;
+}
+
+.iframe-error-btn.primary {
+  background: #007acc;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 122, 204, 0.3);
+}
+
+.iframe-error-btn.primary:hover {
+  background: #005fa3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 122, 204, 0.4);
+}
+
+.iframe-error-btn.primary:active {
+  transform: translateY(0);
+}
+
+.iframe-error-btn.secondary {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.iframe-error-btn.secondary:hover {
+  background: #e0e0e0;
+  border-color: #ccc;
+}
+
+.iframe-error-btn.secondary:active {
+  background: #d0d0d0;
+}
+
+/* Responsive Error Overlay */
+@media (max-width: 768px) {
+  .iframe-error-content {
+    max-width: 90%;
+    padding: 32px 24px;
+  }
+
+  .iframe-error-title {
+    font-size: 22px;
+  }
+
+  .iframe-error-actions {
+    flex-direction: column;
+  }
+
+  .iframe-error-btn {
+    width: 100%;
+  }
+}
+
 /* Print Styles */
 @media print {
   .browser-tabs,
