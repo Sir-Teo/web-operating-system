@@ -20,6 +20,12 @@ import UserManagerApp from './apps/user-manager/UserManagerApp.js';
 import WordProcessor from './apps/word-processor/WordProcessor.js';
 import Spreadsheet from './apps/spreadsheet/Spreadsheet.js';
 import Presentation from './apps/presentation/Presentation.js';
+import TicTacToe from './apps/tic-tac-toe/TicTacToe.js';
+import Snake from './apps/snake/Snake.js';
+import Tetris from './apps/tetris/Tetris.js';
+import Minesweeper from './apps/minesweeper/Minesweeper.js';
+import AirplaneShooter from './apps/airplane-shooter/AirplaneShooter.js';
+import Racing from './apps/racing/Racing.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -232,6 +238,67 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: Presentation
+    });
+
+    // Register Games
+    AppRegistry.register({
+      id: 'tic-tac-toe',
+      name: 'Tic Tac Toe',
+      version: '1.0.0',
+      icon: '⭕',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: TicTacToe
+    });
+
+    AppRegistry.register({
+      id: 'snake',
+      name: 'Snake',
+      version: '1.0.0',
+      icon: '🐍',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Snake
+    });
+
+    AppRegistry.register({
+      id: 'tetris',
+      name: 'Tetris',
+      version: '1.0.0',
+      icon: '🎮',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Tetris
+    });
+
+    AppRegistry.register({
+      id: 'minesweeper',
+      name: 'Minesweeper',
+      version: '1.0.0',
+      icon: '💣',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Minesweeper
+    });
+
+    AppRegistry.register({
+      id: 'airplane-shooter',
+      name: 'Sky Defender',
+      version: '1.0.0',
+      icon: '✈️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: AirplaneShooter
+    });
+
+    AppRegistry.register({
+      id: 'racing',
+      name: 'Speed Racer',
+      version: '1.0.0',
+      icon: '🏎️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Racing
     });
   }
 
