@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import monacoEditorPluginModule from 'vite-plugin-monaco-editor';
+
+const monacoEditorPlugin = monacoEditorPluginModule.default || monacoEditorPluginModule;
 
 export default defineConfig({
   base: './',
@@ -11,6 +14,11 @@ export default defineConfig({
       }
     }
   },
+  plugins: [
+    monacoEditorPlugin({
+      languageWorkers: []
+    })
+  ],
   server: {
     port: 3000,
     open: true
