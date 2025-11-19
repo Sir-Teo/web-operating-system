@@ -8,6 +8,7 @@ import { Logger } from '../utils/Logger.js';
 import ThemeManager from '../system/themes/ThemeManager.js';
 import PluginManager from '../system/plugins/PluginManager.js';
 import UserManager from '../system/users/UserManager.js';
+import { CloudStorageManager } from '../cloud/CloudStorageManager.js';
 
 class Kernel extends EventTarget {
   constructor() {
@@ -29,6 +30,9 @@ class Kernel extends EventTarget {
     this.themeManager = ThemeManager;
     this.pluginManager = null;  // Initialized in boot
     this.userManager = null;    // Initialized in boot
+
+    // Phase 7 - Cloud & Sync
+    this.cloudManager = null;   // Initialized in boot
   }
 
   async boot() {
@@ -43,6 +47,7 @@ class Kernel extends EventTarget {
       await this._initializeIPC();
       await this._initializeUserManager();
       await this._initializePluginManager();
+      await this._initializeCloudManager();
       await this._loadSystemConfiguration();
       await this._startSystemServices();
 
@@ -129,6 +134,12 @@ class Kernel extends EventTarget {
     this.pluginManager = new PluginManager(this);
     await this.pluginManager.loadEnabledPlugins();
     this.logger.info('Plugin manager ready');
+  }
+
+  async _initializeCloudManager() {
+    this.logger.info('Initializing cloud storage manager...');
+    this.cloudManager = new CloudStorageManager(this.vfs);
+    this.logger.info('Cloud storage manager ready');
   }
 
   async _loadSystemConfiguration() {
