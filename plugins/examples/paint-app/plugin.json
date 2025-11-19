@@ -1,0 +1,13 @@
+{
+  "name": "Paint",
+  "version": "1.0.0",
+  "description": "Full-featured paint application with brushes, shapes, and colors",
+  "main": "plugin.js",
+  "author": "WebOS Team",
+  "permissions": ["ui.widget", "storage.read", "storage.write", "fs.read", "fs.write"],
+  "engines": {
+    "webos": ">=2.0.0"
+  },
+  "keywords": ["paint", "draw", "art", "graphics", "productivity"],
+  "category": "productivity"
+}
