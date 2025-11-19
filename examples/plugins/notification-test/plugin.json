@@ -1,0 +1,23 @@
+{
+  "id": "com.webos.notification-test",
+  "name": "Notification Tester",
+  "version": "1.0.0",
+  "description": "Tests the notification system with various examples",
+  "author": {
+    "name": "WebOS Team",
+    "email": "team@webos.dev",
+    "url": "https://webos.dev"
+  },
+  "main": "index.js",
+  "icon": "icon.png",
+  "permissions": [
+    "ui.notifications",
+    "filesystem.read"
+  ],
+  "engines": {
+    "webos": ">=2.6.0"
+  },
+  "categories": ["example", "testing"],
+  "keywords": ["notification", "test", "demo"],
+  "license": "MIT"
+}

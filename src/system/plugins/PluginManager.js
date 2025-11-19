@@ -1,10 +1,17 @@
 /**
  * Plugin Manager
- * Manages plugins and extensions for WebOS
+ * High-level wrapper for plugin system integration with Kernel
  */
+
+import PluginLoader from '../PluginLoader.js';
+
 export class PluginManager {
   constructor(kernel) {
     this.kernel = kernel;
+    this.loader = new PluginLoader(kernel.vfs);
+    this.autoLoadEnabled = true;
+
+    // Legacy support - keep for backward compatibility
     this.plugins = new Map();
     this.hooks = new Map();
     this.loadedPlugins = new Set();
@@ -391,17 +398,85 @@ export class PluginManager {
    * Load all enabled plugins
    */
   async loadEnabledPlugins() {
-    this.loadPluginState();
+    try {
+      // Initialize if not already done
+      await this.loader.init();
 
-    const enabledPlugins = this.getAllPlugins().filter(p => p.enabled);
+      // Get list of enabled plugins from config
+      const enabledPlugins = await this.getEnabledPluginsList();
 
-    for (const plugin of enabledPlugins) {
-      try {
-        await this.loadPlugin(plugin.id);
-      } catch (error) {
-        console.error(`Failed to load plugin ${plugin.id}:`, error);
+      console.log(`[PluginManager] Loading ${enabledPlugins.length} enabled plugins...`);
+
+      // Load and activate each enabled plugin
+      for (const pluginId of enabledPlugins) {
+        try {
+          console.log(`[PluginManager] Loading plugin: ${pluginId}`);
+          await this.loader.loadPlugin(pluginId);
+          await this.loader.activatePlugin(pluginId);
+        } catch (error) {
+          console.error(`[PluginManager] Failed to load plugin ${pluginId}:`, error);
+        }
       }
+
+      console.log('[PluginManager] Enabled plugins loaded');
+
+      // Also load legacy plugins
+      this.loadPluginState();
+      const legacyPlugins = this.getAllPlugins().filter(p => p.enabled);
+      for (const plugin of legacyPlugins) {
+        try {
+          await this.loadPlugin(plugin.id);
+        } catch (error) {
+          console.error(`Failed to load legacy plugin ${plugin.id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('[PluginManager] Error loading enabled plugins:', error);
+      // Don't throw - allow system to continue even if plugins fail to load
     }
+  }
+
+  /**
+   * Get list of enabled plugins from storage
+   * @returns {Promise<Array<string>>} Array of plugin IDs
+   */
+  async getEnabledPluginsList() {
+    try {
+      const configPath = '/home/user/.config/plugins.json';
+      const data = await this.kernel.vfs.readFile(configPath, 'utf8');
+      const config = JSON.parse(data);
+      return config.enabled || [];
+    } catch (error) {
+      // No config file or error reading it - return empty array
+      return [];
+    }
+  }
+
+  /**
+   * Save enabled plugins list
+   * @param {Array<string>} pluginIds - Array of plugin IDs
+   */
+  async saveEnabledPluginsList(pluginIds) {
+    try {
+      const configPath = '/home/user/.config/plugins.json';
+      const config = { enabled: pluginIds };
+
+      // Ensure config directory exists
+      await this.kernel.vfs.mkdir('/home/user/.config', { recursive: true }).catch(() => {});
+
+      await this.kernel.vfs.writeFile(configPath, JSON.stringify(config, null, 2));
+    } catch (error) {
+      console.error('[PluginManager] Failed to save plugins config:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List installed file-system plugins
+   * @returns {Promise<Array<string>>} Array of plugin IDs
+   */
+  async listInstalledPlugins() {
+    return await this.loader.listInstalledPlugins();
   }
 
   /**
