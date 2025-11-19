@@ -148,6 +148,58 @@ class VirtualFileSystem extends EventTarget {
     // Flush any pending writes
     console.log('VFS sync complete');
   }
+
+  /**
+   * Create user home directory structure
+   * @param {string} username - Username
+   */
+  async createUserHome(username) {
+    const userHome = `/home/${username}`;
+
+    try {
+      // Create user home directory
+      await this.mkdir(userHome, { recursive: true });
+
+      // Create standard user directories
+      const standardDirs = [
+        'Documents',
+        'Downloads',
+        'Pictures',
+        'Desktop',
+        'Music',
+        'Videos',
+        '.config'  // For user configuration files
+      ];
+
+      for (const dir of standardDirs) {
+        await this.mkdir(`${userHome}/${dir}`, { recursive: true });
+      }
+
+      console.log(`Created home directory for user: ${username}`);
+      return userHome;
+    } catch (error) {
+      console.error(`Error creating home directory for ${username}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user home directory path
+   * @param {string} username - Username
+   * @returns {string} Home directory path
+   */
+  getUserHome(username) {
+    return `/home/${username}`;
+  }
+
+  /**
+   * Check if user home directory exists
+   * @param {string} username - Username
+   * @returns {boolean} True if exists
+   */
+  async userHomeExists(username) {
+    return await this.exists(`/home/${username}`);
+  }
 }
 
 export default new VirtualFileSystem();

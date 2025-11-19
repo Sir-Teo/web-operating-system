@@ -15,7 +15,7 @@ export class UserManager {
    * Initialize user system
    */
   async init() {
-    // Create default user if none exist
+    // Create default guest user if none exist
     if (this.users.size === 0) {
       await this.createUser({
         username: 'guest',
@@ -26,11 +26,8 @@ export class UserManager {
       });
     }
 
-    // Auto-login as guest
-    const guest = this.getUserByUsername('guest');
-    if (guest) {
-      await this.login('guest', '');
-    }
+    // Don't auto-login - let LoginScreen handle this
+    // Login will be handled by the UI layer
   }
 
   /**
@@ -72,6 +69,17 @@ export class UserManager {
 
     this.users.set(username, user);
     this.saveUsers();
+
+    // Create home directory for the user
+    try {
+      const vfs = this.kernel.vfs;
+      if (vfs && !await vfs.userHomeExists(username)) {
+        await vfs.createUserHome(username);
+      }
+    } catch (error) {
+      console.error(`Failed to create home directory for ${username}:`, error);
+      // Don't fail user creation if home directory creation fails
+    }
 
     console.log(`User created: ${username}`);
     return this.sanitizeUser(user);
@@ -122,13 +130,25 @@ export class UserManager {
       }
     }
 
+    // Ensure user home directory exists
+    try {
+      const vfs = this.kernel.vfs;
+      if (vfs && !await vfs.userHomeExists(username)) {
+        await vfs.createUserHome(username);
+      }
+    } catch (error) {
+      console.error(`Failed to ensure home directory for ${username}:`, error);
+      // Don't fail login if home directory creation fails
+    }
+
     // Create session
     const sessionId = `session-${Date.now()}`;
     const session = {
       id: sessionId,
       username,
       loginTime: new Date().toISOString(),
-      lastActivity: new Date().toISOString()
+      lastActivity: new Date().toISOString(),
+      homeDirectory: `/home/${username}`
     };
 
     this.sessions.set(sessionId, session);
@@ -141,12 +161,13 @@ export class UserManager {
 
     // Trigger login event
     window.dispatchEvent(new CustomEvent('user-login', {
-      detail: { user: this.sanitizeUser(user) }
+      detail: { user: this.sanitizeUser(user), homeDirectory: `/home/${username}` }
     }));
 
     return {
       sessionId,
-      user: this.sanitizeUser(user)
+      user: this.sanitizeUser(user),
+      homeDirectory: `/home/${username}`
     };
   }
 
