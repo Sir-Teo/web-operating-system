@@ -14,6 +14,9 @@ export default class Browser {
     this.historyManager = new HistoryManager();
     this.container = null;
     this.currentIframe = null;
+    this._isUpdatingUI = false;
+    this._currentLoadedUrl = null;
+    this._currentLoadedTabId = null;
   }
 
   /**
@@ -172,7 +175,14 @@ export default class Browser {
 
     // Handle special pages
     if (url.startsWith('about:')) {
-      this.loadSpecialPage(url);
+      const tab = this.tabManager.getActiveTab();
+      if (tab) {
+        this.tabManager.navigate(tab.id, url);
+        // Reset tracking to force reload
+        this._currentLoadedUrl = null;
+        this._currentLoadedTabId = null;
+        this.loadSpecialPage(url);
+      }
       return;
     }
 
@@ -190,6 +200,9 @@ export default class Browser {
     const tab = this.tabManager.getActiveTab();
     if (tab) {
       this.tabManager.navigate(tab.id, url);
+      // Reset tracking to force reload
+      this._currentLoadedUrl = null;
+      this._currentLoadedTabId = null;
       this.loadURL(url);
     }
   }
@@ -320,9 +333,19 @@ export default class Browser {
    * Update UI
    */
   updateUI() {
-    this.updateTabBar();
-    this.updateNavigationBar();
-    this.loadActiveTab();
+    // Prevent re-entrant calls
+    if (this._isUpdatingUI) {
+      return;
+    }
+
+    try {
+      this._isUpdatingUI = true;
+      this.updateTabBar();
+      this.updateNavigationBar();
+      this.loadActiveTab();
+    } finally {
+      this._isUpdatingUI = false;
+    }
   }
 
   /**
@@ -392,6 +415,14 @@ export default class Browser {
   loadActiveTab() {
     const tab = this.tabManager.getActiveTab();
     if (!tab) return;
+
+    // Only load if the URL or tab has changed
+    if (this._currentLoadedUrl === tab.url && this._currentLoadedTabId === tab.id) {
+      return;
+    }
+
+    this._currentLoadedUrl = tab.url;
+    this._currentLoadedTabId = tab.id;
 
     if (tab.url.startsWith('about:')) {
       this.loadSpecialPage(tab.url);
