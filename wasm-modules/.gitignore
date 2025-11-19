@@ -1,0 +1,24 @@
+# Rust build artifacts
+/target/
+**/target/
+*.rlib
+*.so
+*.dylib
+*.dll
+
+# Cargo lock for libraries (keep for binaries)
+# Cargo.lock
+
+# Debug symbols
+*.pdb
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
