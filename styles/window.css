@@ -23,6 +23,8 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: auto;
+  height: 100%;
+  position: relative;
 }
 
 .wb-header {

@@ -3,6 +3,7 @@ import WindowManager from './ui/WindowManager.js';
 import { Desktop } from './ui/Desktop.js';
 import { Taskbar } from './ui/Taskbar.js';
 import { StartMenu } from './ui/StartMenu.js';
+import { WindowSnapping } from './ui/WindowSnapping.js';
 import AppRegistry from './apps/AppRegistry.js';
 import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
@@ -12,10 +13,13 @@ import CodeEditor from './apps/code-editor/CodeEditor.js';
 import Browser from './apps/browser/Browser.js';
 import PackageManager from './apps/package-manager/PackageManager.js';
 import Settings from './apps/settings/Settings.js';
+import SystemMonitor from './apps/system-monitor/SystemMonitor.js';
+import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
 import './apps/package-manager/PackageManager.css';
 import './apps/settings/Settings.css';
+import './apps/system-monitor/SystemMonitor.css';
 
 class WebOS {
   constructor() {
@@ -23,6 +27,7 @@ class WebOS {
     this.desktop = null;
     this.taskbar = null;
     this.startMenu = null;
+    this.windowSnapping = null;
   }
 
   async boot() {
@@ -152,6 +157,17 @@ class WebOS {
       permissions: ['system.theme', 'system.user', 'system.plugin'],
       Component: Settings
     });
+
+    // Register System Monitor
+    AppRegistry.register({
+      id: 'system-monitor',
+      name: 'System Monitor',
+      version: '1.0.0',
+      icon: '📊',
+      type: 'web',
+      permissions: ['system.process', 'system.performance'],
+      Component: SystemMonitor
+    });
   }
 
   async initializeUI() {
@@ -166,6 +182,9 @@ class WebOS {
     // Create Start Menu
     this.startMenu = new StartMenu(this.kernel);
     await this.startMenu.init();
+
+    // Initialize Window Snapping
+    this.windowSnapping = new WindowSnapping(WindowManager);
 
     // Forward window events to the global window object for taskbar
     WindowManager.addEventListener('window-created', (e) => {
