@@ -7,6 +7,7 @@ import { FileWatcher } from '../../filesystem/FileWatcher.js';
 import { CompressionManager } from '../../filesystem/CompressionManager.js';
 import { FileEncryption } from '../../filesystem/FileEncryption.js';
 import NetworkStack from '../../network/NetworkStack.js';
+import { CloudStorageManager } from '../../cloud/CloudStorageManager.js';
 
 export default class Terminal {
   constructor(context) {
@@ -44,6 +45,9 @@ export default class Terminal {
 
     // Initialize network stack
     this.networkStack = NetworkStack;
+
+    // Initialize cloud storage manager
+    this.cloudManager = context.kernel.cloudManager;
   }
 
   async init() {
@@ -498,7 +502,12 @@ export default class Terminal {
       nslookup: this.cmd_nslookup.bind(this),
       dig: this.cmd_dig.bind(this),
       traceroute: this.cmd_traceroute.bind(this),
-      iptables: this.cmd_iptables.bind(this)
+      iptables: this.cmd_iptables.bind(this),
+      // Phase 7: Cloud & Sync
+      cloud: this.cmd_cloud.bind(this),
+      mount: this.cmd_mount.bind(this),
+      umount: this.cmd_umount.bind(this),
+      sync: this.cmd_sync.bind(this)
     };
 
     if (builtins[command]) {
@@ -2676,6 +2685,280 @@ export default class Terminal {
       return `✅ Firewall rules cleared`;
     } else {
       return '❌ iptables: invalid arguments\n💡 Usage:\n   iptables -L (list rules)\n   iptables -A allow <host> (add allow rule)\n   iptables -A deny <host> (add deny rule)\n   iptables -F (flush all rules)';
+    }
+  }
+
+  // ===== Phase 7: Cloud & Sync Commands =====
+
+  /**
+   * cloud - Cloud storage operations
+   */
+  async cmd_cloud(args) {
+    if (!this.cloudManager) {
+      return '❌ Cloud storage not available';
+    }
+
+    if (args.length === 0) {
+      return this._cloudHelp();
+    }
+
+    const subcommand = args[0];
+
+    try {
+      switch (subcommand) {
+        case 'connect':
+          return await this._cloudConnect(args.slice(1));
+        case 'disconnect':
+          return await this._cloudDisconnect(args.slice(1));
+        case 'list':
+          return await this._cloudList(args.slice(1));
+        case 'upload':
+          return await this._cloudUpload(args.slice(1));
+        case 'download':
+          return await this._cloudDownload(args.slice(1));
+        case 'providers':
+          return this._cloudProviders();
+        case 'status':
+          return this._cloudStatus();
+        default:
+          return `❌ Unknown subcommand: ${subcommand}\n💡 Use 'cloud' for help`;
+      }
+    } catch (error) {
+      return `❌ Cloud error: ${error.message}`;
+    }
+  }
+
+  _cloudHelp() {
+    return `☁️  Cloud Storage Commands:
+  cloud connect <type> <url> <username> <password>  - Connect to cloud provider
+  cloud disconnect <provider-id>                     - Disconnect from provider
+  cloud list <provider-id> <path>                    - List cloud files
+  cloud upload <local-path> <provider-id> <cloud-path> - Upload file
+  cloud download <provider-id> <cloud-path> <local-path> - Download file
+  cloud providers                                    - List connected providers
+  cloud status                                       - Show cloud status
+
+Supported provider types:
+  webdav    - WebDAV server
+  mock      - Mock provider (for testing)
+
+Examples:
+  cloud connect webdav https://dav.example.com user pass
+  cloud list provider-123 /documents
+  cloud upload /home/user/file.txt provider-123 /backup/file.txt`;
+  }
+
+  async _cloudConnect(args) {
+    if (args.length < 4) {
+      return '❌ Usage: cloud connect <type> <url> <username> <password>';
+    }
+
+    const [type, url, username, password] = args;
+    const providerId = await this.cloudManager.connect(type, {
+      baseUrl: url,
+      username,
+      password
+    });
+
+    return `✅ Connected to ${type} provider: ${providerId}`;
+  }
+
+  async _cloudDisconnect(args) {
+    if (args.length < 1) {
+      return '❌ Usage: cloud disconnect <provider-id>';
+    }
+
+    const [providerId] = args;
+    await this.cloudManager.disconnect(providerId);
+    return `✅ Disconnected from provider: ${providerId}`;
+  }
+
+  async _cloudList(args) {
+    if (args.length < 2) {
+      return '❌ Usage: cloud list <provider-id> <path>';
+    }
+
+    const [providerId, path] = args;
+    const files = await this.cloudManager.list(providerId, path);
+
+    if (files.length === 0) {
+      return '📁 No files found';
+    }
+
+    let output = '';
+    for (const file of files) {
+      const type = file.type === 'directory' ? 'd' : '-';
+      const size = file.size ? this._formatBytes(file.size) : '';
+      const modified = file.modified ? file.modified.toLocaleString() : '';
+      output += `${type} ${file.name.padEnd(30)} ${size.padStart(10)} ${modified}\n`;
+    }
+
+    return output.trimEnd();
+  }
+
+  async _cloudUpload(args) {
+    if (args.length < 3) {
+      return '❌ Usage: cloud upload <local-path> <provider-id> <cloud-path>';
+    }
+
+    const [localPath, providerId, cloudPath] = args;
+    const result = await this.cloudManager.upload(localPath, providerId, cloudPath);
+    return `✅ Uploaded ${this._formatBytes(result.size)} from ${result.localPath} to ${result.cloudPath}`;
+  }
+
+  async _cloudDownload(args) {
+    if (args.length < 3) {
+      return '❌ Usage: cloud download <provider-id> <cloud-path> <local-path>';
+    }
+
+    const [providerId, cloudPath, localPath] = args;
+    const result = await this.cloudManager.download(providerId, cloudPath, localPath);
+    return `✅ Downloaded ${this._formatBytes(result.size)} from ${result.cloudPath} to ${result.localPath}`;
+  }
+
+  _cloudProviders() {
+    const providers = this.cloudManager.getProviders();
+
+    if (providers.length === 0) {
+      return '📋 No providers connected';
+    }
+
+    let output = '☁️  Connected Providers:\n';
+    for (const provider of providers) {
+      output += `  ${provider.id}\n`;
+      output += `    Name: ${provider.name}\n`;
+      output += `    Authenticated: ${provider.authenticated ? '✅' : '❌'}\n`;
+      if (provider.quota && provider.quota.total > 0) {
+        const usedGB = (provider.quota.used / (1024 * 1024 * 1024)).toFixed(2);
+        const totalGB = (provider.quota.total / (1024 * 1024 * 1024)).toFixed(2);
+        output += `    Quota: ${usedGB}GB / ${totalGB}GB\n`;
+      }
+    }
+
+    return output.trimEnd();
+  }
+
+  _cloudStatus() {
+    const status = this.cloudManager.getStatus();
+
+    let output = '☁️  Cloud Storage Status:\n';
+    output += `  Providers: ${status.providers}\n`;
+    output += `  Mounts: ${status.mounts}\n`;
+    output += `  Active Syncs: ${status.activeSyncs}\n`;
+
+    if (status.mountList.length > 0) {
+      output += '\n📂 Active Mounts:\n';
+      for (const mount of status.mountList) {
+        output += `  ${mount.mountPoint} -> ${mount.cloudPath} (${mount.providerId})\n`;
+      }
+    }
+
+    return output.trimEnd();
+  }
+
+  /**
+   * mount - Mount cloud storage to local filesystem
+   */
+  async cmd_mount(args) {
+    if (!this.cloudManager) {
+      return '❌ Cloud storage not available';
+    }
+
+    if (args.length < 2) {
+      return '❌ Usage: mount <provider-id>:<cloud-path> <local-path> [--sync] [--watch]';
+    }
+
+    const [source, mountPoint, ...options] = args;
+
+    // Parse source (provider:path)
+    const colonIndex = source.indexOf(':');
+    if (colonIndex === -1) {
+      return '❌ Invalid source format. Use: provider-id:/cloud/path';
+    }
+
+    const providerId = source.substring(0, colonIndex);
+    const cloudPath = source.substring(colonIndex + 1);
+
+    // Parse options
+    const mountOptions = {
+      sync: options.includes('--sync'),
+      watch: options.includes('--watch'),
+      syncInterval: 60000 // 1 minute
+    };
+
+    try {
+      const result = await this.cloudManager.mount(providerId, cloudPath, mountPoint, mountOptions);
+      let output = `✅ Mounted ${cloudPath} to ${mountPoint}`;
+      if (result.syncing) {
+        output += ' (syncing enabled)';
+      }
+      return output;
+    } catch (error) {
+      return `❌ Mount error: ${error.message}`;
+    }
+  }
+
+  /**
+   * umount - Unmount cloud storage
+   */
+  async cmd_umount(args) {
+    if (!this.cloudManager) {
+      return '❌ Cloud storage not available';
+    }
+
+    if (args.length < 1) {
+      return '❌ Usage: umount <mount-point>';
+    }
+
+    const [mountPoint] = args;
+
+    try {
+      await this.cloudManager.unmount(mountPoint);
+      return `✅ Unmounted ${mountPoint}`;
+    } catch (error) {
+      return `❌ Unmount error: ${error.message}`;
+    }
+  }
+
+  /**
+   * sync - Synchronize local and cloud directories
+   */
+  async cmd_sync(args) {
+    if (!this.cloudManager) {
+      return '❌ Cloud storage not available';
+    }
+
+    if (args.length < 2) {
+      return '❌ Usage: sync <local-path> <provider-id>:<cloud-path> [--strategy=<strategy>]';
+    }
+
+    const [localPath, source, ...options] = args;
+
+    // Parse source (provider:path)
+    const colonIndex = source.indexOf(':');
+    if (colonIndex === -1) {
+      return '❌ Invalid source format. Use: provider-id:/cloud/path';
+    }
+
+    const providerId = source.substring(0, colonIndex);
+    const cloudPath = source.substring(colonIndex + 1);
+
+    // Parse options
+    const syncOptions = {};
+    for (const option of options) {
+      if (option.startsWith('--strategy=')) {
+        syncOptions.conflictStrategy = option.substring('--strategy='.length);
+      }
+    }
+
+    try {
+      const result = await this.cloudManager.sync(localPath, providerId, cloudPath, syncOptions);
+      return `✅ Sync complete:
+  Uploaded: ${result.uploaded} files
+  Downloaded: ${result.downloaded} files
+  Conflicts: ${result.conflicts}`;
+    } catch (error) {
+      return `❌ Sync error: ${error.message}`;
     }
   }
 
