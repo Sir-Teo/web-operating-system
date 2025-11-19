@@ -1,4 +1,4 @@
-import WinBox from 'winbox/src/js/winbox.js';
+import WinBox from 'winbox';
 
 class WindowManager extends EventTarget {
   constructor() {
