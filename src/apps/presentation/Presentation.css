@@ -1,0 +1,150 @@
+.presentation-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.presentation-menu-bar {
+  user-select: none;
+}
+
+.presentation-toolbar {
+  flex-wrap: wrap;
+}
+
+/* Thumbnail panel */
+.thumbnail-panel {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f0f0f0;
+}
+
+.thumbnail-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.thumbnail-panel::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.thumbnail-panel::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.thumbnail-panel::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.slide-thumbnail {
+  transition: all 0.2s ease;
+}
+
+.slide-thumbnail:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Editor area */
+.presentation-container [contenteditable="true"] {
+  cursor: text;
+}
+
+.presentation-container [contenteditable="true"]:focus {
+  outline: 2px solid #d14424;
+  outline-offset: 2px;
+}
+
+.presentation-container [contenteditable="true"] h1 {
+  font-size: 48px;
+  margin: 0 0 20px 0;
+  font-weight: bold;
+}
+
+.presentation-container [contenteditable="true"] h2 {
+  font-size: 36px;
+  margin: 0 0 15px 0;
+  font-weight: bold;
+}
+
+.presentation-container [contenteditable="true"] p {
+  font-size: 24px;
+  line-height: 1.6;
+  margin: 0 0 15px 0;
+}
+
+.presentation-container [contenteditable="true"] ul,
+.presentation-container [contenteditable="true"] ol {
+  font-size: 24px;
+  line-height: 1.6;
+  margin: 0 0 15px 0;
+  padding-left: 40px;
+}
+
+/* Properties panel */
+.presentation-container > div:nth-child(3) > div:nth-child(3) {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f0f0f0;
+}
+
+.presentation-container > div:nth-child(3) > div:nth-child(3)::-webkit-scrollbar {
+  width: 8px;
+}
+
+.presentation-container > div:nth-child(3) > div:nth-child(3)::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.presentation-container > div:nth-child(3) > div:nth-child(3)::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+/* Toolbar button animations */
+.presentation-toolbar button {
+  transition: all 0.2s ease;
+}
+
+.presentation-toolbar button:active {
+  transform: scale(0.95);
+}
+
+/* File menu dropdown animation */
+.file-menu-dropdown {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Presentation mode overlay */
+.presentation-overlay {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Presentation navigation buttons */
+.presentation-container button {
+  transition: all 0.2s ease;
+}
+
+.presentation-container button:hover {
+  opacity: 0.8;
+}
+
+.presentation-container button:active {
+  transform: scale(0.95);
+}

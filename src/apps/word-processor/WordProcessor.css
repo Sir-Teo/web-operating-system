@@ -1,0 +1,79 @@
+.word-processor-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.word-menu-bar {
+  user-select: none;
+}
+
+.word-toolbar {
+  flex-wrap: wrap;
+}
+
+.word-editor {
+  cursor: text;
+}
+
+.word-editor:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.word-editor h1 {
+  font-size: 24pt;
+  margin: 0 0 12pt 0;
+}
+
+.word-editor h2 {
+  font-size: 18pt;
+  margin: 0 0 10pt 0;
+}
+
+.word-editor h3 {
+  font-size: 14pt;
+  margin: 0 0 8pt 0;
+}
+
+.word-editor p {
+  margin: 0 0 12pt 0;
+}
+
+.word-editor ul,
+.word-editor ol {
+  margin: 0 0 12pt 0;
+  padding-left: 40px;
+}
+
+.file-menu-dropdown {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.word-status-bar {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Print styles */
+@media print {
+  .word-menu-bar,
+  .word-toolbar,
+  .word-status-bar {
+    display: none !important;
+  }
+
+  .word-editor {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+}
