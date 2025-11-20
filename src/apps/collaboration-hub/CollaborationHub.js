@@ -633,7 +633,7 @@ class CollaborationHub {
         <div class="session-id">
           <strong>Session ID:</strong>
           <code>${session.id}</code>
-          <button class="btn-copy" onclick="navigator.clipboard.writeText('${session.id}')">
+          <button class="btn-copy" data-session-id="${session.id}">
             📋 Copy
           </button>
         </div>
@@ -642,6 +642,19 @@ class CollaborationHub {
         </div>
       </div>
     `;
+
+    // Add event listener for copy button
+    const copyBtn = sessionInfo.querySelector('.btn-copy');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(session.id).then(() => {
+          this.showNotification('Session ID copied to clipboard', 'success');
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          this.showNotification('Failed to copy Session ID', 'error');
+        });
+      });
+    }
   }
 
   /**

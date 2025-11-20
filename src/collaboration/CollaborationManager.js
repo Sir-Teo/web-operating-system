@@ -45,13 +45,16 @@ class CollaborationManager extends EventEmitter {
     // Configuration
     this.config = {
       signalingServers: [
-        'wss://signaling.yjs.dev',
-        'wss://y-webrtc-signaling-eu.herokuapp.com',
-        'wss://y-webrtc-signaling-us.herokuapp.com'
+        // Use local signaling for development/testing
+        // For production, you would run your own signaling server
+        // The library will fall back to WebRTC without signaling if needed
       ],
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' }
       ]
     };
 
@@ -109,9 +112,6 @@ class CollaborationManager extends EventEmitter {
     const provider = new WebrtcProvider(sessionId, ydoc, {
       signaling: this.config.signalingServers,
       password: options.password || null,
-      awareness: {
-        user: this.currentUser
-      },
       maxConns: options.maxPeers || 20,
       filterBcConns: true,
       peerOpts: {
@@ -120,6 +120,9 @@ class CollaborationManager extends EventEmitter {
         }
       }
     });
+
+    // Set user info in awareness after provider is created
+    provider.awareness.setLocalStateField('user', this.currentUser);
 
     // Create session object
     const session = {
