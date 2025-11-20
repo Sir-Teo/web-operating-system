@@ -274,6 +274,11 @@ class CollaborationManager extends EventEmitter {
         sessionId: session.id,
         synced
       });
+
+      // Load existing messages when first synced
+      if (synced) {
+        this.loadExistingChatMessages(session);
+      }
     });
 
     // Awareness (presence) changes
@@ -385,6 +390,34 @@ class CollaborationManager extends EventEmitter {
    */
   generateMessageId() {
     return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Load existing chat messages when joining a session
+   */
+  loadExistingChatMessages(session) {
+    // Only load once per session
+    if (session.messagesLoaded) {
+      return;
+    }
+
+    const chatArray = session.ydoc.getArray('chat');
+    const messages = chatArray.toArray();
+
+    console.log('[CollaborationManager] Loading existing messages:', messages.length);
+
+    // Store in history
+    this.chatHistory.set(session.id, messages);
+
+    // Emit events for existing messages
+    messages.forEach((msg) => {
+      this.emit('chat-message', {
+        sessionId: session.id,
+        message: msg
+      });
+    });
+
+    session.messagesLoaded = true;
   }
 
   /**
