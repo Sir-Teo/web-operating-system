@@ -37,6 +37,7 @@ import Calendar from './apps/calendar/Calendar.js';
 import TaskManager from './apps/task-manager/TaskManager.js';
 import CodeRunner from './apps/code-runner/CodeRunner.js';
 import ScreenshotApp from './apps/screenshot/Screenshot.js';
+import CollaborationHub from './apps/collaboration-hub/CollaborationHub.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -46,6 +47,7 @@ import './apps/system-monitor/SystemMonitor.css';
 import './apps/word-processor/WordProcessor.css';
 import './apps/spreadsheet/Spreadsheet.css';
 import './apps/presentation/Presentation.css';
+import './apps/collaboration-hub/CollaborationHub.css';
 
 class WebOS {
   constructor() {
@@ -249,6 +251,17 @@ class WebOS {
       type: 'web',
       permissions: ['system.user'],
       Component: UserManagerApp
+    });
+
+    // Register Collaboration Hub
+    AppRegistry.register({
+      id: 'collaboration-hub',
+      name: 'Collaboration Hub',
+      version: '1.0.0',
+      icon: '🤝',
+      type: 'web',
+      permissions: ['network.http', 'network.webrtc', 'filesystem.read', 'filesystem.write'],
+      Component: CollaborationHub
     });
 
     // Register Paint
