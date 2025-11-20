@@ -109,9 +109,6 @@ class CollaborationManager extends EventEmitter {
     const provider = new WebrtcProvider(sessionId, ydoc, {
       signaling: this.config.signalingServers,
       password: options.password || null,
-      awareness: {
-        user: this.currentUser
-      },
       maxConns: options.maxPeers || 20,
       filterBcConns: true,
       peerOpts: {
@@ -120,6 +117,9 @@ class CollaborationManager extends EventEmitter {
         }
       }
     });
+
+    // Set user info in awareness
+    provider.awareness.setLocalStateField('user', this.currentUser);
 
     // Create session object
     const session = {
