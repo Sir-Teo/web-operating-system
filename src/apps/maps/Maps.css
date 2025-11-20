@@ -77,11 +77,121 @@
   border-color: #2980b9;
 }
 
+.directions-section,
+.tools-section,
+.saved-places-section,
+.markers-section {
+  margin-bottom: 20px;
+}
+
+.directions-section h3,
+.tools-section h3,
 .saved-places-section h3,
 .markers-section h3 {
   margin: 0 0 10px 0;
   font-size: 16px;
   color: #2c3e50;
+}
+
+.route-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.route-start-input,
+.route-end-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 13px;
+}
+
+.get-directions-btn,
+.clear-route-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.get-directions-btn:hover,
+.clear-route-btn:hover {
+  background: #2980b9;
+}
+
+.clear-route-btn {
+  background: #e74c3c;
+  margin-top: 5px;
+}
+
+.clear-route-btn:hover {
+  background: #c0392b;
+}
+
+.route-info {
+  background: #e8f4f8;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+.route-stat {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.route-label {
+  color: #7f8c8d;
+}
+
+.route-value {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.tool-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tool-btn {
+  background: #ecf0f1;
+  border: 2px solid transparent;
+  padding: 8px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  background: #e0e4e5;
+}
+
+.tool-btn.active {
+  background: #3498db;
+  color: white;
+  border-color: #2980b9;
+}
+
+.measure-info {
+  background: #fff3cd;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: #856404;
+  font-weight: 600;
+  text-align: center;
 }
 
 .saved-places-list,
@@ -112,13 +222,26 @@
 .place-icon,
 .marker-icon {
   font-size: 20px;
+  flex-shrink: 0;
+}
+
+.place-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .place-name,
 .marker-name {
-  flex: 1;
   font-size: 14px;
   color: #2c3e50;
+  font-weight: 500;
+}
+
+.place-country {
+  font-size: 11px;
+  color: #7f8c8d;
 }
 
 .remove-place-btn,
