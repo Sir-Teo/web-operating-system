@@ -1,0 +1,299 @@
+.weather-app {
+  height: 100%;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  color: white;
+}
+
+.weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.location-selector {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  max-width: 400px;
+}
+
+.location-input {
+  flex: 1;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 25px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.search-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.2s;
+}
+
+.search-btn:hover {
+  background: white;
+}
+
+.unit-toggle {
+  display: flex;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 3px;
+}
+
+.unit-btn {
+  background: transparent;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 17px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.unit-btn.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+}
+
+.current-weather {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.location-info h2 {
+  margin: 0 0 10px 0;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.current-time {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.weather-icon {
+  font-size: 80px;
+  line-height: 1;
+}
+
+.temperature {
+  font-size: 80px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.weather-details {
+  font-size: 18px;
+}
+
+.condition {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.feels-like {
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.weather-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.forecast-section {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 25px;
+}
+
+.forecast-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.forecast-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.forecast-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  transition: background 0.2s;
+}
+
+.forecast-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.forecast-day {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.forecast-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.forecast-temps {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.temp-high {
+  font-weight: 600;
+}
+
+.temp-low {
+  opacity: 0.7;
+}
+
+.forecast-condition {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.saved-locations {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 25px;
+}
+
+.saved-locations h3 {
+  margin: 0 0 15px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.locations-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.location-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.location-item:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.location-item.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+  font-weight: 600;
+}
+
+.remove-location-btn {
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-location-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.add-location-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.add-location-btn:hover {
+  background: white;
+}
