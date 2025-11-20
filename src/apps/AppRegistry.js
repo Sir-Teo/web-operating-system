@@ -57,6 +57,13 @@ class Application {
       winbox.body.appendChild(contentElement);
     }
 
+    // Set window reference on process for refresh functionality
+    process.window = {
+      contentElement: winbox.body,
+      windowId,
+      winbox
+    };
+
     return { process, windowId, winbox };
   }
 
