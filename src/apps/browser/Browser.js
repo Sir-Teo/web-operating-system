@@ -23,13 +23,39 @@ export default class Browser {
     this._currentLoadedTabId = null;
     this.searchSuggestions = [];
     this.searchEngines = {
-      google: 'https://www.google.com/search?q=',
+      google: 'https://www.google.com/search?igu=1&q=',
       duckduckgo: 'https://duckduckgo.com/?q=',
       bing: 'https://www.bing.com/search?q='
     };
-    this.currentSearchEngine = 'google';
+    this.currentSearchEngine = 'duckduckgo';
     this.devToolsOpen = false;
     this.readingMode = false;
+    this.iframeCompatibilityRules = [
+      {
+        id: 'google',
+        title: 'Google can\'t run inside WebOS Browser',
+        message: 'Google Search and account pages block embedded browsers.',
+        explanation: 'Google sets strict Content Security Policy frame-ancestors rules and attempts to autofocus inputs, which Chromium disallows for sandboxed iframes. Loading it anyway fills the console with CSP/autofocus errors and leaves the page unusable.',
+        details: 'Chromium surfaces these violations as "Blocked autofocusing ..." and "Framing https://ogs.google.com ..." errors.',
+        suggestions: [
+          'Use Tools -> Search Engine to pick DuckDuckGo or Bing for in-app searching.',
+          'Use "Open in New Browser Tab" whenever you need to continue in Google.'
+        ],
+        pattern: /(^|\.)google\.[a-z.]+$/i
+      },
+      {
+        id: 'bilibili',
+        title: 'Bilibili requires a trusted browser context',
+        message: 'Bilibili\'s fingerprint scripts fail inside the sandboxed browser.',
+        explanation: 'risk-captcha and bili-user-fingerprint expect privileged APIs and their own reporting endpoints. Inside WebOS they constantly throw "report is not found", so we stop them before they crash the tab.',
+        details: 'Letting it run also logs the giant ASCII art banner that keeps asking to "understand this error" and the captcha never finishes.',
+        suggestions: [
+          'Open Bilibili in a standalone browser tab so its anti-abuse stack can run.',
+          'Keep the built-in browser for sites that support being embedded.'
+        ],
+        pattern: /(^|\.)bilibili\.com$/i
+      }
+    ];
   }
 
   /**
@@ -418,6 +444,8 @@ export default class Browser {
       }
     }
 
+    url = this.applyIframeCompatibility(url);
+
     const tab = this.tabManager.getActiveTab();
     if (tab) {
       this.tabManager.navigate(tab.id, url);
@@ -443,6 +471,48 @@ export default class Browser {
   }
 
   /**
+   * Apply domain-specific compatibility tweaks for iframe-restricted sites
+   * @param {string} url - Original URL
+   * @returns {string} Safe-to-embed URL
+   */
+  applyIframeCompatibility(url) {
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const isGoogleHost =
+        hostname === 'google.com' ||
+        hostname === 'www.google.com';
+
+      if (isGoogleHost) {
+        // Google exposes a special flag that skips X-Frame-Options enforcement
+        if (!parsedUrl.pathname || parsedUrl.pathname === '/') {
+          parsedUrl.pathname = '/webhp';
+        }
+        parsedUrl.searchParams.set('igu', '1');
+        return parsedUrl.toString();
+      }
+    } catch (e) {
+      // Ignore malformed URLs and fall back to the original value
+    }
+
+    return url;
+  }
+
+  /**
+   * Determine if URL is known to fail inside an iframe
+   * @param {string} url - URL to test
+   * @returns {object|null} Matching compatibility rule
+   */
+  getIframeCompatibilityRule(url) {
+    try {
+      const hostname = new URL(url).hostname.toLowerCase();
+      return this.iframeCompatibilityRules.find(rule => rule.pattern.test(hostname)) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
    * Load URL in iframe
    * @param {string} url - URL to load
    */
@@ -452,6 +522,21 @@ export default class Browser {
 
     // Remove existing iframe and error overlay
     viewContainer.innerHTML = '';
+
+    const compatibilityRule = this.getIframeCompatibilityRule(url);
+    if (compatibilityRule) {
+      this.showIframeError(url, compatibilityRule.message, {
+        title: compatibilityRule.title,
+        explanation: compatibilityRule.explanation,
+        details: compatibilityRule.details,
+        suggestions: compatibilityRule.suggestions,
+        statusMessage: 'Blocked by site restrictions'
+      });
+      this.currentIframe = null;
+      return;
+    }
+
+    url = this.applyIframeCompatibility(url);
 
     // Create new iframe
     const iframe = document.createElement('iframe');
@@ -526,7 +611,7 @@ export default class Browser {
    * @param {string} url - URL that failed to load
    * @param {string} message - Error message
    */
-  showIframeError(url, message) {
+  showIframeError(url, message, options = {}) {
     const viewContainer = this.container.querySelector('#browser-view');
     if (!viewContainer) return;
 
@@ -535,18 +620,36 @@ export default class Browser {
       this.tabManager.updateTabInfo(tab.id, { loading: false });
     }
 
+    const {
+      title = 'Cannot Display Page',
+      explanationTitle = 'Why is this happening?',
+      explanation = 'This website has security settings (X-Frame-Options or Content Security Policy) that prevent it from being displayed in an iframe.',
+      details = '',
+      suggestions = [],
+      statusMessage = 'Failed to load page'
+    } = options || {};
+
+    const detailHtml = details ? `<p>${this.escapeHtml(details)}</p>` : '';
+    const suggestionHtml = Array.isArray(suggestions) && suggestions.length
+      ? `<ul class="iframe-error-suggestions">
+          ${suggestions.map(item => `<li>${this.escapeHtml(item)}</li>`).join('')}
+        </ul>`
+      : '';
+
     // Create error overlay
     const errorOverlay = document.createElement('div');
     errorOverlay.className = 'iframe-error-overlay';
     errorOverlay.innerHTML = `
       <div class="iframe-error-content">
         <div class="iframe-error-icon">🚫</div>
-        <h2 class="iframe-error-title">Cannot Display Page</h2>
-        <p class="iframe-error-message">${message}</p>
+        <h2 class="iframe-error-title">${this.escapeHtml(title)}</h2>
+        <p class="iframe-error-message">${this.escapeHtml(message || 'Unable to load the page')}</p>
         <p class="iframe-error-url">${this.escapeHtml(url)}</p>
         <div class="iframe-error-explanation">
-          <p><strong>Why is this happening?</strong></p>
-          <p>This website has security settings (X-Frame-Options or Content Security Policy) that prevent it from being displayed in an iframe.</p>
+          <p><strong>${this.escapeHtml(explanationTitle)}</strong></p>
+          <p>${this.escapeHtml(explanation)}</p>
+          ${detailHtml}
+          ${suggestionHtml}
         </div>
         <div class="iframe-error-actions">
           <button class="iframe-error-btn primary" id="open-new-tab-btn">
@@ -593,7 +696,7 @@ export default class Browser {
       }
     });
 
-    this.updateStatus('Failed to load page');
+    this.updateStatus(statusMessage);
   }
 
   /**
@@ -603,7 +706,7 @@ export default class Browser {
    */
   escapeHtml(text) {
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = text ?? '';
     return div.innerHTML;
   }
 

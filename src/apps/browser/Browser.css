@@ -1123,6 +1123,19 @@
   font-weight: 600;
 }
 
+.iframe-error-suggestions {
+  margin: 12px 0 0 18px;
+  padding-left: 18px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+  list-style: disc;
+}
+
+.iframe-error-suggestions li {
+  margin-bottom: 6px;
+}
+
 .iframe-error-actions {
   display: flex;
   gap: 12px;

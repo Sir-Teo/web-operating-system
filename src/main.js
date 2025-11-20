@@ -6,20 +6,24 @@ import { StartMenu } from './ui/StartMenu.js';
 import { WindowSnapping } from './ui/WindowSnapping.js';
 import { LoginScreen } from './ui/LoginScreen.js';
 import AppRegistry from './apps/AppRegistry.js';
+import AIAssistant from './apps/ai-assistant/AIAssistant.js';
 import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
 import FileManagerV2 from './apps/file-manager/FileManagerV2.js';
 import TextEditor from './apps/text-editor/TextEditor.js';
 import CodeEditor from './apps/code-editor/CodeEditor.js';
 import Browser from './apps/browser/Browser.js';
+import CloudStorage from './apps/cloud-storage/CloudStorage.js';
 import PackageManager from './apps/package-manager/PackageManager.js';
 import PluginManager from './apps/plugin-manager/PluginManager.js';
 import Settings from './apps/settings/Settings.js';
 import SystemMonitor from './apps/system-monitor/SystemMonitor.js';
+import DevTools from './apps/devtools/DevTools.js';
 import UserManagerApp from './apps/user-manager/UserManagerApp.js';
 import WordProcessor from './apps/word-processor/WordProcessor.js';
 import Spreadsheet from './apps/spreadsheet/Spreadsheet.js';
 import Presentation from './apps/presentation/Presentation.js';
+import Paint from './apps/paint/Paint.js';
 import TicTacToe from './apps/tic-tac-toe/TicTacToe.js';
 import Snake from './apps/snake/Snake.js';
 import Tetris from './apps/tetris/Tetris.js';
@@ -50,6 +54,7 @@ class WebOS {
     this.startMenu = null;
     this.windowSnapping = null;
     this.loginScreen = null;
+    this.autoStarted = false;
   }
 
   async boot() {
@@ -92,6 +97,17 @@ class WebOS {
   }
 
   registerApplications() {
+    // Register AI Assistant
+    AppRegistry.register({
+      id: 'ai-assistant',
+      name: 'AI Assistant',
+      version: '1.0.0',
+      icon: '🤖',
+      type: 'web',
+      permissions: ['network.http'],
+      Component: AIAssistant
+    });
+
     // Register Terminal
     AppRegistry.register({
       id: 'terminal',
@@ -158,6 +174,17 @@ class WebOS {
       Component: Browser
     });
 
+    // Register Cloud Storage
+    AppRegistry.register({
+      id: 'cloud-storage',
+      name: 'Cloud Storage',
+      version: '1.0.0',
+      icon: '☁️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: CloudStorage
+    });
+
     // Register Package Manager
     AppRegistry.register({
       id: 'package-manager',
@@ -202,6 +229,17 @@ class WebOS {
       Component: SystemMonitor
     });
 
+    // Register DevTools
+    AppRegistry.register({
+      id: 'devtools',
+      name: 'DevTools',
+      version: '1.0.0',
+      icon: '🛠️',
+      type: 'web',
+      permissions: ['system.process', 'network.http'],
+      Component: DevTools
+    });
+
     // Register User Manager
     AppRegistry.register({
       id: 'user-manager',
@@ -211,6 +249,17 @@ class WebOS {
       type: 'web',
       permissions: ['system.user'],
       Component: UserManagerApp
+    });
+
+    // Register Paint
+    AppRegistry.register({
+      id: 'paint',
+      name: 'Paint',
+      version: '1.0.0',
+      icon: '🎨',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Paint
     });
 
     // Register Word Processor
@@ -475,6 +524,30 @@ class WebOS {
         taskbar.style.transition = 'opacity 0.5s';
         taskbar.style.opacity = '1';
       }, 100);
+    }
+
+    this.autoStartApps();
+  }
+
+  async autoStartApps() {
+    if (this.autoStarted) {
+      return;
+    }
+
+    this.autoStarted = true;
+
+    const startupApps = [
+      { id: 'paint', windowConfig: { x: 60, y: 60, width: 1080, height: 760 } },
+      { id: 'airplane-shooter', windowConfig: { x: 200, y: 120 } },
+      { id: 'racing', windowConfig: { x: 260, y: 180 } }
+    ];
+
+    for (const app of startupApps) {
+      try {
+        await AppRegistry.launchApp(app.id, { windowConfig: app.windowConfig });
+      } catch (error) {
+        console.warn(`Failed to auto-start ${app.id}:`, error);
+      }
     }
   }
 
