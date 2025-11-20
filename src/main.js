@@ -46,6 +46,13 @@ import Weather from './apps/weather/Weather.js';
 import Maps from './apps/maps/Maps.js';
 import Camera from './apps/camera/Camera.js';
 import Chat from './apps/chat/Chat.js';
+import Clock from './apps/clock/Clock.js';
+import VoiceRecorder from './apps/voice-recorder/VoiceRecorder.js';
+import ArchiveManager from './apps/archive-manager/ArchiveManager.js';
+import PdfViewer from './apps/pdf-viewer/PdfViewer.js';
+import Contacts from './apps/contacts/Contacts.js';
+import ColorPicker from './apps/color-picker/ColorPicker.js';
+import CharacterMap from './apps/character-map/CharacterMap.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -548,6 +555,83 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: Chat
+    });
+
+    // Register Clock
+    AppRegistry.register({
+      id: 'clock',
+      name: 'Clock',
+      version: '1.0.0',
+      icon: '🕐',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Clock
+    });
+
+    // Register Voice Recorder
+    AppRegistry.register({
+      id: 'voice-recorder',
+      name: 'Voice Recorder',
+      version: '1.0.0',
+      icon: '🎙️',
+      type: 'web',
+      permissions: ['system.screencapture', 'filesystem.read', 'filesystem.write'],
+      Component: VoiceRecorder
+    });
+
+    // Register Archive Manager
+    AppRegistry.register({
+      id: 'archive-manager',
+      name: 'Archive Manager',
+      version: '1.0.0',
+      icon: '📦',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write', 'filesystem.delete'],
+      Component: ArchiveManager
+    });
+
+    // Register PDF Viewer
+    AppRegistry.register({
+      id: 'pdf-viewer',
+      name: 'PDF Viewer',
+      version: '1.0.0',
+      icon: '📄',
+      type: 'web',
+      permissions: ['filesystem.read'],
+      Component: PdfViewer
+    });
+
+    // Register Contacts
+    AppRegistry.register({
+      id: 'contacts',
+      name: 'Contacts',
+      version: '1.0.0',
+      icon: '👥',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Contacts
+    });
+
+    // Register Color Picker
+    AppRegistry.register({
+      id: 'color-picker',
+      name: 'Color Picker',
+      version: '1.0.0',
+      icon: '🎨',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: ColorPicker
+    });
+
+    // Register Character Map
+    AppRegistry.register({
+      id: 'character-map',
+      name: 'Character Map',
+      version: '1.0.0',
+      icon: '🔤',
+      type: 'web',
+      permissions: [],
+      Component: CharacterMap
     });
   }
 
