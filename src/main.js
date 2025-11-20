@@ -36,6 +36,7 @@ import MusicPlayer from './apps/music-player/MusicPlayer.js';
 import Calendar from './apps/calendar/Calendar.js';
 import TaskManager from './apps/task-manager/TaskManager.js';
 import CodeRunner from './apps/code-runner/CodeRunner.js';
+import ScreenshotApp from './apps/screenshot/Screenshot.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -420,6 +421,17 @@ class WebOS {
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: CodeRunner
     });
+
+    // Register Screenshot Tool
+    AppRegistry.register({
+      id: 'screenshot',
+      name: 'Screenshot Tool',
+      version: '1.0.0',
+      icon: '📸',
+      type: 'web',
+      permissions: ['system.screencapture'],
+      Component: ScreenshotApp
+    });
   }
 
   async initializeUI() {
@@ -446,6 +458,60 @@ class WebOS {
     WindowManager.addEventListener('window-closed', (e) => {
       window.dispatchEvent(new CustomEvent('window-closed', { detail: e.detail }));
     });
+
+    // Initialize Phase 16: Advanced Desktop Features
+    await this.initializePhase16Features();
+  }
+
+  async initializePhase16Features() {
+    // Initialize Widget Manager
+    const { initWidgetManager } = await import('./system/WidgetManager.js');
+    this.widgetManager = initWidgetManager(this.kernel);
+
+    // Register widget types
+    const { ClockWidget } = await import('./widgets/ClockWidget.js');
+    const { WeatherWidget } = await import('./widgets/WeatherWidget.js');
+    const { CalendarWidget } = await import('./widgets/CalendarWidget.js');
+    const { NotesWidget } = await import('./widgets/NotesWidget.js');
+
+    this.widgetManager.registerWidgetType('clock', ClockWidget);
+    this.widgetManager.registerWidgetType('weather', WeatherWidget);
+    this.widgetManager.registerWidgetType('calendar', CalendarWidget);
+    this.widgetManager.registerWidgetType('notes', NotesWidget);
+
+    // Initialize Workspace Manager
+    const { initWorkspaceManager } = await import('./system/WorkspaceManager.js');
+    this.workspaceManager = initWorkspaceManager(this.kernel);
+
+    // Initialize Workspace Switcher in Taskbar
+    const WorkspaceSwitcher = (await import('./ui/WorkspaceSwitcher.js')).default;
+    const workspaceSwitcherContainer = document.getElementById('workspace-switcher-container');
+    if (workspaceSwitcherContainer) {
+      new WorkspaceSwitcher(this.kernel, workspaceSwitcherContainer);
+    }
+
+    // Initialize Global Search
+    const { initGlobalSearch } = await import('./system/GlobalSearch.js');
+    this.globalSearch = initGlobalSearch(this.kernel);
+
+    // Initialize Quick Actions Panel
+    const { initQuickActionsPanel } = await import('./system/QuickActionsPanel.js');
+    this.quickActionsPanel = initQuickActionsPanel(this.kernel);
+
+    // Initialize Screen Capture
+    const { initScreenCapture } = await import('./system/ScreenCapture.js');
+    this.screenCapture = initScreenCapture(this.kernel);
+
+    // Initialize Notification Center
+    const { initNotificationCenter } = await import('./system/NotificationCenter.js');
+    this.notificationCenter = initNotificationCenter(this.kernel);
+    this.kernel.notificationCenter = this.notificationCenter;
+
+    // Initialize Shortcuts Manager
+    const { initShortcutsManager } = await import('./system/ShortcutsManager.js');
+    this.shortcutsManager = initShortcutsManager(this.kernel);
+
+    console.log('Phase 16 features initialized successfully!');
   }
 
   async registerServiceWorker() {

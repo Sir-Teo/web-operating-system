@@ -1,0 +1,283 @@
+/* Desktop Widgets Styles */
+
+.widgets-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 50px); /* Account for taskbar */
+  pointer-events: none;
+  z-index: 10;
+}
+
+.desktop-widget {
+  position: absolute;
+  min-width: 200px;
+  min-height: 150px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
+  z-index: 1000;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.desktop-widget:hover {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  user-select: none;
+}
+
+.widget-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.widget-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.widget-action {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+  opacity: 0.7;
+}
+
+.widget-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
+.widget-content {
+  padding: 12px;
+  height: calc(100% - 40px);
+  overflow: auto;
+  color: white;
+}
+
+/* Clock Widget */
+.clock-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.clock-widget .time {
+  font-size: 48px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.clock-widget .date {
+  font-size: 16px;
+  opacity: 0.8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Weather Widget */
+.weather-widget {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.weather-widget .location {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.weather-widget .current-weather {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.weather-widget .weather-icon {
+  font-size: 64px;
+}
+
+.weather-widget .temperature {
+  font-size: 48px;
+  font-weight: 300;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.weather-widget .conditions {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 8px;
+}
+
+.weather-widget .details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.weather-widget .detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Calendar Widget */
+.calendar-widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-widget .calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.calendar-widget .month-year {
+  font-size: 16px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.calendar-widget .nav-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.calendar-widget .nav-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.calendar-widget .calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  flex: 1;
+}
+
+.calendar-widget .day-header {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px;
+  opacity: 0.7;
+}
+
+.calendar-widget .day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.calendar-widget .day:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.calendar-widget .day.today {
+  background: rgba(66, 133, 244, 0.5);
+  font-weight: 600;
+}
+
+.calendar-widget .day.other-month {
+  opacity: 0.3;
+}
+
+/* Notes Widget */
+.notes-widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-widget textarea {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: white;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+}
+
+.notes-widget textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.notes-widget textarea:focus {
+  border-color: rgba(66, 133, 244, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.notes-widget .notes-footer {
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: right;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .desktop-widget {
+    min-width: 150px;
+    min-height: 120px;
+  }
+
+  .clock-widget .time {
+    font-size: 36px;
+  }
+
+  .clock-widget .date {
+    font-size: 14px;
+  }
+
+  .weather-widget .weather-icon {
+    font-size: 48px;
+  }
+
+  .weather-widget .temperature {
+    font-size: 36px;
+  }
+}
