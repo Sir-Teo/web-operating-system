@@ -121,7 +121,7 @@ class CollaborationManager extends EventEmitter {
       }
     });
 
-    // Set user info in awareness after provider is created
+    // Set user info in awareness
     provider.awareness.setLocalStateField('user', this.currentUser);
 
     // Create session object
