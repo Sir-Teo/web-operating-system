@@ -1,0 +1,327 @@
+/**
+ * Modal Dialog Styles
+ * Accessible, animated modal system
+ */
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay-visible {
+  opacity: 1;
+}
+
+/* Reduced motion support */
+.reduce-motion .modal-overlay {
+  transition: none;
+}
+
+/* Modal Container */
+.modal {
+  background: var(--bg-primary, #1e1e2e);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.modal-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.reduce-motion .modal {
+  transition: none;
+  transform: none;
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.modal-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #cdd6f4);
+  flex: 1;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary, #bac2de);
+}
+
+/* Modal Input (for prompts) */
+.modal-input-container {
+  margin-top: 16px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--bg-secondary, #181825);
+  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--text-primary, #cdd6f4);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.modal-input:focus {
+  border-color: var(--primary-color, #667eea);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.modal-input-invalid {
+  border-color: var(--error-color, #f38ba8);
+}
+
+.modal-input-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(243, 139, 168, 0.1);
+}
+
+.modal-input-error {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--error-color, #f38ba8);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-input-error::before {
+  content: '⚠';
+  font-size: 14px;
+}
+
+/* Focus visible styles */
+.modal-input.focus-visible {
+  outline: 2px solid var(--primary-color, #667eea);
+  outline-offset: 2px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+/* Modal Buttons */
+.modal-button {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  outline: none;
+  min-width: 80px;
+}
+
+.modal-button:active {
+  transform: scale(0.98);
+}
+
+.modal-button-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.modal-button-primary:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.modal-button-primary:focus {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.modal-button-secondary {
+  background: var(--bg-secondary, #181825);
+  color: var(--text-primary, #cdd6f4);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.modal-button-secondary:hover {
+  background: var(--bg-tertiary, #11111b);
+}
+
+.modal-button-secondary:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+/* Focus visible for buttons */
+.modal-button.focus-visible {
+  outline: 2px solid var(--primary-color, #667eea);
+  outline-offset: 2px;
+}
+
+/* Modal Variants */
+.modal-success .modal-header {
+  color: var(--success-color, #a6e3a1);
+}
+
+.modal-error .modal-header {
+  color: var(--error-color, #f38ba8);
+}
+
+.modal-warning .modal-header {
+  color: var(--warning-color, #f9e2af);
+}
+
+.modal-info .modal-header {
+  color: var(--info-color, #89dceb);
+}
+
+/* High Contrast Mode */
+.high-contrast .modal {
+  border: 2px solid white;
+}
+
+.high-contrast .modal-button {
+  border: 2px solid white;
+}
+
+.high-contrast .modal-button-primary {
+  background: white;
+  color: black;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+    width: 100%;
+    max-width: none;
+  }
+
+  .modal-header {
+    padding: 20px 20px 12px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    padding: 12px 20px 20px;
+    flex-direction: column-reverse;
+  }
+
+  .modal-button {
+    width: 100%;
+  }
+}
+
+/* Tablet */
+@media (min-width: 601px) and (max-width: 960px) {
+  .modal {
+    max-width: 90vw;
+  }
+}
+
+/* Screen reader only (skip links, live regions) */
+.sr-only {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Skip link styles */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 100000;
+}
+
+.skip-link:focus {
+  position: fixed !important;
+  top: 10px !important;
+  left: 10px !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding: 10px 20px !important;
+  background: var(--primary-color, #667eea) !important;
+  color: white !important;
+  text-decoration: none !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  z-index: 100001 !important;
+}
+
+/* Focus visible global styles */
+:focus:not(.focus-visible) {
+  outline: none;
+}
+
+.focus-visible {
+  outline: 2px solid var(--primary-color, #667eea);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
