@@ -1,6 +1,6 @@
 {
   "name": "web-operating-system",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "A production-grade web-based operating system with AI capabilities, multi-user support, developer tools, and advanced productivity features that runs entirely in your browser",
   "type": "module",
   "scripts": {
