@@ -1,538 +1,367 @@
-# WebOS - Complete Documentation
+# WebOS Documentation
 
-**A production-grade web-based operating system that runs entirely in your browser.**
+**Version:** 3.5.0
+**Last Updated:** 2025-11-20
 
-[![Deploy Status](https://github.com/username/web-os/workflows/Deploy/badge.svg)](https://github.com/username/web-os/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-
----
-
-## 🌟 What is WebOS?
-
-WebOS is a **fully functional operating system** that runs entirely in your web browser. It provides a familiar desktop-like experience with:
-
-- 💾 **Virtual File System** - Persistent storage using modern browser APIs (OPFS + IndexedDB)
-- ⚡ **Process Management** - Multi-tasking with true process isolation
-- 🪟 **Window Manager** - Full desktop experience with draggable, resizable windows
-- 📱 **Progressive Web App** - Install and run offline like a native application
-- 🔒 **Security Model** - Permission-based access control
-- 🎨 **Extensible** - Easy to develop and install new applications
-- 🌐 **Zero Backend** - Runs 100% client-side, deployable on GitHub Pages
+Welcome to the WebOS documentation! This comprehensive guide will help you understand, use, and extend the WebOS platform.
 
 ---
 
 ## 📚 Documentation Index
 
-### Core Documentation
+### User Guides
+- **[Keyboard Shortcuts](KEYBOARD_SHORTCUTS.md)** - Complete list of system shortcuts (new in v3.5)
+- **[Applications Guide](APPLICATIONS.md)** - Overview of all 30+ built-in applications
 
-1. **[Architecture Guide](./WEB_OS_ARCHITECTURE.md)** - Complete system architecture and design
-   - High-level system design
-   - Technology stack
-   - Core components (Kernel, VFS, Process Manager, Window Manager)
-   - Advanced features (Service Workers, Permissions, Terminal)
-   - Security model
-   - Deployment strategy
+### Developer Guides
+- **[Architecture Overview](WEB_OS_ARCHITECTURE.md)** - System architecture and design patterns
+- **[API Reference](API_REFERENCE.md)** - Complete kernel and system API documentation
+- **[App Development Guide](APP_DEVELOPMENT_GUIDE.md)** - Build applications for WebOS
+- **[Plugin Development](PLUGIN_DEVELOPMENT.md)** - Create plugins and extensions
 
-2. **[Implementation Roadmap](./IMPLEMENTATION_ROADMAP.md)** - Step-by-step build guide
-   - Phase-by-phase implementation plan
-   - Project setup and structure
-   - Core system development
-   - UI/Window management
-   - Application runtime
-   - System applications
-   - Timeline estimates
+### Technical Guides
+- **[File Operations Guide](FILE_OPERATIONS_GUIDE.md)** - File system operations and storage
+- **[Compression Guide](COMPRESSION_GUIDE.md)** - File compression and WASM acceleration
+- **[Advanced Terminal](ADVANCED_TERMINAL_FEATURES.md)** - Shell scripting and terminal features
+- **[Deployment Guide](GITHUB_PAGES_DEPLOYMENT.md)** - Deploy WebOS to GitHub Pages
 
-3. **[API Reference](./API_REFERENCE.md)** - Complete API documentation
-   - Kernel API
-   - File System API
-   - Process Manager API
-   - Window Manager API
-   - IPC (Inter-Process Communication) API
-   - Permission API
-   - Application API
-   - TypeScript definitions
-
-4. **[Application Development Guide](./APP_DEVELOPMENT_GUIDE.md)** - Building apps for WebOS
-   - Getting started
-   - Application types (Web, WASM, IFrame)
-   - Best practices
-   - Advanced topics
-   - Example applications
-   - Debugging and testing
-
-5. **[GitHub Pages Deployment](./GITHUB_PAGES_DEPLOYMENT.md)** - Deploy to production
-   - Build configuration
-   - GitHub Actions setup
-   - Custom domain configuration
-   - Performance optimization
-   - Troubleshooting
+### Archive
+- **[archive/](archive/)** - Historical documentation from previous phases
 
 ---
 
-## 🚀 Quick Start
+## 🚀 What is WebOS?
 
-### Option 1: Use the Existing Documentation
+WebOS is a **production-grade, fully-functional operating system** that runs entirely in your browser.
 
-If you want to build WebOS from scratch, follow these documents in order:
+### Core Features
 
-1. Read [WEB_OS_ARCHITECTURE.md](./WEB_OS_ARCHITECTURE.md) to understand the system
-2. Follow [IMPLEMENTATION_ROADMAP.md](./IMPLEMENTATION_ROADMAP.md) to build it
-3. Refer to [API_REFERENCE.md](./API_REFERENCE.md) while coding
-4. Use [APP_DEVELOPMENT_GUIDE.md](./APP_DEVELOPMENT_GUIDE.md) to build apps
-5. Deploy using [GITHUB_PAGES_DEPLOYMENT.md](./GITHUB_PAGES_DEPLOYMENT.md)
+**System Architecture:**
+- Real kernel with boot sequence and process management
+- Virtual File System (OPFS + IndexedDB + Memory drivers)
+- Task scheduling and IPC (Inter-Process Communication)
+- Permission and security system
+- WebAssembly performance optimization (5-10x faster)
 
-### Option 2: Quick Setup
+**Desktop Environment (NEW in v3.5):**
+- Desktop widgets (clock, weather, calendar, notes)
+- Multiple workspaces/virtual desktops (up to 9)
+- Global search - Spotlight-like (Ctrl+Space)
+- Quick actions panel (Ctrl+Shift+A)
+- Notification center with history (Ctrl+Shift+N)
+- Screenshot and screen recording tools
+- 15+ customizable keyboard shortcuts
 
-```bash
-# Clone the repository
-git clone https://github.com/username/web-os.git
-cd web-os
+**Applications (30+):**
+- **Productivity**: Word processor, spreadsheet, presentation, task manager
+- **Development**: Terminal (66+ commands), code editor, DevTools, package manager
+- **File Management**: Dual-pane file manager with compression and encryption
+- **Media**: Image viewer, music player, paint application
+- **Utilities**: Calculator, calendar, screenshot tool
+- **Games**: Snake, Tetris, Minesweeper, racing, and more
+- **AI**: AI assistant with local model inference
 
-# Install dependencies
-npm install
+**Cloud & Sync:**
+- Google Drive, Dropbox, OneDrive, WebDAV integration
+- Bi-directional sync with conflict resolution
+- OAuth 2.0 authentication
+- Selective sync and bandwidth throttling
 
-# Start development server
-npm run dev
+**Multi-User System:**
+- User account management with authentication
+- Per-user home directories and settings
+- Fast user switching
+- Guest mode support
 
-# Build for production
-npm run build
+**Mobile Support:**
+- Touch-optimized UI components
+- Gesture recognition (swipe, pinch, tap, long-press)
+- Mobile-friendly terminal with virtual keyboard
+- Responsive layouts for all applications
 
-# Deploy to GitHub Pages
-npm run deploy
-```
+---
+
+## ⌨️ Essential Keyboard Shortcuts
+
+### Desktop & Windows
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Space` | Open global search |
+| `Ctrl+Shift+A` | Quick actions panel |
+| `Ctrl+Shift+N` | Notification center |
+| `Ctrl+Alt+Arrow L/R` | Switch workspaces |
+| `Ctrl+Alt+1-9` | Jump to workspace |
+| `Ctrl+Alt+D` | Show desktop |
+| `Alt+F4` | Close active window |
+
+### Window Management
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Alt+↑` | Maximize window |
+| `Ctrl+Alt+↓` | Minimize window |
+| `Ctrl+Alt+←` | Snap window left |
+| `Ctrl+Alt+→` | Snap window right |
+
+### Applications
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Alt+T` | Open terminal |
+| `Ctrl+Alt+F` | Open file manager |
+| `Ctrl+Alt+L` | Lock screen |
+
+### Screenshots
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+PrintScreen` | Full screen screenshot |
+| `Ctrl+Shift+S` | Selection screenshot |
+
+[Complete shortcuts list →](KEYBOARD_SHORTCUTS.md)
+
+---
+
+## 🎯 Quick Start Guide
+
+### 1. Access WebOS
+Open the application in a modern web browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+
+### 2. Login
+- Use the default guest account
+- Or create a new user via the User Accounts app
+
+### 3. Explore the Desktop
+- **Desktop Icons**: Double-click to launch applications
+- **Start Menu**: Click the ⊞ button in taskbar
+- **Widgets**: Right-click desktop to add widgets
+- **Workspaces**: Use workspace switcher in taskbar
+
+### 4. Key Actions
+- **Search Everything**: Press `Ctrl+Space`
+- **Quick Actions**: Press `Ctrl+Shift+A`
+- **Open Terminal**: Press `Ctrl+Alt+T`
+- **Take Screenshot**: Press `Ctrl+Shift+S`
+
+---
+
+## 📊 Statistics (v3.5.0)
+
+- **Codebase**: 19,000+ lines of production code
+- **Applications**: 30+ system and productivity applications
+- **Terminal Commands**: 66 built-in commands
+- **Widgets**: 4 desktop widgets (extensible)
+- **Cloud Providers**: 4 (Google Drive, Dropbox, OneDrive, WebDAV)
+- **Keyboard Shortcuts**: 15+ customizable shortcuts
+- **Bundle Size**: ~1 MB gzipped
+- **Boot Time**: < 2 seconds
+- **Test Coverage**: 163 passing tests
 
 ---
 
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    User Interface Layer                  │
-│         Desktop Environment │ Taskbar │ Windows          │
-└─────────────────────────────────────────────────────────┘
-                          │
-┌─────────────────────────────────────────────────────────┐
-│                 Application Runtime Layer                │
-│        Web Apps │ WASM Apps │ System Applications       │
-└─────────────────────────────────────────────────────────┘
-                          │
-┌─────────────────────────────────────────────────────────┐
-│                   System Services Layer                  │
-│  Process Manager │ Scheduler │ IPC │ Permissions        │
-└─────────────────────────────────────────────────────────┘
-                          │
-┌─────────────────────────────────────────────────────────┐
-│                 Storage & I/O Layer                      │
-│     OPFS │ IndexedDB │ Cache API │ Service Workers      │
-└─────────────────────────────────────────────────────────┘
-                          │
-┌─────────────────────────────────────────────────────────┐
-│                  Browser Platform Layer                  │
-│   Web Workers │ WASM Engine │ Modern Browser APIs        │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│        Applications Layer (30+)         │
+│  Terminal, File Manager, Code Editor... │
+├─────────────────────────────────────────┤
+│          UI Framework Layer             │
+│   Desktop, Taskbar, Windows, Widgets    │
+├─────────────────────────────────────────┤
+│        System Services Layer            │
+│ Workspaces, Search, Notifications, etc. │
+├─────────────────────────────────────────┤
+│            Kernel Layer                 │
+│  Process Mgr, File System, IPC, Network │
+├─────────────────────────────────────────┤
+│          Storage Layer                  │
+│    OPFS, IndexedDB, Memory, WASM        │
+└─────────────────────────────────────────┘
 ```
 
----
-
-## ✨ Key Features
-
-### File System
-- **OPFS (Origin Private File System)** - High-performance file storage
-- **Virtual File System (VFS)** - Unified interface to multiple storage backends
-- **File operations** - Create, read, update, delete files and directories
-- **File watching** - Real-time notifications on file changes
-- **Persistence** - Data survives browser restarts
-
-### Process Management
-- **Multi-process architecture** - True process isolation
-- **Task scheduling** - Priority-based task execution using browser Scheduler API
-- **Resource management** - Track and limit CPU, memory, storage usage
-- **Process lifecycle** - Full control over process creation, suspension, and termination
-
-### Window Management
-- **Desktop environment** - Familiar desktop with icons and taskbar
-- **Multiple windows** - Run many applications simultaneously
-- **Window controls** - Drag, resize, minimize, maximize, close
-- **Window layouts** - Cascade and tile windows automatically
-- **Focus management** - Proper window focus and z-ordering
-
-### Applications
-- **System apps included**:
-  - 💻 **Terminal** - Full-featured command-line interface
-  - 📁 **File Manager** - Visual file browsing and management
-  - 📝 **Text Editor** - Code editor with syntax highlighting
-  - ⚙️ **Settings** - System configuration
-- **Easy to extend** - Simple API for developing new apps
-- **Three app types** - Web, WebAssembly, and IFrame applications
-
-### Security
-- **Permission system** - Apps must request access to sensitive features
-- **Sandboxing** - Isolate untrusted code in workers/iframes
-- **Content Security Policy** - Prevent XSS and injection attacks
-- **Origin isolation** - Each app runs in its own context
-
-### Progressive Web App
-- **Offline support** - Works without internet connection
-- **Installable** - Add to home screen/desktop
-- **Service workers** - Intelligent caching and background sync
-- **App-like experience** - Feels like a native application
+[Detailed architecture guide →](WEB_OS_ARCHITECTURE.md)
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Development
 
-### Core Technologies
-- **JavaScript (ES2022+)** - Modern ECMAScript features
-- **HTML5 & CSS3** - Semantic markup and modern styling
-- **WebAssembly** - High-performance computing
-- **Service Workers** - Offline functionality and caching
-
-### Storage APIs
-- **OPFS** - Origin Private File System for file storage (60% of disk, excellent performance)
-- **IndexedDB** - Structured data and metadata storage
-- **Cache API** - Static asset caching
-- **localStorage** - User preferences and settings
-
-### Modern Browser APIs
-- File System Access API
-- Scheduler API (Prioritized Task Scheduling)
-- Web Locks API
-- Broadcast Channel API
-- Web Workers API
-- Web Audio API
-- Canvas/WebGL
-- Fetch API
-- Streams API
-
-### Build Tools
-- **Vite** - Fast build tool and dev server
-- **TypeScript** (optional) - Type safety
-- **ESLint** - Code quality
-- **Prettier** - Code formatting
-
-### Libraries
-- **WinBox.js** - Window management (~20KB)
-- **idb** - IndexedDB wrapper
-- **Prism.js/CodeMirror** - Syntax highlighting (optional)
-
----
-
-## 📊 Browser Support
-
-| Browser | Version | Status |
-|---------|---------|--------|
-| **Chrome** | 100+ | ✅ Fully Supported |
-| **Edge** | 100+ | ✅ Fully Supported |
-| **Firefox** | 100+ | ✅ Fully Supported |
-| **Safari** | 16+ | ✅ Fully Supported |
-| **Opera** | 85+ | ✅ Supported |
-
-### Required Browser Features
-- ✅ Service Workers
-- ✅ Web Workers
-- ✅ IndexedDB
-- ✅ File System Access API (OPFS)
-- ✅ ES Modules
-- ✅ WebAssembly
-
----
-
-## 📖 Development Guide
-
-### Project Structure
-
-```
-web-os/
-├── public/
-│   ├── index.html              # Main HTML entry point
-│   ├── manifest.json           # PWA manifest
-│   ├── service-worker.js       # Service worker for offline support
-│   └── icons/                  # App icons
-├── src/
-│   ├── kernel/                 # Core OS kernel
-│   │   ├── Kernel.js          # Main kernel
-│   │   ├── ProcessManager.js  # Process management
-│   │   ├── Scheduler.js       # Task scheduler
-│   │   └── IPC.js             # Inter-process communication
-│   ├── filesystem/             # Virtual file system
-│   │   ├── VFS.js             # Virtual FS interface
-│   │   └── drivers/           # Storage drivers (OPFS, IndexedDB)
-│   ├── ui/                     # User interface
-│   │   ├── Desktop.js         # Desktop environment
-│   │   ├── WindowManager.js   # Window management
-│   │   ├── Taskbar.js         # Taskbar component
-│   │   └── StartMenu.js       # Start menu
-│   ├── apps/                   # System applications
-│   │   ├── terminal/          # Terminal app
-│   │   ├── file-manager/      # File manager app
-│   │   └── text-editor/       # Text editor app
-│   ├── security/               # Security components
-│   │   └── PermissionManager.js
-│   ├── utils/                  # Utility functions
-│   └── main.js                 # Application entry point
-├── styles/                     # Global styles
-├── docs/                       # Documentation
-├── tests/                      # Test files
-├── vite.config.js             # Vite configuration
-├── package.json               # Dependencies
-└── README.md                  # This file
-```
-
-### Building an Application
+### Building Applications
 
 ```javascript
-// apps/my-app/index.js
-export default class MyApp {
-  constructor(context) {
-    this.context = context;
-    this.window = context.window;
-    this.fs = context.fs;
+// MyApp.js
+export class MyApp {
+  constructor(kernel, container) {
+    this.kernel = kernel;
+    this.container = container;
   }
 
   async init() {
     // Initialize your app
+    this.render();
   }
 
   render() {
-    const container = document.createElement('div');
-    container.innerHTML = '<h1>My App</h1>';
-    return container;
+    this.container.innerHTML = `
+      <div class="my-app">
+        <h1>Hello WebOS!</h1>
+      </div>
+    `;
+  }
+
+  destroy() {
+    // Cleanup when app closes
   }
 }
 
-// Register the app
+export default MyApp;
+```
+
+Register your app:
+```javascript
+// In main.js
+import MyApp from './apps/my-app/MyApp.js';
+
 AppRegistry.register({
   id: 'my-app',
-  name: 'My Application',
+  name: 'My App',
   version: '1.0.0',
-  icon: '🚀',
+  icon: '📱',
   type: 'web',
-  entry: '/apps/my-app/index.js',
-  permissions: ['filesystem.read']
+  permissions: ['filesystem.read'],
+  Component: MyApp
 });
 ```
 
----
+[Full development guide →](APP_DEVELOPMENT_GUIDE.md)
 
-## 🎯 Use Cases
+### File System API
 
-### Education
-- Learn operating system concepts
-- Understand browser APIs
-- Study system architecture
-- Practice web development
+```javascript
+// Read file
+const content = await kernel.fs.readFile('/home/document.txt');
 
-### Development
-- Test web applications in isolation
-- Develop browser-based tools
-- Create portable development environments
-- Build demo applications
+// Write file
+await kernel.fs.writeFile('/home/document.txt', 'Hello World');
 
-### Personal Use
-- Portable desktop environment
-- Cloud-based file management
-- Cross-device productivity
-- Privacy-focused computing
+// List directory
+const files = await kernel.fs.readdir('/home');
 
-### Research
-- Browser capabilities research
-- WebAssembly experimentation
-- Storage API testing
-- Performance benchmarking
+// Create directory
+await kernel.fs.mkdir('/home/projects');
 
----
+// Compress file
+await kernel.compressionManager.compress('/home/large.txt');
 
-## 🤝 Contributing
-
-We welcome contributions! Here's how you can help:
-
-### Ways to Contribute
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📖 Improve documentation
-- 🔧 Submit pull requests
-- 🎨 Design improvements
-- 🧪 Write tests
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Test thoroughly
-5. Commit with clear messages (`git commit -m 'Add amazing feature'`)
-6. Push to your branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Coding Standards
-- Use ES modules
-- Follow existing code style
-- Write clear comments
-- Add JSDoc documentation
-- Include tests for new features
-- Update documentation
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](../LICENSE) file for details.
-
-```
-MIT License
-
-Copyright (c) 2025 WebOS Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+// Encrypt file
+await kernel.fileEncryption.encryptFile('/home/secret.txt', 'password');
 ```
 
----
-
-## 🙏 Acknowledgments
-
-### Inspiration
-- Traditional operating systems (Windows, macOS, Linux)
-- Chrome OS
-- Previous web desktop projects (OS.js, eyeOS)
-
-### Technologies
-- [WinBox.js](https://github.com/nextapps-de/winbox) - Window management library
-- [Vite](https://vitejs.dev/) - Build tool
-- [MDN Web Docs](https://developer.mozilla.org/) - API documentation
-
-### Community
-- Contributors and testers
-- Open source community
-- Browser vendors for implementing modern APIs
+[Complete API reference →](API_REFERENCE.md)
 
 ---
 
-## 📞 Support & Contact
+## 🔌 Plugin System
 
-### Documentation
-- **Architecture**: [WEB_OS_ARCHITECTURE.md](./WEB_OS_ARCHITECTURE.md)
-- **Implementation**: [IMPLEMENTATION_ROADMAP.md](./IMPLEMENTATION_ROADMAP.md)
-- **API Reference**: [API_REFERENCE.md](./API_REFERENCE.md)
-- **App Development**: [APP_DEVELOPMENT_GUIDE.md](./APP_DEVELOPMENT_GUIDE.md)
-- **Deployment**: [GITHUB_PAGES_DEPLOYMENT.md](./GITHUB_PAGES_DEPLOYMENT.md)
+Extend WebOS with custom plugins:
 
-### Getting Help
-- 📫 Open an issue on GitHub
-- 💬 Join discussions
-- 📧 Email: your-email@example.com
-- 🌐 Website: https://username.github.io/web-os/
+```javascript
+// example-plugin.js
+export default class MyPlugin {
+  constructor(api) {
+    this.api = api;
+  }
 
-### Stay Updated
-- ⭐ Star the repository
-- 👀 Watch for updates
-- 🍴 Fork to experiment
-- 📢 Share with others
+  async activate() {
+    // Plugin initialization
+    this.api.ui.addMenuItem({
+      label: 'My Feature',
+      onclick: () => this.doSomething()
+    });
+  }
 
----
-
-## 🗺️ Roadmap
-
-### Version 1.0 (Current)
-- ✅ Core kernel and process management
-- ✅ Virtual file system (OPFS + IndexedDB)
-- ✅ Window manager
-- ✅ Basic system applications
-- ✅ Service worker and PWA support
-
-### Version 1.1 (Planned)
-- 🔲 Enhanced terminal with more commands
-- 🔲 Advanced file manager features
-- 🔲 Code editor with LSP support
-- 🔲 System themes and customization
-- 🔲 Plugin/extension system
-
-### Version 2.0 (Future)
-- 🔲 Multi-user support
-- 🔲 Cloud storage integration
-- 🔲 WebRTC-based networking
-- 🔲 WebAssembly-based system services
-- 🔲 Virtual machine support (run Linux via v86)
-- 🔲 Mobile-optimized interface
-
-### Long-term Vision
-- Full desktop OS replacement for basic tasks
-- Developer tools and IDE
-- Multimedia applications
-- Gaming support
-- Enterprise features
-
----
-
-## 📊 Performance Metrics
-
-### Target Metrics
-- **Boot Time**: < 3 seconds
-- **File Operations**: < 100ms
-- **Window Creation**: < 50ms
-- **Memory Usage**: < 100MB base
-- **Storage**: Up to 60% of available disk space
-- **Lighthouse PWA Score**: 100/100
-
-### Benchmarks
-Run benchmarks:
-```bash
-npm run benchmark
+  async deactivate() {
+    // Cleanup
+  }
+}
 ```
 
----
-
-## 🌟 Star History
-
-If you find this project useful, please consider giving it a ⭐!
+[Plugin development guide →](PLUGIN_DEVELOPMENT.md)
 
 ---
 
-## 📝 Changelog
+## 🤖 AI Integration
 
-### v1.0.0 (Current)
-- Initial release
-- Complete documentation suite
-- Core OS functionality
-- Basic applications
-- GitHub Pages deployment ready
+WebOS includes built-in AI capabilities:
 
-For detailed changes, see [CHANGELOG.md](../CHANGELOG.md)
+- **AI Terminal Assistant**: Natural language command suggestions
+- **Smart Code Assistant**: Code completion and explanation
+- **File Search**: Semantic file search
+- **AI Chat**: Conversational interface
 
----
-
-**Built with ❤️ for the web platform**
-
-*Making operating systems accessible, portable, and privacy-focused.*
+Powered by WebLLM with local model inference (no server required).
 
 ---
 
-## Quick Links
+## 🔒 Security
 
-- 🏠 [Home](https://username.github.io/web-os/)
-- 📚 [Full Documentation](./README.md)
-- 🏗️ [Architecture](./WEB_OS_ARCHITECTURE.md)
-- 🛣️ [Roadmap](./IMPLEMENTATION_ROADMAP.md)
-- 📖 [API Docs](./API_REFERENCE.md)
-- 🚀 [Deploy Guide](./GITHUB_PAGES_DEPLOYMENT.md)
-- 💬 [Discussions](https://github.com/username/web-os/discussions)
-- 🐛 [Issues](https://github.com/username/web-os/issues)
+### Authentication
+- Password-based authentication with SHA-256 hashing
+- User session management
+- Fast user switching
+
+### Encryption
+- File encryption: AES-256-GCM with PBKDF2
+- Secure file deletion with overwriting
+- Cryptographic hashing: MD5, SHA-256, SHA-512
+
+### Sandboxing
+- Plugin sandbox execution
+- Permission-based access control
+- Content Security Policy enforcement
 
 ---
 
-**Happy Coding! 🚀**
+## 📱 Mobile Support
+
+WebOS is fully optimized for mobile:
+- **Touch UI**: 44px touch targets, swipe gestures
+- **Virtual Keyboard**: For terminal input
+- **Gestures**: Swipe, pinch, pan, tap, long-press
+- **Responsive**: All apps adapt to screen size
+- **Orientation**: Portrait and landscape support
+- **PWA**: Install as a native app
+
+---
+
+## 🌐 Browser Compatibility
+
+**Minimum Requirements:**
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+
+**Required APIs:**
+- ES2020+ JavaScript
+- Web Components
+- IndexedDB
+- File System Access API (OPFS)
+- WebAssembly
+- Web Workers
+
+---
+
+## 📄 License
+
+MIT License - See LICENSE file for details
+
+---
+
+## 🔗 Links
+
+- **Repository**: https://github.com/Sir-Teo/web-operating-system
+- **Issues**: https://github.com/Sir-Teo/web-operating-system/issues
+- **Roadmap**: See ROADMAP.md in root directory
+- **Changelog**: See git commit history
+
+---
+
+**WebOS v3.5.0** - Building the future of browser-based operating systems 🚀
