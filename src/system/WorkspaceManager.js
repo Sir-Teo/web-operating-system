@@ -269,10 +269,13 @@ export class WorkspaceManager {
         nextWorkspaceId: this.nextWorkspaceId
       };
 
-      await this.kernel.fs.writeFile(
-        '/home/.config/workspaces.json',
-        JSON.stringify(state, null, 2)
-      );
+      const fs = this.kernel.getFileSystem();
+      if (fs) {
+        await fs.writeFile(
+          '/home/.config/workspaces.json',
+          JSON.stringify(state, null, 2)
+        );
+      }
     } catch (error) {
       console.warn('Failed to save workspaces:', error);
     }
@@ -283,12 +286,15 @@ export class WorkspaceManager {
    */
   async _loadWorkspaces() {
     try {
-      const data = await this.kernel.fs.readFile('/home/.config/workspaces.json');
-      const state = JSON.parse(data);
+      const fs = this.kernel.getFileSystem();
+      if (fs) {
+        const data = await fs.readFile('/home/.config/workspaces.json');
+        const state = JSON.parse(data);
 
-      this.workspaces = state.workspaces || [];
-      this.currentWorkspaceId = state.currentWorkspaceId || 1;
-      this.nextWorkspaceId = state.nextWorkspaceId || 1;
+        this.workspaces = state.workspaces || [];
+        this.currentWorkspaceId = state.currentWorkspaceId || 1;
+        this.nextWorkspaceId = state.nextWorkspaceId || 1;
+      }
     } catch (error) {
       // No saved state - use defaults
     }

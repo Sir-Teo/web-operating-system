@@ -8,6 +8,7 @@ import { CompressionManager } from '../../filesystem/CompressionManager.js';
 import { FileEncryption } from '../../filesystem/FileEncryption.js';
 import NetworkStack from '../../network/NetworkStack.js';
 import { CloudStorageManager } from '../../cloud/CloudStorageManager.js';
+import CollaborationCommands from '../../collaboration/CollaborationCommands.js';
 
 export default class Terminal {
   constructor(context) {
@@ -48,6 +49,9 @@ export default class Terminal {
 
     // Initialize cloud storage manager
     this.cloudManager = context.kernel.cloudManager;
+
+    // Initialize collaboration commands
+    this.collaborationCommands = new CollaborationCommands(this);
   }
 
   async init() {
@@ -507,7 +511,13 @@ export default class Terminal {
       cloud: this.cmd_cloud.bind(this),
       mount: this.cmd_mount.bind(this),
       umount: this.cmd_umount.bind(this),
-      sync: this.cmd_sync.bind(this)
+      sync: this.cmd_sync.bind(this),
+      // Phase 17: Collaboration
+      collab: this.collaborationCommands.collab.bind(this.collaborationCommands),
+      session: this.collaborationCommands.session.bind(this.collaborationCommands),
+      presence: this.collaborationCommands.presence.bind(this.collaborationCommands),
+      chat: this.collaborationCommands.chat.bind(this.collaborationCommands),
+      share: this.collaborationCommands.share.bind(this.collaborationCommands)
     };
 
     if (builtins[command]) {
