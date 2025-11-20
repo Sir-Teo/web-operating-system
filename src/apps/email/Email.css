@@ -1,0 +1,277 @@
+.email-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.email-layout {
+  display: grid;
+  grid-template-columns: 200px 300px 1fr;
+  height: 100%;
+  gap: 0;
+}
+
+.email-sidebar {
+  background: #2c3e50;
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.compose-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.compose-btn:hover {
+  background: #2980b9;
+}
+
+.folder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.folder-item {
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.folder-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.folder-item.active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.folder-item .count {
+  background: #e74c3c;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.email-list {
+  background: white;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+}
+
+.email-list-header {
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.email-list-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.email-items {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.email-item {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.email-item:hover {
+  background: #f8f9fa;
+}
+
+.email-item.selected {
+  background: #e3f2fd;
+}
+
+.email-item.unread {
+  background: #f0f8ff;
+  font-weight: bold;
+}
+
+.email-from {
+  font-size: 14px;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.email-subject {
+  font-size: 13px;
+  color: #34495e;
+  margin-bottom: 5px;
+}
+
+.email-preview {
+  font-size: 12px;
+  color: #7f8c8d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.email-date {
+  font-size: 11px;
+  color: #95a5a6;
+  margin-top: 5px;
+}
+
+.email-content {
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.email-header {
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.email-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.action-btn {
+  background: #ecf0f1;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.action-btn:hover {
+  background: #bdc3c7;
+}
+
+.email-header h2 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 20px;
+}
+
+.email-meta {
+  font-size: 13px;
+  color: #7f8c8d;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.email-body {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  line-height: 1.6;
+  color: #2c3e50;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #95a5a6;
+  font-size: 14px;
+}
+
+.compose-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.compose-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 600px;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.compose-content h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.compose-to,
+.compose-subject {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.compose-body {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  min-height: 200px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.compose-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.send-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.send-btn:hover {
+  background: #2980b9;
+}
+
+.cancel-btn {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancel-btn:hover {
+  background: #7f8c8d;
+}

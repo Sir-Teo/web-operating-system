@@ -39,6 +39,13 @@ import CodeRunner from './apps/code-runner/CodeRunner.js';
 import ScreenshotApp from './apps/screenshot/Screenshot.js';
 import CollaborationHub from './apps/collaboration-hub/CollaborationHub.js';
 import SecurityCenter from './apps/security-center/SecurityCenter.js';
+import Email from './apps/email/Email.js';
+import Notes from './apps/notes/Notes.js';
+import VideoPlayer from './apps/video-player/VideoPlayer.js';
+import Weather from './apps/weather/Weather.js';
+import Maps from './apps/maps/Maps.js';
+import Camera from './apps/camera/Camera.js';
+import Chat from './apps/chat/Chat.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -50,6 +57,13 @@ import './apps/spreadsheet/Spreadsheet.css';
 import './apps/presentation/Presentation.css';
 import './apps/collaboration-hub/CollaborationHub.css';
 import './apps/security-center/SecurityCenter.css';
+import './apps/email/Email.css';
+import './apps/notes/Notes.css';
+import './apps/video-player/VideoPlayer.css';
+import './apps/weather/Weather.css';
+import './apps/maps/Maps.css';
+import './apps/camera/Camera.css';
+import './apps/chat/Chat.css';
 
 class WebOS {
   constructor() {
@@ -457,6 +471,83 @@ class WebOS {
       type: 'web',
       permissions: ['system.screencapture'],
       Component: ScreenshotApp
+    });
+
+    // Register Email Client
+    AppRegistry.register({
+      id: 'email',
+      name: 'Email',
+      version: '1.0.0',
+      icon: '📧',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Email
+    });
+
+    // Register Notes
+    AppRegistry.register({
+      id: 'notes',
+      name: 'Notes',
+      version: '1.0.0',
+      icon: '📝',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Notes
+    });
+
+    // Register Video Player
+    AppRegistry.register({
+      id: 'video-player',
+      name: 'Video Player',
+      version: '1.0.0',
+      icon: '🎬',
+      type: 'web',
+      permissions: ['filesystem.read'],
+      Component: VideoPlayer
+    });
+
+    // Register Weather
+    AppRegistry.register({
+      id: 'weather',
+      name: 'Weather',
+      version: '1.0.0',
+      icon: '🌤️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Weather
+    });
+
+    // Register Maps
+    AppRegistry.register({
+      id: 'maps',
+      name: 'Maps',
+      version: '1.0.0',
+      icon: '🗺️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Maps
+    });
+
+    // Register Camera
+    AppRegistry.register({
+      id: 'camera',
+      name: 'Camera',
+      version: '1.0.0',
+      icon: '📷',
+      type: 'web',
+      permissions: ['system.screencapture', 'filesystem.read', 'filesystem.write'],
+      Component: Camera
+    });
+
+    // Register Chat
+    AppRegistry.register({
+      id: 'chat',
+      name: 'Chat',
+      version: '1.0.0',
+      icon: '💬',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Chat
     });
   }
 
