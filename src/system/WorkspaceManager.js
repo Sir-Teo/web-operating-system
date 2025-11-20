@@ -269,7 +269,7 @@ export class WorkspaceManager {
         nextWorkspaceId: this.nextWorkspaceId
       };
 
-      const fs = this.kernel.getFileSystem();
+      const fs = this.kernel.vfs;
       if (fs) {
         await fs.writeFile(
           '/home/.config/workspaces.json',
@@ -286,7 +286,7 @@ export class WorkspaceManager {
    */
   async _loadWorkspaces() {
     try {
-      const fs = this.kernel.getFileSystem();
+      const fs = this.kernel.vfs;
       if (fs) {
         const data = await fs.readFile('/home/.config/workspaces.json');
         const state = JSON.parse(data);
