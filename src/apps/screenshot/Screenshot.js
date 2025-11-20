@@ -3,9 +3,9 @@
  * Provides UI for taking screenshots
  */
 export class ScreenshotApp {
-  constructor(kernel, container) {
-    this.kernel = kernel;
-    this.container = container;
+  constructor(context) {
+    this.context = context;
+    this.container = null;
     this.screenCapture = null;
   }
 
@@ -13,13 +13,14 @@ export class ScreenshotApp {
     // Get screen capture instance
     const { getScreenCapture } = await import('../../system/ScreenCapture.js');
     this.screenCapture = getScreenCapture();
-
-    this._render();
   }
 
-  _render() {
+  render() {
+    this.container = document.createElement('div');
+    this.container.className = 'screenshot-app';
+
     this.container.innerHTML = `
-      <div class="screenshot-app">
+      <div class="screenshot-content">
         <div class="app-header">
           <h2>📸 Screenshot Tool</h2>
           <p class="app-description">Capture screenshots and record your screen</p>
@@ -89,6 +90,8 @@ export class ScreenshotApp {
     `;
 
     this._setupEventListeners();
+
+    return this.container;
   }
 
   _setupEventListeners() {
@@ -138,7 +141,7 @@ export class ScreenshotApp {
 
     try {
       // List screenshots from Pictures directory
-      const files = await this.kernel.fs.readdir('/home/Pictures');
+      const files = await this.context.fs.readdir('/home/Pictures');
       const screenshots = files
         .filter(f => f.name.startsWith('screenshot-'))
         .slice(0, 5);

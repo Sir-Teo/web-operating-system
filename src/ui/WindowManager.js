@@ -67,6 +67,16 @@ class WindowManager extends EventTarget {
     return this.windows.get(windowId);
   }
 
+  getAllWindows() {
+    return Array.from(this.windows.entries()).map(([id, data]) => ({
+      id,
+      element: data.winbox?.dom,
+      winbox: data.winbox,
+      process: data.process,
+      config: data.config
+    }));
+  }
+
   closeWindow(windowId) {
     const window = this.windows.get(windowId);
     if (window) {
