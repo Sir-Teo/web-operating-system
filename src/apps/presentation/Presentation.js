@@ -562,10 +562,13 @@ export default class Presentation {
     // Keyboard navigation
     const handleKeyPress = (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault(); // Prevent default space bar scrolling
         if (currentIndex < this.slides.length - 1) showSlide(currentIndex + 1);
       } else if (e.key === 'ArrowLeft') {
+        e.preventDefault(); // Prevent default arrow key scrolling
         if (currentIndex > 0) showSlide(currentIndex - 1);
       } else if (e.key === 'Escape') {
+        e.preventDefault();
         document.body.removeChild(overlay);
         document.removeEventListener('keydown', handleKeyPress);
       }

@@ -26,6 +26,12 @@ import Tetris from './apps/tetris/Tetris.js';
 import Minesweeper from './apps/minesweeper/Minesweeper.js';
 import AirplaneShooter from './apps/airplane-shooter/AirplaneShooter.js';
 import Racing from './apps/racing/Racing.js';
+import Calculator from './apps/calculator/Calculator.js';
+import ImageViewer from './apps/image-viewer/ImageViewer.js';
+import MusicPlayer from './apps/music-player/MusicPlayer.js';
+import Calendar from './apps/calendar/Calendar.js';
+import TaskManager from './apps/task-manager/TaskManager.js';
+import CodeRunner from './apps/code-runner/CodeRunner.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -299,6 +305,72 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: Racing
+    });
+
+    // Register Calculator
+    AppRegistry.register({
+      id: 'calculator',
+      name: 'Calculator',
+      version: '1.0.0',
+      icon: '🔢',
+      type: 'web',
+      permissions: [],
+      Component: Calculator
+    });
+
+    // Register Image Viewer
+    AppRegistry.register({
+      id: 'image-viewer',
+      name: 'Image Viewer',
+      version: '1.0.0',
+      icon: '🖼️',
+      type: 'web',
+      permissions: ['filesystem.read'],
+      Component: ImageViewer
+    });
+
+    // Register Music Player
+    AppRegistry.register({
+      id: 'music-player',
+      name: 'Music Player',
+      version: '1.0.0',
+      icon: '🎵',
+      type: 'web',
+      permissions: ['filesystem.read'],
+      Component: MusicPlayer
+    });
+
+    // Register Calendar
+    AppRegistry.register({
+      id: 'calendar',
+      name: 'Calendar',
+      version: '1.0.0',
+      icon: '📅',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: Calendar
+    });
+
+    // Register Task Manager
+    AppRegistry.register({
+      id: 'task-manager',
+      name: 'Task Manager',
+      version: '1.0.0',
+      icon: '✅',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: TaskManager
+    });
+
+    // Register Code Runner
+    AppRegistry.register({
+      id: 'code-runner',
+      name: 'Code Runner',
+      version: '1.0.0',
+      icon: '▶️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: CodeRunner
     });
   }
 
