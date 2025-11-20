@@ -1,7 +1,7 @@
 {
   "name": "web-operating-system",
-  "version": "3.6.0",
-  "description": "A production-grade web-based operating system with real-time collaboration, AI capabilities, multi-user support, developer tools, and advanced productivity features that runs entirely in your browser",
+  "version": "3.7.0",
+  "description": "A production-grade web-based operating system with enterprise security, real-time collaboration, AI capabilities, multi-user support, developer tools, and advanced productivity features that runs entirely in your browser",
   "type": "module",
   "scripts": {
     "dev": "vite",

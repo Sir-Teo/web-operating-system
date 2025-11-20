@@ -38,6 +38,7 @@ import TaskManager from './apps/task-manager/TaskManager.js';
 import CodeRunner from './apps/code-runner/CodeRunner.js';
 import ScreenshotApp from './apps/screenshot/Screenshot.js';
 import CollaborationHub from './apps/collaboration-hub/CollaborationHub.js';
+import SecurityCenter from './apps/security-center/SecurityCenter.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -48,6 +49,7 @@ import './apps/word-processor/WordProcessor.css';
 import './apps/spreadsheet/Spreadsheet.css';
 import './apps/presentation/Presentation.css';
 import './apps/collaboration-hub/CollaborationHub.css';
+import './apps/security-center/SecurityCenter.css';
 
 class WebOS {
   constructor() {
@@ -262,6 +264,17 @@ class WebOS {
       type: 'web',
       permissions: ['network.http', 'network.webrtc', 'filesystem.read', 'filesystem.write'],
       Component: CollaborationHub
+    });
+
+    // Register Security Center
+    AppRegistry.register({
+      id: 'security-center',
+      name: 'Security Center',
+      version: '1.0.0',
+      icon: '🔒',
+      type: 'web',
+      permissions: ['system.security', 'filesystem.read', 'filesystem.write'],
+      Component: SecurityCenter
     });
 
     // Register Paint
