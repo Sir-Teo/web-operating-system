@@ -54,7 +54,6 @@ class WebOS {
     this.startMenu = null;
     this.windowSnapping = null;
     this.loginScreen = null;
-    this.autoStarted = false;
   }
 
   async boot() {
@@ -524,30 +523,6 @@ class WebOS {
         taskbar.style.transition = 'opacity 0.5s';
         taskbar.style.opacity = '1';
       }, 100);
-    }
-
-    this.autoStartApps();
-  }
-
-  async autoStartApps() {
-    if (this.autoStarted) {
-      return;
-    }
-
-    this.autoStarted = true;
-
-    const startupApps = [
-      { id: 'paint', windowConfig: { x: 60, y: 60, width: 1080, height: 760 } },
-      { id: 'airplane-shooter', windowConfig: { x: 200, y: 120 } },
-      { id: 'racing', windowConfig: { x: 260, y: 180 } }
-    ];
-
-    for (const app of startupApps) {
-      try {
-        await AppRegistry.launchApp(app.id, { windowConfig: app.windowConfig });
-      } catch (error) {
-        console.warn(`Failed to auto-start ${app.id}:`, error);
-      }
     }
   }
 
