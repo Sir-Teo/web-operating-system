@@ -1,4 +1,4 @@
-import { EventBus } from '../utils/EventBus.js';
+import { eventBus } from '../utils/EventBus.js';
 import { ProcessError, ProcessNotFoundError, ProcessSpawnError, ProcessTerminatedError } from './Errors.js';
 import { createLogger } from './Logger.js';
 
@@ -205,7 +205,7 @@ class ProcessManager extends EventTarget {
         detail: { process }
       }));
 
-      EventBus.emit('process-created', { process });
+      eventBus.emit('process-created', { process });
 
       logger.info('Process spawned successfully', {
         pid: process.pid,
@@ -303,7 +303,7 @@ class ProcessManager extends EventTarget {
         detail: { pid, exitCode }
       }));
 
-      EventBus.emit('process-terminated', { pid, exitCode });
+      eventBus.emit('process-terminated', { pid, exitCode });
 
       logger.info('Process killed successfully', { pid });
     } catch (err) {
