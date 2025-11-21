@@ -433,7 +433,10 @@ export default class Terminal {
       return await this._executePipelineOrRedirect(commandLine);
     }
 
-    const [command, ...args] = commandLine.trim().split(/\s+/);
+    let [command, ...args] = commandLine.trim().split(/\s+/);
+
+    // Expand globs in arguments
+    args = await this._expandGlobs(args);
 
     const builtins = {
       cd: this.cmd_cd.bind(this),
@@ -463,6 +466,12 @@ export default class Terminal {
       head: this.cmd_head.bind(this),
       tail: this.cmd_tail.bind(this),
       cut: this.cmd_cut.bind(this),
+      tr: this.cmd_tr.bind(this),
+      tee: this.cmd_tee.bind(this),
+      sed: this.cmd_sed.bind(this),
+      awk: this.cmd_awk.bind(this),
+      rev: this.cmd_rev.bind(this),
+      nl: this.cmd_nl.bind(this),
       // New shell scripting and job control commands
       script: this.cmd_script.bind(this),
       theme: this.cmd_theme.bind(this),
@@ -533,25 +542,100 @@ export default class Terminal {
 
   async _executePipelineOrRedirect(commandLine) {
     try {
-      // Handle output redirection (> and >>)
-      if (commandLine.includes('>')) {
-        const append = commandLine.includes('>>');
-        const parts = commandLine.split(append ? '>>' : '>').map(s => s.trim());
-        if (parts.length !== 2) {
-          return '❌ Syntax error: invalid redirection';
+      // Handle command chaining first (&&, ||, ;)
+      if (commandLine.includes('&&') || commandLine.includes('||') || commandLine.match(/;\s*\S/)) {
+        return await this._executeChainedCommands(commandLine);
+      }
+
+      // Handle combined input/output redirection and pipes
+      let command = commandLine;
+      let inputFile = null;
+      let outputFile = null;
+      let appendOutput = false;
+
+      // Extract input redirection (<)
+      if (command.includes('<')) {
+        const inputMatch = command.match(/\s*<\s*([^\s|>]+)/);
+        if (inputMatch) {
+          inputFile = inputMatch[1].trim();
+          command = command.replace(inputMatch[0], '');
         }
+      }
 
-        const [command, filename] = parts;
-        const output = await this.executeCommand(command);
+      // Extract output redirection (> or >>)
+      if (command.includes('>>')) {
+        const outputMatch = command.match(/\s*>>\s*([^\s|<]+)/);
+        if (outputMatch) {
+          outputFile = outputMatch[1].trim();
+          appendOutput = true;
+          command = command.replace(outputMatch[0], '');
+        }
+      } else if (command.includes('>')) {
+        const outputMatch = command.match(/\s*>\s*([^\s|<]+)/);
+        if (outputMatch) {
+          outputFile = outputMatch[1].trim();
+          command = command.replace(outputMatch[0], '');
+        }
+      }
 
+      // Read input file if specified
+      let input = '';
+      if (inputFile) {
+        try {
+          const filePath = this._resolvePath(inputFile);
+          input = await this.context.fs.readFile(filePath, { encoding: 'utf8' });
+        } catch (error) {
+          return `❌ Input redirection error: ${error.message}`;
+        }
+      }
+
+      // Handle pipes
+      let output;
+      if (command.includes('|')) {
+        const commands = command.split('|').map(s => s.trim());
+
+        for (let i = 0; i < commands.length; i++) {
+          const cmdParts = commands[i].trim().split(/\s+/);
+          const cmd = cmdParts[0];
+          const args = cmdParts.slice(1);
+
+          // For first command, use input from file or execute normally
+          if (i === 0) {
+            if (inputFile) {
+              output = await this._executeWithInput(cmd, args, input);
+            } else {
+              output = await this.executeCommand(commands[i]);
+            }
+          } else {
+            // Pass previous output as input to next command
+            output = await this._executeWithInput(cmd, args, output);
+          }
+
+          if (output.startsWith('❌')) {
+            return output; // Stop on error
+          }
+        }
+      } else {
+        // Single command with possible input redirection
+        if (inputFile) {
+          const cmdParts = command.trim().split(/\s+/);
+          const cmd = cmdParts[0];
+          const args = cmdParts.slice(1);
+          output = await this._executeWithInput(cmd, args, input);
+        } else {
+          output = await this.executeCommand(command);
+        }
+      }
+
+      // Handle output redirection if specified
+      if (outputFile) {
         if (output.startsWith('❌')) {
           return output;
         }
 
         try {
-          const filePath = this._resolvePath(filename);
-          if (append) {
-            // Read existing content and append
+          const filePath = this._resolvePath(outputFile);
+          if (appendOutput) {
             let existing = '';
             try {
               existing = await this.context.fs.readFile(filePath, { encoding: 'utf8' });
@@ -562,54 +646,177 @@ export default class Terminal {
           } else {
             await this.context.fs.writeFile(filePath, output + '\n');
           }
-          return `✅ Output redirected to: ${filename}`;
+          return `✅ Output redirected to: ${outputFile}`;
         } catch (error) {
           return `❌ Redirection error: ${error.message}`;
         }
       }
 
-      // Handle pipes
-      if (commandLine.includes('|')) {
-        const commands = commandLine.split('|').map(s => s.trim());
-        let input = '';
-
-        for (let i = 0; i < commands.length; i++) {
-          const cmdParts = commands[i].trim().split(/\s+/);
-          const cmd = cmdParts[0];
-          const args = cmdParts.slice(1);
-
-          // For first command, execute normally
-          if (i === 0) {
-            input = await this.executeCommand(commands[i]);
-          } else {
-            // Pass previous output as input to next command
-            input = await this._executeWithInput(cmd, args, input);
-          }
-
-          if (input.startsWith('❌')) {
-            return input; // Stop on error
-          }
-        }
-
-        return input;
-      }
-
-      return '❌ Invalid pipeline syntax';
+      return output;
     } catch (error) {
       return `❌ Pipeline error: ${error.message}`;
     }
   }
 
+  async _expandGlobs(args) {
+    // Expand glob patterns in arguments
+    const expanded = [];
+
+    for (const arg of args) {
+      // Check if arg contains glob characters
+      if (arg.includes('*') || arg.includes('?') || arg.match(/\[.+\]/)) {
+        try {
+          const matches = await this._matchGlob(arg);
+          if (matches.length > 0) {
+            expanded.push(...matches);
+          } else {
+            // No matches, keep original
+            expanded.push(arg);
+          }
+        } catch (e) {
+          // Error in globbing, keep original
+          expanded.push(arg);
+        }
+      } else {
+        expanded.push(arg);
+      }
+    }
+
+    return expanded;
+  }
+
+  async _matchGlob(pattern) {
+    // Convert glob pattern to regex
+    const regexPattern = pattern
+      .replace(/\./g, '\\.')
+      .replace(/\*/g, '.*')
+      .replace(/\?/g, '.')
+      .replace(/\[([^\]]+)\]/g, '[$1]');
+
+    const regex = new RegExp('^' + regexPattern + '$');
+
+    // Get directory and pattern
+    const lastSlash = pattern.lastIndexOf('/');
+    let dir = this.currentDir;
+    let filePattern = pattern;
+
+    if (lastSlash !== -1) {
+      dir = this._resolvePath(pattern.substring(0, lastSlash));
+      filePattern = pattern.substring(lastSlash + 1);
+      const fileRegex = new RegExp('^' + filePattern
+        .replace(/\./g, '\\.')
+        .replace(/\*/g, '.*')
+        .replace(/\?/g, '.')
+        .replace(/\[([^\]]+)\]/g, '[$1]') + '$');
+
+      try {
+        const entries = await this.context.fs.readdir(dir);
+        const matches = entries.filter(entry => fileRegex.test(entry));
+        return matches.map(m => pattern.substring(0, lastSlash + 1) + m);
+      } catch (e) {
+        return [];
+      }
+    }
+
+    // Match in current directory
+    try {
+      const entries = await this.context.fs.readdir(dir);
+      return entries.filter(entry => regex.test(entry));
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async _executeChainedCommands(commandLine) {
+    // Split by operators while preserving them
+    const tokens = [];
+    let current = '';
+    let i = 0;
+
+    while (i < commandLine.length) {
+      if (commandLine[i] === '&' && commandLine[i + 1] === '&') {
+        if (current.trim()) tokens.push(current.trim());
+        tokens.push('&&');
+        current = '';
+        i += 2;
+      } else if (commandLine[i] === '|' && commandLine[i + 1] === '|') {
+        if (current.trim()) tokens.push(current.trim());
+        tokens.push('||');
+        current = '';
+        i += 2;
+      } else if (commandLine[i] === ';') {
+        if (current.trim()) tokens.push(current.trim());
+        tokens.push(';');
+        current = '';
+        i++;
+      } else {
+        current += commandLine[i];
+        i++;
+      }
+    }
+    if (current.trim()) tokens.push(current.trim());
+
+    let result = '';
+    let lastExitCode = 0;
+
+    for (let i = 0; i < tokens.length; i += 2) {
+      const cmd = tokens[i];
+      const operator = tokens[i + 1];
+
+      // Execute based on previous command's exit code
+      if (i === 0 || operator === undefined) {
+        // First command or last command, always execute
+        result = await this.executeCommand(cmd);
+        lastExitCode = result.startsWith('❌') ? 1 : 0;
+      } else {
+        const prevOperator = tokens[i - 1];
+
+        if (prevOperator === '&&') {
+          // Execute only if previous succeeded
+          if (lastExitCode === 0) {
+            result = await this.executeCommand(cmd);
+            lastExitCode = result.startsWith('❌') ? 1 : 0;
+          } else {
+            // Skip execution
+            continue;
+          }
+        } else if (prevOperator === '||') {
+          // Execute only if previous failed
+          if (lastExitCode !== 0) {
+            result = await this.executeCommand(cmd);
+            lastExitCode = result.startsWith('❌') ? 1 : 0;
+          } else {
+            // Skip execution
+            continue;
+          }
+        } else if (prevOperator === ';') {
+          // Always execute
+          result = await this.executeCommand(cmd);
+          lastExitCode = result.startsWith('❌') ? 1 : 0;
+        }
+      }
+    }
+
+    return result;
+  }
+
   async _executeWithInput(command, args, input) {
     // Commands that can process piped input
     const pipeableCommands = {
+      cat: () => this.cmd_cat(args, input),
       grep: () => this.cmd_grep(args, input),
       wc: () => this.cmd_wc(args, input),
       sort: () => this.cmd_sort(args, input),
       uniq: () => this.cmd_uniq(args, input),
       head: () => this.cmd_head(args, input),
       tail: () => this.cmd_tail(args, input),
-      cut: () => this.cmd_cut(args, input)
+      cut: () => this.cmd_cut(args, input),
+      tr: () => this.cmd_tr(args, input),
+      tee: () => this.cmd_tee(args, input),
+      sed: () => this.cmd_sed(args, input),
+      awk: () => this.cmd_awk(args, input),
+      rev: () => this.cmd_rev(args, input),
+      nl: () => this.cmd_nl(args, input)
     };
 
     if (pipeableCommands[command]) {
@@ -760,7 +967,12 @@ export default class Terminal {
     return `📍 ${this.currentDir}`;
   }
 
-  async cmd_cat(args) {
+  async cmd_cat(args, pipedInput = null) {
+    // If piped input, just return it
+    if (pipedInput !== null) {
+      return pipedInput;
+    }
+
     if (args.length === 0) {
       return '❌ cat: missing file operand\n💡 Usage: cat <filename>';
     }
@@ -1364,6 +1576,206 @@ export default class Terminal {
     }
 
     return result.join('\n');
+  }
+
+  async cmd_tr(args, pipedInput = null) {
+    // tr 'set1' 'set2' - translate characters
+    if (args.length < 2) {
+      return '❌ tr: requires two arguments\n💡 Usage: echo "text" | tr "abc" "xyz"';
+    }
+
+    if (pipedInput === null) {
+      return '❌ tr: no input provided\n💡 Usage: command | tr "set1" "set2"';
+    }
+
+    const set1 = args[0];
+    const set2 = args[1];
+    let result = pipedInput;
+
+    // Handle special character classes
+    const handleSet = (set) => {
+      if (set === '[:lower:]') return 'abcdefghijklmnopqrstuvwxyz';
+      if (set === '[:upper:]') return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (set === '[:digit:]') return '0123456789';
+      if (set === '[:space:]') return ' \t\n\r';
+      return set;
+    };
+
+    const from = handleSet(set1);
+    const to = handleSet(set2);
+
+    // Translate characters
+    for (let i = 0; i < from.length; i++) {
+      const replacement = i < to.length ? to[i] : to[to.length - 1];
+      result = result.split(from[i]).join(replacement);
+    }
+
+    return result;
+  }
+
+  async cmd_tee(args, pipedInput = null) {
+    // tee [-a] <file> - read from stdin and write to stdout and files
+    if (pipedInput === null) {
+      return '❌ tee: no input provided\n💡 Usage: command | tee file.txt';
+    }
+
+    const append = args.includes('-a');
+    const files = args.filter(arg => arg !== '-a');
+
+    if (files.length === 0) {
+      return '❌ tee: missing file operand\n💡 Usage: command | tee [-a] file.txt';
+    }
+
+    // Write to each file
+    for (const file of files) {
+      try {
+        const filePath = this._resolvePath(file);
+        if (append) {
+          let existing = '';
+          try {
+            existing = await this.context.fs.readFile(filePath, { encoding: 'utf8' });
+          } catch (e) {
+            // File doesn't exist, that's ok
+          }
+          await this.context.fs.writeFile(filePath, existing + pipedInput + '\n');
+        } else {
+          await this.context.fs.writeFile(filePath, pipedInput + '\n');
+        }
+      } catch (error) {
+        return `❌ tee: ${error.message}`;
+      }
+    }
+
+    // Also return the input (to stdout)
+    return pipedInput;
+  }
+
+  async cmd_sed(args, pipedInput = null) {
+    // Simplified sed implementation: sed 's/pattern/replacement/[g]'
+    if (args.length === 0) {
+      return '❌ sed: missing script\n💡 Usage: command | sed "s/pattern/replacement/g"';
+    }
+
+    if (pipedInput === null) {
+      return '❌ sed: no input provided\n💡 Usage: command | sed "s/pattern/replacement/g"';
+    }
+
+    const script = args[0];
+
+    // Parse s/pattern/replacement/flags
+    const match = script.match(/^s\/(.+?)\/(.+?)\/(g?)$/);
+    if (!match) {
+      return '❌ sed: invalid script syntax\n💡 Use: s/pattern/replacement/[g]';
+    }
+
+    const [, pattern, replacement, flags] = match;
+    const global = flags.includes('g');
+
+    try {
+      const regex = new RegExp(pattern, global ? 'g' : '');
+      return pipedInput.split('\n')
+        .map(line => line.replace(regex, replacement))
+        .join('\n');
+    } catch (error) {
+      return `❌ sed: invalid regex: ${error.message}`;
+    }
+  }
+
+  async cmd_awk(args, pipedInput = null) {
+    // Simplified awk: awk '{print $N}' or awk '/pattern/ {print $N}'
+    if (args.length === 0) {
+      return '❌ awk: missing program\n💡 Usage: command | awk \'{print $1}\'';
+    }
+
+    if (pipedInput === null) {
+      return '❌ awk: no input provided\n💡 Usage: command | awk \'{print $1}\'';
+    }
+
+    const program = args.join(' ');
+    const lines = pipedInput.split('\n');
+    const result = [];
+
+    // Parse the program: /pattern/ {action} or {action}
+    const patternMatch = program.match(/\/(.+?)\//);
+    const actionMatch = program.match(/\{(.+?)\}/);
+
+    if (!actionMatch) {
+      return '❌ awk: invalid program syntax\n💡 Use: {print $N} or /pattern/ {print $N}';
+    }
+
+    const action = actionMatch[1].trim();
+    const pattern = patternMatch ? new RegExp(patternMatch[1]) : null;
+
+    for (const line of lines) {
+      // Check pattern if specified
+      if (pattern && !pattern.test(line)) {
+        continue;
+      }
+
+      // Process action
+      const fields = line.split(/\s+/);
+
+      if (action.startsWith('print ')) {
+        const printArgs = action.substring(6).trim();
+
+        // Handle $N field references
+        let output = printArgs.replace(/\$(\d+)/g, (_, n) => {
+          const fieldNum = parseInt(n);
+          if (fieldNum === 0) return line;
+          return fields[fieldNum - 1] || '';
+        });
+
+        // Handle $0 (entire line)
+        output = output.replace(/\$0/g, line);
+
+        result.push(output);
+      }
+    }
+
+    return result.join('\n');
+  }
+
+  async cmd_rev(args, pipedInput = null) {
+    // rev - reverse lines characterwise
+    let content;
+
+    if (pipedInput !== null) {
+      content = pipedInput;
+    } else if (args.length > 0) {
+      const filePath = this._resolvePath(args[0]);
+      try {
+        content = await this.context.fs.readFile(filePath, { encoding: 'utf8' });
+      } catch (error) {
+        return `❌ rev: ${error.message}`;
+      }
+    } else {
+      return '❌ rev: no input provided\n💡 Usage: command | rev or rev <file>';
+    }
+
+    return content.split('\n')
+      .map(line => line.split('').reverse().join(''))
+      .join('\n');
+  }
+
+  async cmd_nl(args, pipedInput = null) {
+    // nl - number lines
+    let content;
+
+    if (pipedInput !== null) {
+      content = pipedInput;
+    } else if (args.length > 0) {
+      const filePath = this._resolvePath(args[0]);
+      try {
+        content = await this.context.fs.readFile(filePath, { encoding: 'utf8' });
+      } catch (error) {
+        return `❌ nl: ${error.message}`;
+      }
+    } else {
+      return '❌ nl: no input provided\n💡 Usage: command | nl or nl <file>';
+    }
+
+    const lines = content.split('\n');
+    return lines.map((line, i) => `${String(i + 1).padStart(6)}  ${line}`).join('\n');
   }
 
   // ========== NEW COMMANDS ==========

@@ -163,7 +163,7 @@ export class ScriptExecutor {
   async evaluateCondition(condition) {
     switch (condition.type) {
       case 'UnaryCondition':
-        return this.evaluateUnaryCondition(condition);
+        return await this.evaluateUnaryCondition(condition);
 
       case 'BinaryCondition':
         return await this.evaluateBinaryCondition(condition);
@@ -182,7 +182,7 @@ export class ScriptExecutor {
   /**
    * Evaluate a unary condition (-f, -d, -z, -n, etc.)
    */
-  evaluateUnaryCondition(condition) {
+  async evaluateUnaryCondition(condition) {
     const op = condition.operator;
     const operand = this.expandVariables(condition.operand);
 
@@ -193,12 +193,50 @@ export class ScriptExecutor {
       case '-n': // String is not empty
         return operand.length > 0;
 
-      case '-f': // File exists (we'll check in VFS)
-        // For now, assume true if variable is set
-        return operand.length > 0;
+      case '-f': // File exists (check in VFS)
+        try {
+          const path = this.terminal._resolvePath(operand);
+          const stats = await this.terminal.context.fs.stat(path);
+          return stats.isFile();
+        } catch (e) {
+          return false;
+        }
 
-      case '-d': // Directory exists
-        return operand.length > 0;
+      case '-d': // Directory exists (check in VFS)
+        try {
+          const path = this.terminal._resolvePath(operand);
+          const stats = await this.terminal.context.fs.stat(path);
+          return stats.isDirectory();
+        } catch (e) {
+          return false;
+        }
+
+      case '-e': // Path exists (file or directory)
+        try {
+          const path = this.terminal._resolvePath(operand);
+          await this.terminal.context.fs.stat(path);
+          return true;
+        } catch (e) {
+          return false;
+        }
+
+      case '-r': // File is readable (assume true if exists)
+        try {
+          const path = this.terminal._resolvePath(operand);
+          await this.terminal.context.fs.stat(path);
+          return true;
+        } catch (e) {
+          return false;
+        }
+
+      case '-w': // File is writable (assume true if exists)
+        try {
+          const path = this.terminal._resolvePath(operand);
+          await this.terminal.context.fs.stat(path);
+          return true;
+        } catch (e) {
+          return false;
+        }
 
       default:
         return false;
