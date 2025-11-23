@@ -9,6 +9,7 @@ import { FileEncryption } from '../../filesystem/FileEncryption.js';
 import NetworkStack from '../../network/NetworkStack.js';
 import { CloudStorageManager } from '../../cloud/CloudStorageManager.js';
 import CollaborationCommands from '../../collaboration/CollaborationCommands.js';
+import LanguageCommands from './LanguageCommands.js';
 
 export default class Terminal {
   constructor(context) {
@@ -52,6 +53,9 @@ export default class Terminal {
 
     // Initialize collaboration commands
     this.collaborationCommands = new CollaborationCommands(this);
+
+    // Initialize language commands
+    this.languageCommands = new LanguageCommands(this);
   }
 
   async init() {
@@ -528,6 +532,9 @@ export default class Terminal {
       chat: this.collaborationCommands.chat.bind(this.collaborationCommands),
       share: this.collaborationCommands.share.bind(this.collaborationCommands)
     };
+
+    // Register language runtime commands
+    this.languageCommands.registerCommands(builtins);
 
     if (builtins[command]) {
       try {
