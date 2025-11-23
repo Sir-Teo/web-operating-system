@@ -53,6 +53,13 @@ import PdfViewer from './apps/pdf-viewer/PdfViewer.js';
 import Contacts from './apps/contacts/Contacts.js';
 import ColorPicker from './apps/color-picker/ColorPicker.js';
 import CharacterMap from './apps/character-map/CharacterMap.js';
+import AdvancedImageEditor from './apps/AdvancedImageEditor.js';
+import DataVisualization from './apps/DataVisualization.js';
+import GitClient from './apps/GitClient.js';
+import ScreenRecorder from './apps/ScreenRecorder.js';
+import DatabaseManager from './apps/DatabaseManager.js';
+import APITester from './apps/APITester.js';
+import MarkdownEditor from './apps/MarkdownEditor.js';
 import 'winbox/dist/css/winbox.min.css';
 import './apps/code-editor/CodeEditor.css';
 import './apps/browser/Browser.css';
@@ -632,6 +639,83 @@ class WebOS {
       type: 'web',
       permissions: [],
       Component: CharacterMap
+    });
+
+    // Register Advanced Image Editor
+    AppRegistry.register({
+      id: 'advanced-image-editor',
+      name: 'Advanced Image Editor',
+      version: '1.0.0',
+      icon: '🎨',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: AdvancedImageEditor
+    });
+
+    // Register Data Visualization
+    AppRegistry.register({
+      id: 'data-visualization',
+      name: 'Data Visualization',
+      version: '1.0.0',
+      icon: '📊',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: DataVisualization
+    });
+
+    // Register Git Client
+    AppRegistry.register({
+      id: 'git-client',
+      name: 'Git Client',
+      version: '1.0.0',
+      icon: '🌿',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: GitClient
+    });
+
+    // Register Screen Recorder
+    AppRegistry.register({
+      id: 'screen-recorder',
+      name: 'Screen Recorder',
+      version: '1.0.0',
+      icon: '🎥',
+      type: 'web',
+      permissions: ['system.screencapture', 'filesystem.read', 'filesystem.write'],
+      Component: ScreenRecorder
+    });
+
+    // Register Database Manager
+    AppRegistry.register({
+      id: 'database-manager',
+      name: 'Database Manager',
+      version: '1.0.0',
+      icon: '🗄️',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: DatabaseManager
+    });
+
+    // Register API Tester
+    AppRegistry.register({
+      id: 'api-tester',
+      name: 'API Tester',
+      version: '1.0.0',
+      icon: '🌐',
+      type: 'web',
+      permissions: ['network.http', 'filesystem.read', 'filesystem.write'],
+      Component: APITester
+    });
+
+    // Register Markdown Editor
+    AppRegistry.register({
+      id: 'markdown-editor',
+      name: 'Markdown Editor',
+      version: '1.0.0',
+      icon: '📝',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: MarkdownEditor
     });
   }
 
