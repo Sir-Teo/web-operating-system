@@ -14,6 +14,8 @@
  * - Advanced caching strategies
  */
 
+import DeterministicAIEngine from './DeterministicAIEngine.js';
+
 export class AIService {
   constructor() {
     this.initialized = false;
@@ -44,6 +46,9 @@ export class AIService {
     // Conversation summarization for long contexts
     this.conversationSummaries = [];
     this.summaryThreshold = 10; // Summarize after 10 messages
+
+    // Deterministic AI Engine for OS-aware intelligent responses
+    this.deterministicEngine = new DeterministicAIEngine();
   }
 
   /**
@@ -369,6 +374,22 @@ export class AIService {
    * @private
    */
   async _generateResponse(prompt, options = {}) {
+    // Use the deterministic AI engine for intelligent, OS-aware responses
+    try {
+      const result = await this.deterministicEngine.process(prompt, options);
+      return result.response;
+    } catch (error) {
+      console.error('[AIService] Deterministic engine error:', error);
+      // Fallback to legacy response generation
+      return this._generateLegacyResponse(prompt, options);
+    }
+  }
+
+  /**
+   * Legacy response generation (fallback)
+   * @private
+   */
+  async _generateLegacyResponse(prompt, options = {}) {
     // Simulate processing delay
     await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -888,6 +909,24 @@ export class AIService {
   }
 
   /**
+   * Update OS context for deterministic engine
+   * @param {Object} context - OS context (file system, processes, etc.)
+   */
+  updateOSContext(context) {
+    if (this.deterministicEngine) {
+      this.deterministicEngine.updateOSContext(context);
+    }
+  }
+
+  /**
+   * Get the deterministic engine instance for advanced operations
+   * @returns {DeterministicAIEngine} The engine instance
+   */
+  getEngine() {
+    return this.deterministicEngine;
+  }
+
+  /**
    * Dispose of the service and free resources
    */
   async dispose() {
@@ -898,6 +937,9 @@ export class AIService {
     this.conversationSummaries = [];
     this.model = null;
     this.initialized = false;
+    if (this.deterministicEngine) {
+      this.deterministicEngine.clearHistory();
+    }
     console.log('[AIService] Disposed');
   }
 }
