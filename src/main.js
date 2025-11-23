@@ -1,6 +1,7 @@
 import Kernel from './kernel/Kernel.js';
 import WindowManager from './ui/WindowManager.js';
 import { Desktop } from './ui/Desktop.js';
+import { initializeRuntimes } from './system/runtime/index.ts';
 import { Taskbar } from './ui/Taskbar.js';
 import { StartMenu } from './ui/StartMenu.js';
 import { WindowSnapping } from './ui/WindowSnapping.js';
@@ -36,6 +37,10 @@ import MusicPlayer from './apps/music-player/MusicPlayer.js';
 import Calendar from './apps/calendar/Calendar.js';
 import TaskManager from './apps/task-manager/TaskManager.js';
 import CodeRunner from './apps/code-runner/CodeRunner.js';
+import CodeRunnerEnhanced from './apps/code-runner/CodeRunnerEnhanced.js';
+import LanguageManager from './apps/language-manager/LanguageManager.tsx';
+import PolyglotPlayground from './apps/polyglot-playground/PolyglotPlayground.tsx';
+import InteractiveNotebook from './apps/interactive-notebook/InteractiveNotebook.tsx';
 import ScreenshotApp from './apps/screenshot/Screenshot.js';
 import CollaborationHub from './apps/collaboration-hub/CollaborationHub.js';
 import SecurityCenter from './apps/security-center/SecurityCenter.js';
@@ -103,6 +108,11 @@ class WebOS {
 
       // Register system applications
       this.registerApplications();
+
+      this.updateBootMessage('Initializing language runtimes...');
+
+      // Initialize multi-language runtime system
+      initializeRuntimes();
 
       this.updateBootMessage('Initializing user interface...');
 
@@ -474,6 +484,50 @@ class WebOS {
       type: 'web',
       permissions: ['filesystem.read', 'filesystem.write'],
       Component: CodeRunner
+    });
+
+    // Register Enhanced Code Runner (Multi-Language)
+    AppRegistry.register({
+      id: 'code-runner-enhanced',
+      name: 'Code Runner Pro',
+      version: '2.0.0',
+      icon: '🚀',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: CodeRunnerEnhanced
+    });
+
+    // Register Language Manager
+    AppRegistry.register({
+      id: 'language-manager',
+      name: 'Language Manager',
+      version: '1.0.0',
+      icon: '🌐',
+      type: 'react',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: LanguageManager
+    });
+
+    // Register Polyglot Playground
+    AppRegistry.register({
+      id: 'polyglot-playground',
+      name: 'Polyglot Playground',
+      version: '1.0.0',
+      icon: '🎮',
+      type: 'react',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: PolyglotPlayground
+    });
+
+    // Register Interactive Notebook
+    AppRegistry.register({
+      id: 'interactive-notebook',
+      name: 'Interactive Notebook',
+      version: '1.0.0',
+      icon: '📓',
+      type: 'react',
+      permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
+      Component: InteractiveNotebook
     });
 
     // Register Screenshot Tool
