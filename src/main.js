@@ -41,6 +41,7 @@ import CodeRunnerEnhanced from './apps/code-runner/CodeRunnerEnhanced.js';
 import LanguageManager from './apps/language-manager/LanguageManager.tsx';
 import PolyglotPlayground from './apps/polyglot-playground/PolyglotPlayground.tsx';
 import InteractiveNotebook from './apps/interactive-notebook/InteractiveNotebook.tsx';
+import RuntimeDiagnostics from './apps/runtime-diagnostics/RuntimeDiagnostics.tsx';
 import ScreenshotApp from './apps/screenshot/Screenshot.js';
 import CollaborationHub from './apps/collaboration-hub/CollaborationHub.js';
 import SecurityCenter from './apps/security-center/SecurityCenter.js';
@@ -528,6 +529,17 @@ class WebOS {
       type: 'react',
       permissions: ['filesystem.read', 'filesystem.write', 'network.http'],
       Component: InteractiveNotebook
+    });
+
+    // Register Runtime Diagnostics
+    AppRegistry.register({
+      id: 'runtime-diagnostics',
+      name: 'Runtime Diagnostics',
+      version: '1.0.0',
+      icon: '📊',
+      type: 'react',
+      permissions: ['system.diagnostics', 'system.performance'],
+      Component: RuntimeDiagnostics
     });
 
     // Register Screenshot Tool

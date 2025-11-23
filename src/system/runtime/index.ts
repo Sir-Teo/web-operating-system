@@ -1,8 +1,9 @@
 /**
  * Multi-Language Runtime System
- * Entry point for all language runtimes
+ * Entry point for all language runtimes with enterprise-grade features
  */
 
+// Core runtime exports
 export * from './LanguageRuntime';
 export * from './JavaScriptRuntime';
 export * from './TypeScriptRuntime';
@@ -11,6 +12,13 @@ export * from './RubyRuntime';
 export * from './PHPRuntime';
 export * from './SQLiteRuntime';
 
+// Infrastructure exports
+export { default as Logger, LogLevel, LogCategory } from './Logger';
+export { default as ConfigurationManager } from './ConfigurationManager';
+export { default as CacheManager } from './CacheManager';
+export { default as ResourceMonitor } from './ResourceMonitor';
+export { default as EnhancedRuntimeManager } from './EnhancedRuntimeManager';
+
 import { RuntimeManager } from './LanguageRuntime';
 import { JavaScriptRuntime } from './JavaScriptRuntime';
 import { TypeScriptRuntime } from './TypeScriptRuntime';
@@ -18,12 +26,17 @@ import { PythonRuntime } from './PythonRuntime';
 import { RubyRuntime } from './RubyRuntime';
 import { PHPRuntime } from './PHPRuntime';
 import { SQLiteRuntime } from './SQLiteRuntime';
+import EnhancedRuntimeManager from './EnhancedRuntimeManager';
+import Logger, { LogCategory } from './Logger';
 
 /**
- * Initialize all language runtimes
+ * Initialize all language runtimes with enhanced features
  */
-export function initializeRuntimes(): RuntimeManager {
-  const runtimeManager = RuntimeManager.getInstance();
+export function initializeRuntimes(): EnhancedRuntimeManager {
+  const runtimeManager = EnhancedRuntimeManager.getEnhancedInstance();
+  const logger = Logger.getInstance();
+
+  logger.info(LogCategory.RUNTIME, 'Initializing runtime system');
 
   // Register all available runtimes
   runtimeManager.registerRuntime('javascript', new JavaScriptRuntime());
@@ -37,6 +50,10 @@ export function initializeRuntimes(): RuntimeManager {
   runtimeManager.registerRuntime('php', new PHPRuntime());
   runtimeManager.registerRuntime('sqlite', new SQLiteRuntime());
   runtimeManager.registerRuntime('sql', new SQLiteRuntime());
+
+  logger.info(LogCategory.RUNTIME, 'Runtime system initialized', {
+    languages: runtimeManager.getAvailableRuntimes(),
+  });
 
   return runtimeManager;
 }
