@@ -26,9 +26,9 @@ export default class ScreenRecorder {
         icon: '🎥'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.mediaRecorder = null;
         this.recordedChunks = [];
         this.stream = null;
@@ -39,19 +39,19 @@ export default class ScreenRecorder {
         this.timer = null;
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'Screen Recorder',
-            width: '1000px',
-            height: '700px',
-            x: '10%',
-            y: '8%'
-        });
+    async init() {
+        console.log('[ScreenRecorder] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.attachEventListeners();
+        setTimeout(() => {
+            this.attachEventListeners();
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -449,7 +449,7 @@ export default class ScreenRecorder {
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
 
         body.querySelector('[data-action="startRecording"]').addEventListener('click', () => this.startRecording());
         body.querySelector('[data-action="pauseRecording"]').addEventListener('click', () => this.pauseRecording());
@@ -459,7 +459,7 @@ export default class ScreenRecorder {
     }
 
     async togglePreview() {
-        const video = this.window.body.querySelector('#previewVideo');
+        const video = this.container.querySelector('#previewVideo');
 
         if (this.stream) {
             // Stop preview
@@ -475,18 +475,18 @@ export default class ScreenRecorder {
 
     async startPreview() {
         try {
-            const video = this.window.body.querySelector('#previewVideo');
+            const video = this.container.querySelector('#previewVideo');
 
             this.stream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
                     cursor: 'always',
-                    frameRate: parseInt(this.window.body.querySelector('#frameRate').value)
+                    frameRate: parseInt(this.container.querySelector('#frameRate').value)
                 },
-                audio: this.window.body.querySelector('#recordSystemAudio').checked
+                audio: this.container.querySelector('#recordSystemAudio').checked
             });
 
             // Add microphone if enabled
-            if (this.window.body.querySelector('#recordMicrophone').checked) {
+            if (this.container.querySelector('#recordMicrophone').checked) {
                 try {
                     const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     const audioTrack = audioStream.getAudioTracks()[0];
@@ -512,17 +512,17 @@ export default class ScreenRecorder {
             }
 
             // Show countdown if enabled
-            if (this.window.body.querySelector('#countdown').checked) {
+            if (this.container.querySelector('#countdown').checked) {
                 await this.showCountdown();
             }
 
-            const format = this.window.body.querySelector('#outputFormat').value;
+            const format = this.container.querySelector('#outputFormat').value;
             const mimeType = format === 'webm' ? 'video/webm;codecs=vp9' : 'video/mp4';
 
             this.recordedChunks = [];
             this.mediaRecorder = new MediaRecorder(this.stream, {
                 mimeType: mimeType,
-                videoBitsPerSecond: parseInt(this.window.body.querySelector('#bitrate').value) * 1000
+                videoBitsPerSecond: parseInt(this.container.querySelector('#bitrate').value) * 1000
             });
 
             this.mediaRecorder.ondataavailable = (event) => {
@@ -546,7 +546,7 @@ export default class ScreenRecorder {
             this.updateUI();
             this.updateStatus('Recording...', true);
 
-            this.window.body.querySelector('#recordingIndicator').classList.add('active');
+            this.container.querySelector('#recordingIndicator').classList.add('active');
         } catch (error) {
             console.error('Error starting recording:', error);
             alert('Failed to start recording: ' + error.message);
@@ -554,8 +554,8 @@ export default class ScreenRecorder {
     }
 
     async showCountdown() {
-        const overlay = this.window.body.querySelector('#countdownOverlay');
-        const number = this.window.body.querySelector('#countdownNumber');
+        const overlay = this.container.querySelector('#countdownOverlay');
+        const number = this.container.querySelector('#countdownNumber');
 
         overlay.classList.add('active');
 
@@ -574,14 +574,14 @@ export default class ScreenRecorder {
             this.startTime = Date.now() - this.pausedTime;
             this.startTimer();
             this.updateStatus('Recording...', true);
-            this.window.body.querySelector('[data-action="pauseRecording"]').textContent = '⏸️ Pause';
+            this.container.querySelector('[data-action="pauseRecording"]').textContent = '⏸️ Pause';
         } else {
             this.mediaRecorder.pause();
             this.isPaused = true;
             this.pausedTime = Date.now() - this.startTime;
             this.stopTimer();
             this.updateStatus('Paused', false);
-            this.window.body.querySelector('[data-action="pauseRecording"]').textContent = '▶️ Resume';
+            this.container.querySelector('[data-action="pauseRecording"]').textContent = '▶️ Resume';
         }
     }
 
@@ -594,16 +594,16 @@ export default class ScreenRecorder {
             this.updateUI();
             this.updateStatus('Recording stopped');
 
-            this.window.body.querySelector('#recordingIndicator').classList.remove('active');
+            this.container.querySelector('#recordingIndicator').classList.remove('active');
         }
     }
 
     async saveRecording() {
         const blob = new Blob(this.recordedChunks, {
-            type: this.window.body.querySelector('#outputFormat').value === 'webm' ? 'video/webm' : 'video/mp4'
+            type: this.container.querySelector('#outputFormat').value === 'webm' ? 'video/webm' : 'video/mp4'
         });
 
-        const filename = `recording-${Date.now()}.${this.window.body.querySelector('#outputFormat').value}`;
+        const filename = `recording-${Date.now()}.${this.container.querySelector('#outputFormat').value}`;
         const url = URL.createObjectURL(blob);
 
         // Add to recordings list
@@ -620,8 +620,8 @@ export default class ScreenRecorder {
             const arrayBuffer = await blob.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
 
-            await this.system.kernel.filesystem.writeFile(
-                `/home/${this.system.kernel.currentUser}/Videos/${filename}`,
+            await this.context.fs.writeFile(
+                `/home/${this.context.kernel.currentUser}/Videos/${filename}`,
                 uint8Array
             );
         } catch (error) {
@@ -630,7 +630,7 @@ export default class ScreenRecorder {
     }
 
     addRecordingToList(filename, size, url) {
-        const list = this.window.body.querySelector('#recordingsList');
+        const list = this.container.querySelector('#recordingsList');
 
         // Create first recording or replace placeholder
         const existingPlaceholder = list.querySelector('[style*="padding: 20px"]');
@@ -656,7 +656,7 @@ export default class ScreenRecorder {
 
     async takeScreenshot() {
         try {
-            const video = this.window.body.querySelector('#previewVideo');
+            const video = this.container.querySelector('#previewVideo');
 
             if (!video.srcObject) {
                 alert('Please start preview first');
@@ -685,8 +685,8 @@ export default class ScreenRecorder {
                     const arrayBuffer = await blob.arrayBuffer();
                     const uint8Array = new Uint8Array(arrayBuffer);
 
-                    await this.system.kernel.filesystem.writeFile(
-                        `/home/${this.system.kernel.currentUser}/Pictures/${filename}`,
+                    await this.context.fs.writeFile(
+                        `/home/${this.context.kernel.currentUser}/Pictures/${filename}`,
                         uint8Array
                     );
 
@@ -712,7 +712,7 @@ export default class ScreenRecorder {
                 .map(v => v.toString().padStart(2, '0'))
                 .join(':');
 
-            this.window.body.querySelector('#timerDisplay').textContent = timeString;
+            this.container.querySelector('#timerDisplay').textContent = timeString;
         }, 100);
     }
 
@@ -724,9 +724,9 @@ export default class ScreenRecorder {
     }
 
     updateUI() {
-        const startBtn = this.window.body.querySelector('[data-action="startRecording"]');
-        const pauseBtn = this.window.body.querySelector('[data-action="pauseRecording"]');
-        const stopBtn = this.window.body.querySelector('[data-action="stopRecording"]');
+        const startBtn = this.container.querySelector('[data-action="startRecording"]');
+        const pauseBtn = this.container.querySelector('[data-action="pauseRecording"]');
+        const stopBtn = this.container.querySelector('[data-action="stopRecording"]');
 
         startBtn.disabled = this.isRecording;
         pauseBtn.disabled = !this.isRecording;
@@ -734,7 +734,7 @@ export default class ScreenRecorder {
     }
 
     updateStatus(text, isRecording = false) {
-        const statusText = this.window.body.querySelector('#statusText');
+        const statusText = this.container.querySelector('#statusText');
         statusText.textContent = text;
         statusText.classList.toggle('recording', isRecording);
     }

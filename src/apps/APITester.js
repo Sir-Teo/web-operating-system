@@ -25,9 +25,9 @@ export default class APITester {
         icon: '🌐'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.history = [];
         this.collections = [];
         this.currentRequest = {
@@ -40,20 +40,20 @@ export default class APITester {
         };
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'API Tester',
-            width: '1400px',
-            height: '900px',
-            x: '5%',
-            y: '3%'
-        });
+    async init() {
+        console.log('[APITester] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.attachEventListeners();
-        this.loadSampleHistory();
+        setTimeout(() => {
+            this.attachEventListeners();
+            this.loadSampleHistory();
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -471,7 +471,7 @@ export default class APITester {
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
 
         // Toolbar actions
         body.querySelectorAll('[data-action]').forEach(btn => {
@@ -496,7 +496,7 @@ export default class APITester {
     }
 
     switchRequestTab(tabName) {
-        const body = this.window.body;
+        const body = this.container;
 
         body.querySelectorAll('.request-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -508,7 +508,7 @@ export default class APITester {
     }
 
     updateAuthFields(type) {
-        const fields = this.window.body.querySelector('#authFields');
+        const fields = this.container.querySelector('#authFields');
 
         switch (type) {
             case 'bearer':
@@ -561,8 +561,8 @@ export default class APITester {
     }
 
     async sendRequest() {
-        const method = this.window.body.querySelector('#methodSelect').value;
-        const url = this.window.body.querySelector('#urlInput').value.trim();
+        const method = this.container.querySelector('#methodSelect').value;
+        const url = this.container.querySelector('#urlInput').value.trim();
 
         if (!url) {
             alert('Please enter a URL');
@@ -580,8 +580,8 @@ export default class APITester {
 
             // Add body for non-GET requests
             if (method !== 'GET' && method !== 'HEAD') {
-                const bodyType = this.window.body.querySelector('#bodyType').value;
-                const bodyContent = this.window.body.querySelector('#bodyTextarea').value;
+                const bodyType = this.container.querySelector('#bodyType').value;
+                const bodyContent = this.container.querySelector('#bodyTextarea').value;
 
                 if (bodyContent) {
                     if (bodyType === 'json') {
@@ -634,7 +634,7 @@ export default class APITester {
 
     getHeaders() {
         const headers = {};
-        const headerRows = this.window.body.querySelectorAll('#headersTable .key-value-row');
+        const headerRows = this.container.querySelectorAll('#headersTable .key-value-row');
 
         headerRows.forEach(row => {
             const key = row.querySelector('input:first-child').value.trim();
@@ -649,11 +649,11 @@ export default class APITester {
     }
 
     displayResponse(response) {
-        const header = this.window.body.querySelector('#responseHeader');
-        const badge = this.window.body.querySelector('#statusBadge');
-        const timeEl = this.window.body.querySelector('#responseTime');
-        const sizeEl = this.window.body.querySelector('#responseSize');
-        const body = this.window.body.querySelector('#responseBody');
+        const header = this.container.querySelector('#responseHeader');
+        const badge = this.container.querySelector('#statusBadge');
+        const timeEl = this.container.querySelector('#responseTime');
+        const sizeEl = this.container.querySelector('#responseSize');
+        const body = this.container.querySelector('#responseBody');
 
         header.style.display = 'flex';
 
@@ -671,9 +671,9 @@ export default class APITester {
     }
 
     displayError(message) {
-        const header = this.window.body.querySelector('#responseHeader');
-        const badge = this.window.body.querySelector('#statusBadge');
-        const body = this.window.body.querySelector('#responseBody');
+        const header = this.container.querySelector('#responseHeader');
+        const badge = this.container.querySelector('#statusBadge');
+        const body = this.container.querySelector('#responseBody');
 
         header.style.display = 'flex';
         badge.textContent = 'Error';
@@ -720,7 +720,7 @@ export default class APITester {
     }
 
     updateHistoryList() {
-        const list = this.window.body.querySelector('#historyList');
+        const list = this.container.querySelector('#historyList');
 
         list.innerHTML = this.history.map(item => `
             <div class="history-item">
@@ -741,8 +741,8 @@ export default class APITester {
         list.querySelectorAll('.history-item').forEach((item, index) => {
             item.addEventListener('click', () => {
                 const request = this.history[index];
-                this.window.body.querySelector('#methodSelect').value = request.method;
-                this.window.body.querySelector('#urlInput').value = request.url;
+                this.container.querySelector('#methodSelect').value = request.method;
+                this.container.querySelector('#urlInput').value = request.url;
             });
         });
     }
@@ -776,10 +776,10 @@ export default class APITester {
     }
 
     newRequest() {
-        this.window.body.querySelector('#urlInput').value = '';
-        this.window.body.querySelector('#bodyTextarea').value = '';
-        this.window.body.querySelector('#responseBody').innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">Enter a URL and click Send to get a response</div>';
-        this.window.body.querySelector('#responseHeader').style.display = 'none';
+        this.container.querySelector('#urlInput').value = '';
+        this.container.querySelector('#bodyTextarea').value = '';
+        this.container.querySelector('#responseBody').innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">Enter a URL and click Send to get a response</div>';
+        this.container.querySelector('#responseHeader').style.display = 'none';
     }
 
     saveRequest() {
@@ -810,8 +810,8 @@ export default class APITester {
     }
 
     generateCode() {
-        const method = this.window.body.querySelector('#methodSelect').value;
-        const url = this.window.body.querySelector('#urlInput').value;
+        const method = this.container.querySelector('#methodSelect').value;
+        const url = this.container.querySelector('#urlInput').value;
 
         const code = `// JavaScript Fetch
 fetch('${url}', {

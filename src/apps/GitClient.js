@@ -26,9 +26,9 @@ export default class GitClient {
         icon: '🌿'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.currentRepo = null;
         this.repoStatus = null;
         this.branches = [];
@@ -38,20 +38,20 @@ export default class GitClient {
         this.selectedFile = null;
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'Git Client',
-            width: '1400px',
-            height: '900px',
-            x: '5%',
-            y: '3%'
-        });
+    async init() {
+        console.log('[GitClient] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.attachEventListeners();
-        await this.loadRepository(args?.path || '/home/' + this.system.kernel.currentUser);
+        setTimeout(() => {
+            this.attachEventListeners();
+            this.loadRepository(this.context.args?.path || '/home/' + this.context.kernel.currentUser);
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -562,7 +562,7 @@ export default class GitClient {
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
 
         // Toolbar actions
         body.querySelectorAll('[data-action]').forEach(btn => {
@@ -582,7 +582,7 @@ export default class GitClient {
     }
 
     switchTab(tabName) {
-        const body = this.window.body;
+        const body = this.container;
 
         // Update tabs
         body.querySelectorAll('.tab').forEach(tab => {
@@ -650,7 +650,7 @@ export default class GitClient {
         this.currentRepo = path;
 
         // Update UI
-        const repoInfo = this.window.body.querySelector('#repoInfo');
+        const repoInfo = this.container.querySelector('#repoInfo');
         repoInfo.innerHTML = `
             <div class="repo-info-item">
                 <span class="repo-info-label">Path:</span>
@@ -669,7 +669,7 @@ export default class GitClient {
     async loadMockData() {
         // Mock current branch
         this.currentBranch = 'main';
-        this.window.body.querySelector('#currentBranch').textContent = this.currentBranch;
+        this.container.querySelector('#currentBranch').textContent = this.currentBranch;
 
         // Mock branches
         this.branches = [
@@ -724,7 +724,7 @@ export default class GitClient {
     }
 
     updateBranchList() {
-        const branchList = this.window.body.querySelector('#branchList');
+        const branchList = this.container.querySelector('#branchList');
         branchList.innerHTML = this.branches.map(branch => `
             <div class="branch-item ${branch.current ? 'active' : ''}" data-branch="${branch.name}">
                 <span class="branch-icon">🌿</span>
@@ -743,7 +743,7 @@ export default class GitClient {
 
     updateFilesList() {
         // Staged files
-        const stagedFiles = this.window.body.querySelector('#stagedFiles');
+        const stagedFiles = this.container.querySelector('#stagedFiles');
         stagedFiles.innerHTML = this.repoStatus.staged.map(file => `
             <div class="file-item" data-file="${file.path}" data-staged="true">
                 <span class="file-status status-${file.status}">${file.status.charAt(0).toUpperCase()}</span>
@@ -752,7 +752,7 @@ export default class GitClient {
         `).join('');
 
         // Unstaged files
-        const unstagedFiles = this.window.body.querySelector('#unstagedFiles');
+        const unstagedFiles = this.container.querySelector('#unstagedFiles');
         unstagedFiles.innerHTML = this.repoStatus.unstaged.map(file => `
             <div class="file-item" data-file="${file.path}" data-staged="false">
                 <span class="file-status status-${file.status}">${file.status.charAt(0).toUpperCase()}</span>
@@ -761,7 +761,7 @@ export default class GitClient {
         `).join('');
 
         // Untracked files
-        const untrackedFiles = this.window.body.querySelector('#untrackedFiles');
+        const untrackedFiles = this.container.querySelector('#untrackedFiles');
         untrackedFiles.innerHTML = this.repoStatus.untracked.map(file => `
             <div class="file-item" data-file="${file.path}" data-staged="false">
                 <span class="file-status status-added">?</span>
@@ -770,9 +770,9 @@ export default class GitClient {
         `).join('');
 
         // Add click handlers
-        this.window.body.querySelectorAll('.file-item').forEach(item => {
+        this.container.querySelectorAll('.file-item').forEach(item => {
             item.addEventListener('click', () => {
-                this.window.body.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
+                this.container.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
                 this.selectedFile = item.dataset.file;
                 this.showDiff(item.dataset.file);
@@ -781,7 +781,7 @@ export default class GitClient {
     }
 
     showDiff(filePath) {
-        const diffViewer = this.window.body.querySelector('#diffViewer');
+        const diffViewer = this.container.querySelector('#diffViewer');
 
         // Mock diff
         const mockDiff = `
@@ -863,8 +863,8 @@ export default class GitClient {
     }
 
     async commitChanges() {
-        const message = this.window.body.querySelector('#commitMessage').value.trim();
-        const description = this.window.body.querySelector('#commitDescription').value.trim();
+        const message = this.container.querySelector('#commitMessage').value.trim();
+        const description = this.container.querySelector('#commitDescription').value.trim();
 
         if (!message) {
             alert('Please enter a commit message');
@@ -880,7 +880,7 @@ export default class GitClient {
         const commit = {
             hash: Math.random().toString(36).substr(2, 7),
             message: message,
-            author: this.system.kernel.currentUser,
+            author: this.context.kernel.currentUser,
             date: new Date().toISOString(),
             description: description
         };
@@ -892,14 +892,14 @@ export default class GitClient {
         this.updateFilesList();
 
         // Clear inputs
-        this.window.body.querySelector('#commitMessage').value = '';
-        this.window.body.querySelector('#commitDescription').value = '';
+        this.container.querySelector('#commitMessage').value = '';
+        this.container.querySelector('#commitDescription').value = '';
 
         alert('Changes committed successfully!');
     }
 
     loadHistory() {
-        const historyPanel = this.window.body.querySelector('#historyPanel');
+        const historyPanel = this.container.querySelector('#historyPanel');
 
         historyPanel.innerHTML = this.commits.map(commit => `
             <div class="commit-item">
@@ -914,7 +914,7 @@ export default class GitClient {
     }
 
     loadStash() {
-        const stashList = this.window.body.querySelector('#stashList');
+        const stashList = this.container.querySelector('#stashList');
 
         // Mock stash
         const stashes = [
@@ -939,7 +939,7 @@ export default class GitClient {
     async switchBranch(branchName) {
         this.currentBranch = branchName;
         this.branches.forEach(b => b.current = b.name === branchName);
-        this.window.body.querySelector('#currentBranch').textContent = branchName;
+        this.container.querySelector('#currentBranch').textContent = branchName;
         this.updateBranchList();
         alert(`Switched to branch '${branchName}'`);
     }

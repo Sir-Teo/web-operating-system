@@ -24,9 +24,9 @@ export default class AdvancedImageEditor {
         icon: '🎨'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.canvas = null;
         this.ctx = null;
         this.previewCanvas = null;
@@ -60,28 +60,30 @@ export default class AdvancedImageEditor {
         this.selection = null;
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'Advanced Image Editor',
-            width: '1200px',
-            height: '800px',
-            x: '10%',
-            y: '5%'
-        });
+    async init() {
+        // Initialize editor
+        console.log('[AdvancedImageEditor] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.initializeEditor();
-        this.attachEventListeners();
+        // Initialize editor after DOM is ready
+        setTimeout(() => {
+            this.initializeEditor();
+            this.attachEventListeners();
 
-        // Load image if provided in args
-        if (args?.file) {
-            await this.loadImage(args.file);
-        } else {
-            // Create blank canvas
-            this.createNewImage(800, 600, '#ffffff');
-        }
+            // Load image if provided in args
+            if (this.context.args?.file) {
+                this.loadImage(this.context.args.file);
+            } else {
+                // Create blank canvas
+                this.createNewImage(800, 600, '#ffffff');
+            }
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -502,7 +504,7 @@ export default class AdvancedImageEditor {
     }
 
     initializeEditor() {
-        this.canvas = this.window.body.querySelector('#imageCanvas');
+        this.canvas = this.container.querySelector('#imageCanvas');
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
 
         // Update status
@@ -510,7 +512,7 @@ export default class AdvancedImageEditor {
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
 
         // Toolbar actions
         body.querySelectorAll('[data-action]').forEach(btn => {
@@ -667,7 +669,7 @@ export default class AdvancedImageEditor {
                 const imageData = layerCtx.getImageData(x, y, 1, 1);
                 const pixel = imageData.data;
                 this.brushColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
-                this.window.body.querySelector('#brushColor').value = this.rgbToHex(pixel[0], pixel[1], pixel[2]);
+                this.container.querySelector('#brushColor').value = this.rgbToHex(pixel[0], pixel[1], pixel[2]);
                 break;
         }
     }
@@ -831,8 +833,8 @@ export default class AdvancedImageEditor {
                 const arrayBuffer = await blob.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
 
-                await this.system.kernel.filesystem.writeFile(
-                    `/home/${this.system.kernel.currentUser}/Pictures/${filename}`,
+                await this.context.fs.writeFile(
+                    `/home/${this.context.kernel.currentUser}/Pictures/${filename}`,
                     uint8Array
                 );
 
@@ -910,7 +912,7 @@ export default class AdvancedImageEditor {
     }
 
     updateLayersList() {
-        const list = this.window.body.querySelector('#layersList');
+        const list = this.container.querySelector('#layersList');
         list.innerHTML = '';
 
         // Reverse order for display (top layer first)
@@ -1142,10 +1144,10 @@ export default class AdvancedImageEditor {
     }
 
     applyColorAdjustments() {
-        const brightness = parseInt(this.window.body.querySelector('#brightness').value);
-        const contrast = parseInt(this.window.body.querySelector('#contrast').value);
-        const saturation = parseInt(this.window.body.querySelector('#saturation').value);
-        const hue = parseInt(this.window.body.querySelector('#hue').value);
+        const brightness = parseInt(this.container.querySelector('#brightness').value);
+        const contrast = parseInt(this.container.querySelector('#contrast').value);
+        const saturation = parseInt(this.container.querySelector('#saturation').value);
+        const hue = parseInt(this.container.querySelector('#hue').value);
 
         const activeLayer = this.layers[this.activeLayerIndex];
         const layerCtx = activeLayer.canvas.getContext('2d');
@@ -1359,8 +1361,8 @@ export default class AdvancedImageEditor {
     }
 
     updateUndoRedoButtons() {
-        const undoBtn = this.window.body.querySelector('[data-action="undo"]');
-        const redoBtn = this.window.body.querySelector('[data-action="redo"]');
+        const undoBtn = this.container.querySelector('[data-action="undo"]');
+        const redoBtn = this.container.querySelector('[data-action="redo"]');
 
         undoBtn.disabled = this.historyIndex <= 0;
         redoBtn.disabled = this.historyIndex >= this.history.length - 1;
@@ -1372,7 +1374,7 @@ export default class AdvancedImageEditor {
     }
 
     updateStatus() {
-        const body = this.window.body;
+        const body = this.container;
         body.querySelector('#currentTool').textContent = this.currentTool.charAt(0).toUpperCase() + this.currentTool.slice(1);
         body.querySelector('#canvasSize').textContent = `${this.canvas.width} × ${this.canvas.height}`;
         body.querySelector('#zoomLevel').textContent = `${Math.round(this.zoom * 100)}%`;

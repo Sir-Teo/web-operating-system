@@ -25,33 +25,33 @@ export default class MarkdownEditor {
         icon: '📝'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.content = '';
         this.currentFile = null;
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'Markdown Editor',
-            width: '1400px',
-            height: '900px',
-            x: '5%',
-            y: '3%'
-        });
+    async init() {
+        console.log('[MarkdownEditor] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.attachEventListeners();
+        setTimeout(() => {
+            this.attachEventListeners();
 
-        // Load file if provided
-        if (args?.file) {
-            await this.loadFile(args.file);
-        } else {
-            this.updatePreview();
-        }
+            // Load file if provided
+            if (this.context.args?.file) {
+                this.loadFile(this.context.args.file);
+            } else {
+                this.updatePreview();
+            }
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -404,7 +404,7 @@ Start writing your markdown here...
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
         const editor = body.querySelector('#mdEditor');
 
         // Toolbar actions
@@ -456,7 +456,7 @@ Start writing your markdown here...
     }
 
     applyFormat(format) {
-        const editor = this.window.body.querySelector('#mdEditor');
+        const editor = this.container.querySelector('#mdEditor');
         const start = editor.selectionStart;
         const end = editor.selectionEnd;
         const selectedText = editor.value.substring(start, end);
@@ -533,8 +533,8 @@ Start writing your markdown here...
     }
 
     updatePreview() {
-        const preview = this.window.body.querySelector('#mdPreview');
-        const markdown = this.window.body.querySelector('#mdEditor').value;
+        const preview = this.container.querySelector('#mdPreview');
+        const markdown = this.container.querySelector('#mdEditor').value;
 
         preview.innerHTML = this.parseMarkdown(markdown);
         this.updateTOC();
@@ -601,8 +601,8 @@ Start writing your markdown here...
     }
 
     updateTOC() {
-        const markdown = this.window.body.querySelector('#mdEditor').value;
-        const tocList = this.window.body.querySelector('#tocList');
+        const markdown = this.container.querySelector('#mdEditor').value;
+        const tocList = this.container.querySelector('#tocList');
 
         // Extract headers
         const headers = [];
@@ -635,25 +635,25 @@ Start writing your markdown here...
     }
 
     updateStats() {
-        const text = this.window.body.querySelector('#mdEditor').value;
+        const text = this.container.querySelector('#mdEditor').value;
 
         const words = text.trim() ? text.trim().split(/\s+/).length : 0;
         const chars = text.length;
         const lines = text.split('\n').length;
 
-        this.window.body.querySelector('#wordCount').textContent = `Words: ${words}`;
-        this.window.body.querySelector('#charCount').textContent = `Characters: ${chars}`;
-        this.window.body.querySelector('#lineCount').textContent = `Lines: ${lines}`;
+        this.container.querySelector('#wordCount').textContent = `Words: ${words}`;
+        this.container.querySelector('#charCount').textContent = `Characters: ${chars}`;
+        this.container.querySelector('#lineCount').textContent = `Lines: ${lines}`;
     }
 
     toggleTOC() {
-        const tocPanel = this.window.body.querySelector('#tocPanel');
+        const tocPanel = this.container.querySelector('#tocPanel');
         tocPanel.classList.toggle('active');
     }
 
     newDocument() {
         if (confirm('Create new document? Unsaved changes will be lost.')) {
-            this.window.body.querySelector('#mdEditor').value = '';
+            this.container.querySelector('#mdEditor').value = '';
             this.currentFile = null;
             this.content = '';
             this.updatePreview();
@@ -671,10 +671,10 @@ Start writing your markdown here...
 
     async loadFile(filename) {
         try {
-            const content = await this.system.kernel.filesystem.readFile(filename);
+            const content = await this.context.fs.readFile(filename);
             const text = new TextDecoder().decode(content);
 
-            this.window.body.querySelector('#mdEditor').value = text;
+            this.container.querySelector('#mdEditor').value = text;
             this.currentFile = filename;
             this.content = text;
             this.updatePreview();
@@ -696,14 +696,14 @@ Start writing your markdown here...
                     filename += '.md';
                 }
 
-                filename = `/home/${this.system.kernel.currentUser}/Documents/${filename}`;
+                filename = `/home/${this.context.kernel.currentUser}/Documents/${filename}`;
             }
 
-            const content = this.window.body.querySelector('#mdEditor').value;
+            const content = this.container.querySelector('#mdEditor').value;
             const encoder = new TextEncoder();
             const data = encoder.encode(content);
 
-            await this.system.kernel.filesystem.writeFile(filename, data);
+            await this.context.fs.writeFile(filename, data);
 
             this.currentFile = filename;
             alert('Document saved successfully!');
@@ -764,7 +764,7 @@ Start writing your markdown here...
     </style>
 </head>
 <body>
-${this.window.body.querySelector('#mdPreview').innerHTML}
+${this.container.querySelector('#mdPreview').innerHTML}
 </body>
 </html>`;
 
@@ -776,7 +776,7 @@ ${this.window.body.querySelector('#mdPreview').innerHTML}
             a.click();
             URL.revokeObjectURL(url);
         } else {
-            const markdown = this.window.body.querySelector('#mdEditor').value;
+            const markdown = this.container.querySelector('#mdEditor').value;
             const blob = new Blob([markdown], { type: 'text/markdown' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');

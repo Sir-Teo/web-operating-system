@@ -24,28 +24,28 @@ export default class DatabaseManager {
         icon: '🗄️'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.currentDb = null;
         this.tables = [];
         this.queryHistory = [];
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'Database Manager',
-            width: '1400px',
-            height: '900px',
-            x: '5%',
-            y: '3%'
-        });
+    async init() {
+        console.log('[DatabaseManager] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.attachEventListeners();
-        this.initializeSampleData();
+        setTimeout(() => {
+            this.attachEventListeners();
+            this.initializeSampleData();
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -395,7 +395,7 @@ export default class DatabaseManager {
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
 
         body.querySelectorAll('[data-action]').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -423,7 +423,7 @@ export default class DatabaseManager {
     }
 
     switchTab(tabName) {
-        const body = this.window.body;
+        const body = this.container;
 
         body.querySelectorAll('.tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -464,7 +464,7 @@ export default class DatabaseManager {
                 this.showDiagram();
                 break;
             case 'clear':
-                this.window.body.querySelector('#sqlEditor').value = '';
+                this.container.querySelector('#sqlEditor').value = '';
                 break;
         }
     }
@@ -521,7 +521,7 @@ export default class DatabaseManager {
     }
 
     updateTablesList() {
-        const list = this.window.body.querySelector('#tablesList');
+        const list = this.container.querySelector('#tablesList');
         list.innerHTML = this.tables.map(table => `
             <div class="table-item" data-table="${table.name}">
                 <span>📋</span>
@@ -542,12 +542,12 @@ export default class DatabaseManager {
     selectTable(tableName) {
         const table = this.tables.find(t => t.name === tableName);
         if (table) {
-            this.window.body.querySelector('#sqlEditor').value = `SELECT * FROM ${tableName};`;
+            this.container.querySelector('#sqlEditor').value = `SELECT * FROM ${tableName};`;
         }
     }
 
     executeQuery() {
-        const query = this.window.body.querySelector('#sqlEditor').value.trim();
+        const query = this.container.querySelector('#sqlEditor').value.trim();
         if (!query) {
             alert('Please enter a SQL query');
             return;
@@ -679,8 +679,8 @@ export default class DatabaseManager {
     }
 
     displayResults(results) {
-        const container = this.window.body.querySelector('#resultsContainer');
-        const info = this.window.body.querySelector('#resultsInfo');
+        const container = this.container.querySelector('#resultsContainer');
+        const info = this.container.querySelector('#resultsInfo');
 
         if (results.message) {
             container.innerHTML = `
@@ -719,7 +719,7 @@ export default class DatabaseManager {
     }
 
     showSchema() {
-        const viewer = this.window.body.querySelector('#schemaViewer');
+        const viewer = this.container.querySelector('#schemaViewer');
 
         let html = '';
         this.tables.forEach(table => {
@@ -748,7 +748,7 @@ export default class DatabaseManager {
     }
 
     showHistory() {
-        const list = this.window.body.querySelector('#historyList');
+        const list = this.container.querySelector('#historyList');
 
         if (this.queryHistory.length === 0) {
             list.innerHTML = '<p style="text-align: center; color: #666;">No query history</p>';

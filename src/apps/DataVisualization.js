@@ -23,9 +23,9 @@ export default class DataVisualization {
         icon: '📊'
     };
 
-    constructor(system) {
-        this.system = system;
-        this.window = null;
+    constructor(context) {
+        this.context = context;
+        this.container = null;
         this.currentChart = null;
         this.data = [];
         this.chartType = 'line';
@@ -40,20 +40,20 @@ export default class DataVisualization {
         };
     }
 
-    async open(args) {
-        this.window = this.system.windowManager.createWindow({
-            title: 'Data Visualization',
-            width: '1400px',
-            height: '900px',
-            x: '5%',
-            y: '3%'
-        });
+    async init() {
+        console.log('[DataVisualization] Initialized');
+    }
 
-        const content = this.createUI();
-        this.window.body.innerHTML = content;
+    render() {
+        this.container = document.createElement('div');
+        this.container.innerHTML = this.createUI();
 
-        this.attachEventListeners();
-        this.loadSampleData();
+        setTimeout(() => {
+            this.attachEventListeners();
+            this.loadSampleData();
+        }, 0);
+
+        return this.container;
     }
 
     createUI() {
@@ -454,7 +454,7 @@ export default class DataVisualization {
     }
 
     attachEventListeners() {
-        const body = this.window.body;
+        const body = this.container;
 
         // Toolbar actions
         body.querySelectorAll('[data-action]').forEach(btn => {
@@ -595,7 +595,7 @@ export default class DataVisualization {
     }
 
     updateDataTable() {
-        const table = this.window.body.querySelector('#dataTable');
+        const table = this.container.querySelector('#dataTable');
         const thead = table.querySelector('thead');
         const tbody = table.querySelector('tbody');
 
@@ -614,7 +614,7 @@ export default class DataVisualization {
     calculateStatistics() {
         if (this.data.length === 0) return;
 
-        const statsPanel = this.window.body.querySelector('#statsPanel');
+        const statsPanel = this.container.querySelector('#statsPanel');
         const numericColumns = {};
 
         // Find numeric columns
@@ -654,7 +654,7 @@ export default class DataVisualization {
     }
 
     renderChart() {
-        const canvas = this.window.body.querySelector('#chartCanvas');
+        const canvas = this.container.querySelector('#chartCanvas');
         const ctx = canvas.getContext('2d');
 
         // Set canvas size
@@ -1241,18 +1241,18 @@ export default class DataVisualization {
     }
 
     updateChartConfig() {
-        this.chartConfig.title = this.window.body.querySelector('#chartTitle').value;
-        this.chartConfig.xLabel = this.window.body.querySelector('#xLabel').value;
-        this.chartConfig.yLabel = this.window.body.querySelector('#yLabel').value;
-        this.chartConfig.showLegend = this.window.body.querySelector('#showLegend').checked;
-        this.chartConfig.showGrid = this.window.body.querySelector('#showGrid').checked;
-        this.chartConfig.animated = this.window.body.querySelector('#animated').checked;
+        this.chartConfig.title = this.container.querySelector('#chartTitle').value;
+        this.chartConfig.xLabel = this.container.querySelector('#xLabel').value;
+        this.chartConfig.yLabel = this.container.querySelector('#yLabel').value;
+        this.chartConfig.showLegend = this.container.querySelector('#showLegend').checked;
+        this.chartConfig.showGrid = this.container.querySelector('#showGrid').checked;
+        this.chartConfig.animated = this.container.querySelector('#animated').checked;
 
         this.renderChart();
     }
 
     exportPNG() {
-        const canvas = this.window.body.querySelector('#chartCanvas');
+        const canvas = this.container.querySelector('#chartCanvas');
         canvas.toBlob(blob => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1279,7 +1279,7 @@ export default class DataVisualization {
     }
 
     toggleFullscreen() {
-        const chartContainer = this.window.body.querySelector('.chart-container');
+        const chartContainer = this.container.querySelector('.chart-container');
         if (document.fullscreenElement) {
             document.exitFullscreen();
         } else {
