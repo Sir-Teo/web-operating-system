@@ -7,6 +7,8 @@ import { StartMenu } from './ui/StartMenu.js';
 import { WindowSnapping } from './ui/WindowSnapping.js';
 import { LoginScreen } from './ui/LoginScreen.js';
 import AppRegistry from './apps/AppRegistry.js';
+import nextGenKernel from './NextGenKernel.js';
+import './ui/CommandPalette.css';
 import AIAssistant from './apps/ai-assistant/AIAssistant.js';
 import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
@@ -88,6 +90,7 @@ import './apps/chat/Chat.css';
 class WebOS {
   constructor() {
     this.kernel = Kernel;
+    this.nextGenKernel = nextGenKernel;
     this.desktop = null;
     this.taskbar = null;
     this.startMenu = null;
@@ -114,6 +117,11 @@ class WebOS {
 
       // Initialize multi-language runtime system
       initializeRuntimes();
+
+      this.updateBootMessage('Initializing next-generation features...');
+
+      // Initialize Next-Gen Kernel (AI, Distributed Computing, etc.)
+      await this.nextGenKernel.initialize();
 
       this.updateBootMessage('Initializing user interface...');
 
@@ -964,9 +972,13 @@ class WebOS {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     const webos = new WebOS();
+    window.webos = webos; // Expose globally
+    window.nextGenKernel = nextGenKernel; // Expose next-gen features globally
     webos.boot();
   });
 } else {
   const webos = new WebOS();
+  window.webos = webos; // Expose globally
+  window.nextGenKernel = nextGenKernel; // Expose next-gen features globally
   webos.boot();
 }
