@@ -1,6 +1,7 @@
 /**
  * Code Editor Application
  * Professional code editor with Monaco Editor integration
+ * VASTLY IMPROVED with advanced developer tools
  */
 import * as monaco from 'monaco-editor';
 import { LanguageDetector } from './LanguageDetector.js';
@@ -14,6 +15,16 @@ import { IntegratedTerminal } from './IntegratedTerminal.js';
 import { CommandPalette } from './CommandPalette.js';
 import { QuickOpen } from './QuickOpen.js';
 import { GitPanel } from './GitPanel.js';
+
+// NEW DEVELOPER FEATURES
+import { SnippetsManager } from './SnippetsManager.js';
+import { LivePreview } from './LivePreview.js';
+import { CodeLinter } from './CodeLinter.js';
+import { VisualDebugger } from './VisualDebugger.js';
+import { ProjectTemplates } from './ProjectTemplates.js';
+import { MultiLanguageREPL } from './MultiLanguageREPL.js';
+import { CodeFormatter } from './CodeFormatter.js';
+import { DeveloperDashboard } from './DeveloperDashboard.js';
 
 export default class CodeEditor {
   constructor(context) {
@@ -39,6 +50,19 @@ export default class CodeEditor {
     this.breadcrumbsEnabled = true;
     this.wordWrap = 'off';
     this.fontSize = 14;
+
+    // NEW DEVELOPER TOOLS
+    this.snippetsManager = null;
+    this.livePreview = null;
+    this.codeLinter = null;
+    this.visualDebugger = null;
+    this.projectTemplates = null;
+    this.multiLanguageREPL = null;
+    this.codeFormatter = null;
+    this.developerDashboard = null;
+
+    // Store reference globally for file tree refresh
+    window.currentCodeEditorInstance = this;
   }
 
   /**
@@ -113,6 +137,40 @@ export default class CodeEditor {
     this.gitPanel = new GitPanel(this.vfs, this.context.kernel);
     this.gitPanel.initialize(this.container);
 
+    // === INITIALIZE NEW DEVELOPER TOOLS ===
+
+    // Initialize Snippets Manager
+    this.snippetsManager = new SnippetsManager(this.editorPane.getEditor());
+    this.snippetsManager.initialize(this.container);
+
+    // Initialize Live Preview
+    this.livePreview = new LivePreview(this.vfs, this.tabManager);
+    this.livePreview.initialize(this.container);
+
+    // Initialize Code Linter
+    this.codeLinter = new CodeLinter(this.editorPane.getEditor());
+
+    // Initialize Visual Debugger
+    this.visualDebugger = new VisualDebugger(this.editorPane.getEditor(), this.vfs);
+    this.visualDebugger.initialize(this.container);
+
+    // Initialize Project Templates
+    this.projectTemplates = new ProjectTemplates(this.vfs);
+    this.projectTemplates.initialize(this.container);
+
+    // Initialize Multi-Language REPL
+    this.multiLanguageREPL = new MultiLanguageREPL();
+    this.multiLanguageREPL.initialize(this.container);
+
+    // Initialize Code Formatter
+    this.codeFormatter = new CodeFormatter(this.editorPane.getEditor());
+
+    // Initialize Developer Dashboard
+    this.developerDashboard = new DeveloperDashboard();
+    this.developerDashboard.initialize(this.container);
+
+    // === END NEW DEVELOPER TOOLS ===
+
     // Apply saved settings
     this.settingsPanel.applySettings();
 
@@ -120,6 +178,14 @@ export default class CodeEditor {
     this.tabManager.onChange(() => {
       this.updateTabBar();
       this.updateActiveTab();
+
+      // Trigger live preview refresh
+      if (this.livePreview && this.livePreview.isVisible) {
+        this.livePreview.triggerRefresh();
+      }
+
+      // Run linter on content
+      this.runLinter();
     });
 
     // Setup keyboard shortcuts
@@ -182,6 +248,31 @@ export default class CodeEditor {
             </button>
             <button class="toolbar-btn" id="replace-btn" title="Replace (Ctrl+H)">
               🔄 Replace
+            </button>
+            <button class="toolbar-btn" id="format-code-btn" title="Format Code (Shift+Alt+F)">
+              ✨ Format
+            </button>
+          </div>
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="snippets-btn" title="Snippets (Ctrl+Shift+I)">
+              📋 Snippets
+            </button>
+            <button class="toolbar-btn" id="live-preview-btn" title="Live Preview (Ctrl+Shift+V)">
+              👁️ Preview
+            </button>
+            <button class="toolbar-btn" id="debugger-btn" title="Debugger (F5)">
+              🐛 Debug
+            </button>
+            <button class="toolbar-btn" id="repl-btn" title="REPL (Ctrl+Shift+R)">
+              ⚡ REPL
+            </button>
+          </div>
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="new-project-btn" title="New Project (Ctrl+Shift+N)">
+              📦 New Project
+            </button>
+            <button class="toolbar-btn" id="dashboard-btn" title="Dashboard (Ctrl+Shift+D)">
+              📊 Dashboard
             </button>
           </div>
           <div class="toolbar-group">
@@ -301,6 +392,45 @@ export default class CodeEditor {
     this.container.querySelector('#replace-btn')?.addEventListener('click', () => {
       this.searchPanel.show();
     });
+
+    // Format code
+    this.container.querySelector('#format-code-btn')?.addEventListener('click', () => {
+      this.formatCode();
+    });
+
+    // === NEW FEATURE BUTTONS ===
+
+    // Snippets
+    this.container.querySelector('#snippets-btn')?.addEventListener('click', () => {
+      this.snippetsManager?.toggle();
+    });
+
+    // Live Preview
+    this.container.querySelector('#live-preview-btn')?.addEventListener('click', () => {
+      this.livePreview?.toggle();
+    });
+
+    // Debugger
+    this.container.querySelector('#debugger-btn')?.addEventListener('click', () => {
+      this.visualDebugger?.toggle();
+    });
+
+    // REPL
+    this.container.querySelector('#repl-btn')?.addEventListener('click', () => {
+      this.multiLanguageREPL?.toggle();
+    });
+
+    // New Project
+    this.container.querySelector('#new-project-btn')?.addEventListener('click', () => {
+      this.projectTemplates?.show();
+    });
+
+    // Dashboard
+    this.container.querySelector('#dashboard-btn')?.addEventListener('click', () => {
+      this.developerDashboard?.toggle();
+    });
+
+    // === END NEW FEATURE BUTTONS ===
 
     // Settings
     this.container.querySelector('#settings-btn')?.addEventListener('click', () => {
@@ -431,6 +561,52 @@ export default class CodeEditor {
           document.addEventListener('keydown', zenHandler, { once: true });
         }, 100);
       }
+
+      // === NEW FEATURE SHORTCUTS ===
+
+      // Ctrl+Shift+I - Snippets
+      if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        this.snippetsManager?.toggle();
+      }
+
+      // Ctrl+Shift+V - Live Preview
+      if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+        e.preventDefault();
+        this.livePreview?.toggle();
+      }
+
+      // F5 - Run in debugger
+      if (e.key === 'F5') {
+        e.preventDefault();
+        this.visualDebugger?.show();
+      }
+
+      // Ctrl+Shift+R - Toggle REPL (note: overrides run file, REPL is more useful)
+      if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        this.multiLanguageREPL?.toggle();
+      }
+
+      // Ctrl+Shift+N - New Project
+      if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+        e.preventDefault();
+        this.projectTemplates?.show();
+      }
+
+      // Ctrl+Shift+D - Developer Dashboard
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        this.developerDashboard?.toggle();
+      }
+
+      // Shift+Alt+F - Format code
+      if (e.shiftKey && e.altKey && e.key === 'F') {
+        e.preventDefault();
+        this.formatCode();
+      }
+
+      // === END NEW FEATURE SHORTCUTS ===
     };
 
     document.addEventListener('keydown', this.keyboardShortcutsHandler);
@@ -896,6 +1072,51 @@ export default class CodeEditor {
     }
   }
 
+  // === NEW DEVELOPER TOOL METHODS ===
+
+  /**
+   * Format current code
+   */
+  formatCode() {
+    if (!this.codeFormatter) return;
+
+    const result = this.codeFormatter.formatEditor();
+    if (result && result.success) {
+      this.showStatusMessage(result.message);
+    } else if (result && !result.success) {
+      this.showStatusMessage(result.message);
+      alert(result.message);
+    }
+  }
+
+  /**
+   * Run linter on current code
+   */
+  runLinter() {
+    if (!this.codeLinter) return;
+
+    const activeTab = this.tabManager.getActiveTab();
+    if (!activeTab) return;
+
+    const model = this.editorPane?.getEditor()?.getModel();
+    if (!model) return;
+
+    const code = model.getValue();
+    const language = model.getLanguageId();
+
+    // Run linter
+    const issues = this.codeLinter.lint(code, language);
+
+    // Update status bar with issue count
+    if (issues.length > 0) {
+      const errors = issues.filter(i => i.severity === 'error').length;
+      const warnings = issues.filter(i => i.severity === 'warning').length;
+      this.showStatusMessage(`Linter: ${errors} errors, ${warnings} warnings`);
+    }
+  }
+
+  // === END NEW DEVELOPER TOOL METHODS ===
+
   /**
    * Destroy the application
    */
@@ -941,7 +1162,51 @@ export default class CodeEditor {
       this.gitPanel.destroy?.();
     }
 
+    // === DESTROY NEW DEVELOPER TOOLS ===
+
+    // Destroy snippets manager
+    if (this.snippetsManager) {
+      this.snippetsManager.destroy?.();
+    }
+
+    // Destroy live preview
+    if (this.livePreview) {
+      this.livePreview.destroy?.();
+    }
+
+    // Destroy linter
+    if (this.codeLinter) {
+      this.codeLinter.destroy?.();
+    }
+
+    // Destroy debugger
+    if (this.visualDebugger) {
+      this.visualDebugger.destroy?.();
+    }
+
+    // Destroy project templates
+    if (this.projectTemplates) {
+      this.projectTemplates.destroy?.();
+    }
+
+    // Destroy REPL
+    if (this.multiLanguageREPL) {
+      this.multiLanguageREPL.destroy?.();
+    }
+
+    // Destroy developer dashboard
+    if (this.developerDashboard) {
+      this.developerDashboard.destroy?.();
+    }
+
+    // === END DESTROY NEW DEVELOPER TOOLS ===
+
     // Dispose all Monaco models
     monaco.editor.getModels().forEach(model => model.dispose());
+
+    // Clear global reference
+    if (window.currentCodeEditorInstance === this) {
+      delete window.currentCodeEditorInstance;
+    }
   }
 }
