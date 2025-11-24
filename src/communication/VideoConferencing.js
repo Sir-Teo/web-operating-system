@@ -3,7 +3,7 @@
  * Built-in WebRTC video and audio conferencing
  */
 
-import SimplePeer from 'simple-peer';
+import SimplePeer from 'simple-peer/simplepeer.min.js';
 import { Logger } from '../utils/Logger.js';
 import { eventBus } from '../utils/EventBus.js';
 

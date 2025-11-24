@@ -30,6 +30,7 @@ export default class Browser {
     this.currentSearchEngine = 'duckduckgo';
     this.devToolsOpen = false;
     this.readingMode = false;
+    this.autoExternalFallback = true;
     this.iframeCompatibilityRules = [
       {
         id: 'google',
@@ -42,6 +43,19 @@ export default class Browser {
           'Use "Open in New Browser Tab" whenever you need to continue in Google.'
         ],
         pattern: /(^|\.)google\.[a-z.]+$/i
+      },
+      {
+        id: 'github',
+        title: 'GitHub blocks embedding',
+        message: 'GitHub sets frame-ancestors \'none\', so it cannot render inside the built-in browser.',
+        explanation: 'Sites that declare frame-ancestors or X-Frame-Options deny embedding for security reasons. The browser must open them in a real tab/window instead of an iframe.',
+        details: 'GitHub, Gist, and GitHub Pages commonly send frame-ancestors \'none\' headers, which browsers enforce.',
+        suggestions: [
+          'Use "Open in New Browser Tab" to view the page in your normal browser.',
+          'Copy the link and paste it into any external tab if the popup was blocked.'
+        ],
+        pattern: /(^|\.)(github\.com|githubusercontent\.com|github\.io)$/i,
+        forceExternal: true
       },
       {
         id: 'bilibili',
@@ -525,6 +539,9 @@ export default class Browser {
 
     const compatibilityRule = this.getIframeCompatibilityRule(url);
     if (compatibilityRule) {
+      if (compatibilityRule.forceExternal && this.autoExternalFallback) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
       this.showIframeError(url, compatibilityRule.message, {
         title: compatibilityRule.title,
         explanation: compatibilityRule.explanation,

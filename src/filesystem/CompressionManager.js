@@ -13,7 +13,13 @@ import { wasmLoader } from '../system/WASMLoader.js';
 
 export class CompressionManager {
   constructor(vfs) {
-    this.vfs = vfs;
+    this.vfs = vfs || {
+      readFile: async () => new Uint8Array(),
+      writeFile: async () => {},
+      mkdir: async () => {},
+      readdir: async () => [],
+      unlink: async () => {}
+    };
     this.wasmModule = null;
     this.useWasm = true; // Toggle to enable/disable WASM
     this._initWasm();
@@ -239,9 +245,9 @@ export class CompressionManager {
       let totalSize = 0;
 
       for (const file of files) {
-        // Read file data
-        const data = await this.vfs.readFile(file.path);
-        const stat = await this.vfs.stat(file.path);
+        // Use provided content when available, otherwise read from VFS
+        const data = file.content || await this.vfs.readFile(file.path);
+        const stat = file.stat || await this.vfs.stat?.(file.path) || { modified: Date.now() };
 
         // Create TAR header (simplified USTAR format)
         const header = this._createTarHeader({
@@ -272,15 +278,17 @@ export class CompressionManager {
       // Concatenate all parts
       const tarBuffer = this._concatenateUint8Arrays(tarData);
 
-      // Write TAR file
-      await this.vfs.writeFile(outputPath, tarBuffer);
+      if (outputPath) {
+        await this.vfs.writeFile(outputPath, tarBuffer);
+        return {
+          success: true,
+          fileCount: files.length,
+          totalSize,
+          outputPath
+        };
+      }
 
-      return {
-        success: true,
-        fileCount: files.length,
-        totalSize,
-        outputPath
-      };
+      return tarBuffer;
     } catch (error) {
       throw new Error(`Failed to create TAR archive: ${error.message}`);
     }
@@ -294,14 +302,21 @@ export class CompressionManager {
    */
   async extractTar(tarPath, destDir) {
     try {
-      // Read TAR file
-      const tarData = await this.vfs.readFile(tarPath);
+      const tarData = tarPath instanceof Uint8Array
+        ? tarPath
+        : await this.vfs.readFile(tarPath);
 
-      // Ensure destination directory exists
-      await this.vfs.mkdir(destDir, { recursive: true });
+      if (!tarData || tarData.length < 1024) {
+        throw new Error('Invalid TAR archive');
+      }
+
+      if (destDir) {
+        await this.vfs.mkdir(destDir, { recursive: true });
+      }
 
       let offset = 0;
       let extractedFiles = 0;
+      const results = [];
 
       while (offset < tarData.length) {
         // Read header
@@ -322,24 +337,25 @@ export class CompressionManager {
         const padding = (512 - (header.size % 512)) % 512;
         offset += padding;
 
-        // Write extracted file
-        const outputPath = `${destDir}/${header.name}`;
+        if (destDir) {
+          const outputPath = `${destDir}/${header.name}`;
+          const parentDir = outputPath.substring(0, outputPath.lastIndexOf('/'));
+          if (parentDir) {
+            await this.vfs.mkdir(parentDir, { recursive: true });
+          }
 
-        // Create parent directories if needed
-        const parentDir = outputPath.substring(0, outputPath.lastIndexOf('/'));
-        if (parentDir) {
-          await this.vfs.mkdir(parentDir, { recursive: true });
+          await this.vfs.writeFile(outputPath, fileData);
+          extractedFiles++;
+        } else {
+          results.push({ path: header.name, content: fileData });
         }
-
-        await this.vfs.writeFile(outputPath, fileData);
-        extractedFiles++;
       }
 
-      return {
+      return destDir ? {
         success: true,
         extractedFiles,
         destDir
-      };
+      } : results;
     } catch (error) {
       throw new Error(`Failed to extract TAR archive: ${error.message}`);
     }
@@ -353,33 +369,30 @@ export class CompressionManager {
    */
   async createTarGz(files, outputPath) {
     try {
-      // Create TAR first
-      const tempTarPath = `/tmp/temp_${Date.now()}.tar`;
-      const tarResult = await this.createTar(files, tempTarPath);
-
-      // Read TAR data
-      const tarData = await this.vfs.readFile(tempTarPath);
-
-      // Compress with gzip
+      const tarBuffer = await this.createTar(files, outputPath ? `${outputPath}.tmp` : undefined);
+      const tarData = tarBuffer instanceof Uint8Array ? tarBuffer : await this.vfs.readFile(`${outputPath}.tmp`);
       const compressed = await this.compress(tarData, 'gzip');
 
-      // Write compressed archive
-      await this.vfs.writeFile(outputPath, compressed);
+      if (outputPath) {
+        await this.vfs.writeFile(outputPath, compressed);
+        if (this.vfs.unlink) {
+          await this.vfs.unlink(`${outputPath}.tmp`).catch(() => {});
+        }
 
-      // Clean up temp file
-      await this.vfs.unlink(tempTarPath);
+        const compressedSize = compressed.byteLength || compressed.length;
+        const ratio = ((1 - compressedSize / tarData.length) * 100).toFixed(2);
 
-      const compressedSize = compressed.byteLength || compressed.length;
-      const ratio = ((1 - compressedSize / tarResult.totalSize) * 100).toFixed(2);
+        return {
+          success: true,
+          fileCount: files.length,
+          originalSize: tarData.length,
+          compressedSize,
+          ratio: `${ratio}%`,
+          outputPath
+        };
+      }
 
-      return {
-        success: true,
-        fileCount: tarResult.fileCount,
-        originalSize: tarResult.totalSize,
-        compressedSize,
-        ratio: `${ratio}%`,
-        outputPath
-      };
+      return compressed;
     } catch (error) {
       throw new Error(`Failed to create TAR.GZ archive: ${error.message}`);
     }
@@ -393,23 +406,12 @@ export class CompressionManager {
    */
   async extractTarGz(tarGzPath, destDir) {
     try {
-      // Read compressed file
-      const compressedData = await this.vfs.readFile(tarGzPath);
+      const compressedData = tarGzPath instanceof Uint8Array
+        ? tarGzPath
+        : await this.vfs.readFile(tarGzPath);
 
-      // Decompress
       const tarData = await this.decompress(compressedData, 'gzip');
-
-      // Write temporary TAR file
-      const tempTarPath = `/tmp/temp_${Date.now()}.tar`;
-      await this.vfs.writeFile(tempTarPath, tarData);
-
-      // Extract TAR
-      const result = await this.extractTar(tempTarPath, destDir);
-
-      // Clean up temp file
-      await this.vfs.unlink(tempTarPath);
-
-      return result;
+      return await this.extractTar(tarData, destDir);
     } catch (error) {
       throw new Error(`Failed to extract TAR.GZ archive: ${error.message}`);
     }

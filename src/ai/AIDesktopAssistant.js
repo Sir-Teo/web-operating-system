@@ -349,11 +349,6 @@ export class AIDesktopAssistant {
    * Launch application by name
    */
   async _launchApp(entities, command) {
-    const appRegistry = window.appRegistry;
-    if (!appRegistry) {
-      throw new Error('App registry not available');
-    }
-
     // Try to find app from entities
     let appToLaunch = null;
 

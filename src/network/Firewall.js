@@ -13,6 +13,7 @@ export class Firewall {
     this.logEnabled = true;
     this.logs = [];
     this.maxLogs = 1000;
+    this.statistics = { allowed: 0, blocked: 0 };
 
     // Add default safe rules
     this._initializeDefaultRules();
@@ -30,16 +31,23 @@ export class Firewall {
     }
 
     const urlObj = this._parseURL(url);
-    const decision = this._evaluateRules(urlObj, options);
+    const evaluation = this._evaluateRules(urlObj, options);
+    const decision = evaluation.allowed;
 
-    if (this.logEnabled) {
+    if (decision) {
+      this.statistics.allowed += 1;
+    } else {
+      this.statistics.blocked += 1;
+    }
+
+    if (this.logEnabled && evaluation.shouldLog) {
       this._log({
         timestamp: Date.now(),
         url,
         hostname: urlObj.hostname,
         port: urlObj.port,
         protocol: urlObj.protocol,
-        decision,
+        action: decision ? 'allow' : 'deny',
         method: options.method || 'GET'
       });
     }
@@ -76,7 +84,9 @@ export class Firewall {
    * @returns {Array} List of rules
    */
   getRules() {
-    return this.rules.map(rule => ({ ...rule }));
+    return [...this.rules]
+      .sort((a, b) => b.priority - a.priority)
+      .map(rule => ({ ...rule }));
   }
 
   /**
@@ -84,7 +94,13 @@ export class Firewall {
    */
   clearRules() {
     this.rules = [];
-    this._initializeDefaultRules();
+  }
+
+  /**
+   * Enable default safe rules
+   */
+  enableDefaultRules() {
+    this._initializeDefaultRules(true);
   }
 
   /**
@@ -111,7 +127,8 @@ export class Firewall {
       defaultPolicy: this.defaultPolicy,
       ruleCount: this.rules.length,
       logEnabled: this.logEnabled,
-      logCount: this.logs.length
+      logCount: this.logs.length,
+      statistics: { ...this.statistics }
     };
   }
 
@@ -129,6 +146,20 @@ export class Firewall {
    */
   clearLogs() {
     this.logs = [];
+  }
+
+  /**
+   * Get usage statistics
+   */
+  getStatistics() {
+    return { ...this.statistics };
+  }
+
+  /**
+   * Reset usage statistics
+   */
+  resetStatistics() {
+    this.statistics = { allowed: 0, blocked: 0 };
   }
 
   /**
@@ -195,7 +226,11 @@ export class Firewall {
    * Initialize default firewall rules
    * @private
    */
-  _initializeDefaultRules() {
+  _initializeDefaultRules(reset = false) {
+    if (reset) {
+      this.rules = [];
+    }
+
     // Allow common web ports
     this.rules.push({
       id: 'default-http',
@@ -204,7 +239,7 @@ export class Firewall {
       protocol: 'tcp',
       action: 'allow',
       enabled: true,
-      priority: 1000,
+      priority: 1,
       reason: 'Default HTTP access'
     });
 
@@ -215,7 +250,7 @@ export class Firewall {
       protocol: 'tcp',
       action: 'allow',
       enabled: true,
-      priority: 1000,
+      priority: 1,
       reason: 'Default HTTPS access'
     });
 
@@ -226,7 +261,7 @@ export class Firewall {
       pattern: /malware|virus|trojan|phishing/i,
       action: 'deny',
       enabled: true,
-      priority: 500,
+      priority: 1,
       reason: 'Block known malicious patterns'
     });
   }
@@ -236,23 +271,38 @@ export class Firewall {
    * @private
    */
   _validateRule(rule) {
-    if (!rule.type) {
+    // Infer type if not provided
+    const inferredType = rule.type ||
+      (rule.hostname ? 'hostname' : null) ||
+      (rule.port ? 'port' : null) ||
+      (rule.protocol ? 'protocol' : null) ||
+      (rule.pattern ? 'pattern' : null) ||
+      (rule.method ? 'method' : null);
+
+    if (!inferredType) {
       throw new Error('Rule must have a type');
     }
 
-    if (!rule.action || !['allow', 'deny'].includes(rule.action)) {
+    // Normalize hostname/pattern fields
+    let normalizedRule = { ...rule, type: inferredType };
+
+    if (rule.hostname && !rule.pattern) {
+      normalizedRule.pattern = rule.hostname;
+    }
+
+    if (!normalizedRule.action || !['allow', 'deny'].includes(normalizedRule.action)) {
       throw new Error('Rule action must be "allow" or "deny"');
     }
 
     return {
-      id: rule.id || `rule-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type: rule.type,
-      action: rule.action,
-      enabled: rule.enabled !== false,
-      priority: rule.priority || 100,
-      reason: rule.reason || '',
+      id: normalizedRule.id || `rule-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: normalizedRule.type,
+      action: normalizedRule.action,
+      enabled: normalizedRule.enabled !== false,
+      priority: normalizedRule.priority ?? 100,
+      reason: normalizedRule.reason || '',
       created: Date.now(),
-      ...rule
+      ...normalizedRule
     };
   }
 
@@ -264,18 +314,18 @@ export class Firewall {
     // Sort rules by priority (lower number = higher priority)
     const sortedRules = [...this.rules]
       .filter(r => r.enabled)
-      .sort((a, b) => a.priority - b.priority);
+      .sort((a, b) => b.priority - a.priority);
 
     for (const rule of sortedRules) {
       const matches = this._ruleMatches(rule, urlObj, options);
 
       if (matches) {
-        return rule.action === 'allow';
+        return { allowed: rule.action === 'allow', shouldLog: rule.log !== false };
       }
     }
 
     // No matching rule, use default policy
-    return this.defaultPolicy === 'allow';
+    return { allowed: this.defaultPolicy === 'allow', shouldLog: false };
   }
 
   /**
@@ -286,12 +336,12 @@ export class Firewall {
     switch (rule.type) {
       case 'hostname':
         if (typeof rule.pattern === 'string') {
-          return urlObj.hostname === rule.pattern ||
-                 urlObj.hostname.endsWith('.' + rule.pattern);
+          const pattern = this._toWildcardRegex(rule.pattern, rule.caseSensitive !== false);
+          return pattern.test(urlObj.hostname);
         } else if (rule.pattern instanceof RegExp) {
           return rule.pattern.test(urlObj.hostname);
         }
-        break;
+        return false;
 
       case 'port':
         return urlObj.port === rule.port;
@@ -302,8 +352,11 @@ export class Firewall {
       case 'pattern':
         if (rule.pattern instanceof RegExp) {
           return rule.pattern.test(urlObj.href);
+        } else if (typeof rule.pattern === 'string') {
+          const pattern = this._toWildcardRegex(rule.pattern, rule.caseSensitive !== false);
+          return pattern.test(urlObj.href);
         }
-        break;
+        return false;
 
       case 'method':
         return options.method === rule.method;
@@ -330,7 +383,7 @@ export class Firewall {
         href: urlObj.href,
         protocol: urlObj.protocol,
         hostname: urlObj.hostname,
-        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+        port: Number(urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80)),
         pathname: urlObj.pathname
       };
     } catch (error) {
@@ -363,11 +416,7 @@ export class Firewall {
    * @returns {string} JSON string of rules
    */
   exportRules() {
-    return JSON.stringify({
-      version: '1.0',
-      defaultPolicy: this.defaultPolicy,
-      rules: this.rules
-    }, null, 2);
+    return JSON.stringify(this.getRules(), null, 2);
   }
 
   /**
@@ -377,15 +426,32 @@ export class Firewall {
   importRules(json) {
     try {
       const data = JSON.parse(json);
-
-      if (data.version !== '1.0') {
-        throw new Error('Unsupported rules version');
+      const rulesArray = Array.isArray(data) ? data : data.rules;
+      if (!rulesArray) {
+        throw new Error('Invalid rules format');
       }
 
-      this.defaultPolicy = data.defaultPolicy || 'allow';
-      this.rules = data.rules.map(rule => this._validateRule(rule));
+      this.rules = [];
+      for (const rule of rulesArray) {
+        this.addRule(rule);
+      }
     } catch (error) {
       throw new Error(`Failed to import rules: ${error.message}`);
     }
+  }
+
+  /**
+   * Convert wildcard string to RegExp
+   */
+  _toWildcardRegex(pattern, caseSensitive = true) {
+    if (pattern === '*') {
+      return new RegExp('.*', caseSensitive ? '' : 'i');
+    }
+
+    const escaped = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*');
+
+    return new RegExp(`^${escaped}$`, caseSensitive ? '' : 'i');
   }
 }

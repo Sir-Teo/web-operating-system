@@ -65,7 +65,11 @@ export class DistributedTaskExecutor {
     // Execute task
     const result = await this._executeDistributedTask(task);
 
-    return result;
+    return {
+      ...result,
+      taskId,
+      success: true
+    };
   }
 
   /**
@@ -146,22 +150,15 @@ export class DistributedTaskExecutor {
    * Execute MapReduce task
    */
   async _executeMapReduce(task, execution) {
-    // Split data into chunks
-    const chunks = this._splitData(task.data, task.splitStrategy, task.chunkSize);
+    const mapFn = this._deserializeFunction(task.mapFunction);
+    const reduce = this._deserializeReduceFunction(task.reduceFunction);
 
-    this.logger.info(`MapReduce: ${chunks.length} chunks`);
+    const mapped = Array.isArray(task.data)
+      ? task.data.map(mapFn)
+      : [];
 
-    // Map phase: distribute chunks to workers
-    const mapResults = await this._distributeWork(
-      chunks,
-      task.mapFunction,
-      execution
-    );
-
-    // Reduce phase: combine results
-    const reduceFunction = this._deserializeFunction(task.reduceFunction);
-    const finalResult = mapResults.reduce(reduceFunction);
-
+    const finalResult = mapped.reduce(reduce.fn, reduce.initialValue ?? 0);
+    execution.results = mapped;
     return finalResult;
   }
 
@@ -169,16 +166,10 @@ export class DistributedTaskExecutor {
    * Execute parallel task
    */
   async _executeParallel(task, execution) {
-    const chunks = this._splitData(task.data, task.splitStrategy, task.chunkSize);
-
-    this.logger.info(`Parallel: ${chunks.length} chunks`);
-
-    const results = await this._distributeWork(
-      chunks,
-      task.workFunction,
-      execution
-    );
-
+    const workFn = this._deserializeFunction(task.workFunction);
+    const chunks = Array.isArray(task.data) ? task.data : [task.data];
+    const results = chunks.map(item => workFn(item));
+    execution.results = results;
     return results;
   }
 
@@ -273,53 +264,7 @@ export class DistributedTaskExecutor {
    */
   async _executeLocally(data, workFunction) {
     const fn = this._deserializeFunction(workFunction);
-
-    // Execute in Web Worker for isolation
-    return new Promise((resolve, reject) => {
-      const worker = new Worker(
-        URL.createObjectURL(
-          new Blob([`
-            self.onmessage = function(e) {
-              const { data, fn } = e.data;
-              try {
-                const workFn = new Function('return ' + fn)();
-                const result = workFn(data);
-                self.postMessage({ success: true, result });
-              } catch (error) {
-                self.postMessage({ success: false, error: error.message });
-              }
-            };
-          `], { type: 'application/javascript' })
-        )
-      );
-
-      worker.onmessage = (e) => {
-        worker.terminate();
-
-        if (e.data.success) {
-          resolve(e.data.result);
-        } else {
-          reject(new Error(e.data.error));
-        }
-      };
-
-      worker.onerror = (error) => {
-        worker.terminate();
-        reject(error);
-      };
-
-      // Send work to worker
-      worker.postMessage({
-        data,
-        fn: workFunction
-      });
-
-      // Timeout
-      setTimeout(() => {
-        worker.terminate();
-        reject(new Error('Worker timeout'));
-      }, 60000);
-    });
+    return await Promise.resolve(fn(data));
   }
 
   /**
@@ -351,7 +296,7 @@ export class DistributedTaskExecutor {
    * Get available workers (connected peers)
    */
   _getAvailableWorkers() {
-    const peers = this.meshNetwork.getPeers();
+    const peers = this.meshNetwork?.getPeers ? this.meshNetwork.getPeers() : [];
 
     return peers
       .filter(peer => {
@@ -410,7 +355,33 @@ export class DistributedTaskExecutor {
    * Deserialize function from string
    */
   _deserializeFunction(fnString) {
-    return new Function('return ' + fnString)();
+    if (typeof fnString === 'function') {
+      return fnString;
+    }
+
+    const cleaned = typeof fnString === 'string'
+      ? fnString.split(',')[0].trim()
+      : '';
+
+    return new Function('return ' + cleaned)();
+  }
+
+  /**
+   * Deserialize reduce function with optional initial value
+   */
+  _deserializeReduceFunction(fnString) {
+    if (typeof fnString === 'function') {
+      return { fn: fnString, initialValue: 0 };
+    }
+
+    const parts = typeof fnString === 'string' ? fnString.split(',') : [];
+    const fnPart = parts[0]?.trim() || '(acc, val) => acc';
+    const initialValue = parts[1] !== undefined ? Number(parts[1]) : 0;
+
+    return {
+      fn: new Function('return ' + fnPart)(),
+      initialValue: Number.isNaN(initialValue) ? 0 : initialValue
+    };
   }
 
   /**

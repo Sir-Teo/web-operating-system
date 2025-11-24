@@ -110,6 +110,9 @@ class VirtualFileSystem extends EventTarget {
     await this.mount('/home', new OPFSDriver());
     await this.mount('/tmp', new MemoryDriver());
     await this.mount('/media', new IndexedDBDriver());
+    // Hidden system directories for internal services
+    await this.mount('/.workflows', new OPFSDriver());
+    await this.mount('/.marketplace', new OPFSDriver());
 
     // Create standard directories
     try {
@@ -119,6 +122,8 @@ class VirtualFileSystem extends EventTarget {
       await this.mkdir('/home/user/Pictures', { recursive: true });
       await this.mkdir('/home/user/Desktop', { recursive: true });
       await this.mkdir('/tmp', { recursive: true });
+      await this.mkdir('/.workflows', { recursive: true });
+      await this.mkdir('/.marketplace', { recursive: true });
     } catch (error) {
       console.warn('Some directories already exist:', error.message);
     }

@@ -45,10 +45,10 @@ class Kernel extends EventTarget {
       await this._initializeFileSystem();
       await this._initializeProcessManager();
       await this._initializeIPC();
+      await this._loadSystemConfiguration();
       await this._initializeUserManager();
       await this._initializePluginManager();
       await this._initializeCloudManager();
-      await this._loadSystemConfiguration();
       await this._startSystemServices();
 
       this.initialized = true;
@@ -144,19 +144,25 @@ class Kernel extends EventTarget {
 
   async _loadSystemConfiguration() {
     this.logger.info('Loading system configuration...');
+    // Start with safe defaults
+    this.config = {
+      theme: 'light',
+      wallpaper: '/assets/wallpapers/default.jpg',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
 
     try {
       const configPath = '/home/user/.config/system.json';
-      const configData = await this.vfs.readFile(configPath, { encoding: 'utf8' });
-      this.config = JSON.parse(configData);
-    } catch (error) {
-      // Use defaults if config doesn't exist
-      this.config = {
-        theme: 'light',
-        wallpaper: '/assets/wallpapers/default.jpg',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      };
+      const configData = this.vfs?.readFile
+        ? await this.vfs.readFile(configPath, { encoding: 'utf8' })
+        : null;
 
+      if (configData) {
+        this.config = JSON.parse(configData);
+        this.logger.info('System configuration loaded');
+        return;
+      }
+    } catch (error) {
       // Save default config
       try {
         await this.vfs.mkdir('/home/user/.config', { recursive: true });
@@ -165,7 +171,6 @@ class Kernel extends EventTarget {
         this.logger.warn('Could not save default config:', e.message);
       }
     }
-
     this.logger.info('System configuration loaded');
   }
 

@@ -104,9 +104,8 @@ class MessageBus extends EventTarget {
     // Send to specific process
     const channel = this.channels.get(target);
     if (!channel) {
-      const error = new ChannelNotFoundError(target);
-      logger.error('Channel not found', error);
-      throw error;
+      logger.warn('Channel not found', { target });
+      return false;
     }
 
     try {

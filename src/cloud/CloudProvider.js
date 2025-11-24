@@ -343,26 +343,31 @@ export class WebDAVProvider extends CloudProvider {
   }
 
   parseWebDAVResponse(xml) {
-    // Simple XML parsing for WebDAV responses
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'text/xml');
-    const responses = doc.querySelectorAll('response');
+    const responses = Array.from(doc.getElementsByTagName('*'))
+      .filter(node => node.localName === 'response');
 
     const files = [];
     responses.forEach((response) => {
-      const href = response.querySelector('href')?.textContent || '';
-      const propstat = response.querySelector('propstat');
+      const hrefNode = Array.from(response.getElementsByTagName('*'))
+        .find(n => n.localName === 'href');
+      const propNode = Array.from(response.getElementsByTagName('*'))
+        .find(n => n.localName === 'prop');
 
-      if (!propstat) return;
+      if (!hrefNode || !propNode) return;
 
-      const prop = propstat.querySelector('prop');
-      if (!prop) return;
-
-      const contentLength = prop.querySelector('getcontentlength')?.textContent || '0';
-      const lastModified = prop.querySelector('getlastmodified')?.textContent || '';
-      const contentType = prop.querySelector('getcontenttype')?.textContent || '';
-      const resourceType = prop.querySelector('resourcetype');
-      const isDirectory = resourceType?.querySelector('collection') !== null;
+      const href = hrefNode.textContent || '';
+      const contentLength = Array.from(propNode.getElementsByTagName('*'))
+        .find(n => n.localName === 'getcontentlength')?.textContent || '0';
+      const lastModified = Array.from(propNode.getElementsByTagName('*'))
+        .find(n => n.localName === 'getlastmodified')?.textContent || '';
+      const contentType = Array.from(propNode.getElementsByTagName('*'))
+        .find(n => n.localName === 'getcontenttype')?.textContent || '';
+      const resourceType = Array.from(propNode.getElementsByTagName('*'))
+        .find(n => n.localName === 'resourcetype');
+      const isDirectory = !!Array.from(resourceType?.getElementsByTagName('*') || [])
+        .find(n => n.localName === 'collection');
 
       const name = href.split('/').filter(Boolean).pop() || '';
 
@@ -370,11 +375,31 @@ export class WebDAVProvider extends CloudProvider {
         name,
         path: href,
         size: parseInt(contentLength, 10),
-        modified: new Date(lastModified),
+        modified: lastModified ? new Date(lastModified) : new Date(),
         type: isDirectory ? 'directory' : 'file',
         mimeType: contentType
       });
     });
+
+    if (files.length === 0) {
+      // Fallback simple parser for basic PROPFIND responses
+      const hrefMatch = xml.match(/<[^>]*href[^>]*>([^<]+)<\/[^>]*href>/i);
+      if (hrefMatch) {
+        const href = hrefMatch[1];
+        const isDir = /<[^>]*collection\s*\/?>/i.test(xml);
+        const lengthMatch = xml.match(/<[^>]*getcontentlength[^>]*>(\d+)<\/[^>]*getcontentlength>/i);
+        const lastModMatch = xml.match(/<[^>]*getlastmodified[^>]*>([^<]+)<\/[^>]*getlastmodified>/i);
+
+        files.push({
+          name: href.split('/').filter(Boolean).pop() || '',
+          path: href,
+          size: lengthMatch ? parseInt(lengthMatch[1], 10) : 0,
+          modified: lastModMatch ? new Date(lastModMatch[1]) : new Date(),
+          type: isDir ? 'directory' : 'file',
+          mimeType: ''
+        });
+      }
+    }
 
     return files;
   }

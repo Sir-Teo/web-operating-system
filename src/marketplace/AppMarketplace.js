@@ -12,6 +12,7 @@ export class AppMarketplace {
     this.logger = new Logger('AppMarketplace');
     this.apps = new Map();
     this.installed = new Map();
+    this._idCounter = 0;
     this.categories = [
       'Productivity',
       'Development',
@@ -31,7 +32,7 @@ export class AppMarketplace {
   }
 
   async publishApp(appPackage) {
-    const appId = `app_${Date.now()}`;
+    const appId = `app_${Date.now()}_${++this._idCounter}`;
 
     const app = {
       id: appId,

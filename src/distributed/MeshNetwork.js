@@ -3,7 +3,7 @@
  * Allows multiple WebOS instances to form a mesh network for distributed task execution
  */
 
-import SimplePeer from 'simple-peer';
+import SimplePeer from 'simple-peer/simplepeer.min.js';
 import { eventBus } from '../utils/EventBus.js';
 import { Logger } from '../utils/Logger.js';
 

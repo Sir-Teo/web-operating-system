@@ -12,6 +12,8 @@ export class CICDPipeline {
     this.logger = new Logger('CICDPipeline');
     this.pipelines = new Map();
     this.builds = new Map();
+    this._idCounter = 0;
+    this._buildCounter = 0;
   }
 
   async initialize() {
@@ -21,7 +23,7 @@ export class CICDPipeline {
   }
 
   createPipeline(config) {
-    const pipelineId = `pipeline_${Date.now()}`;
+    const pipelineId = `pipeline_${Date.now()}_${++this._idCounter}`;
 
     const pipeline = {
       id: pipelineId,
@@ -42,7 +44,7 @@ export class CICDPipeline {
     const pipeline = this.pipelines.get(pipelineId);
     if (!pipeline) throw new Error('Pipeline not found');
 
-    const buildId = `build_${Date.now()}`;
+    const buildId = `build_${Date.now()}_${++this._buildCounter}`;
     const build = {
       id: buildId,
       pipelineId,

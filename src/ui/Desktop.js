@@ -154,7 +154,7 @@ export class Desktop {
         </div>
       `;
 
-      const winbox = WindowManager.createWindow({
+      const { winbox } = WindowManager.createWindow({
         title: `📁 ${folderName}`,
         icon: '📁',
         width: '600px',
@@ -163,7 +163,12 @@ export class Desktop {
         y: 'center'
       });
 
-      winbox.body.appendChild(content);
+      const target = winbox.body || winbox.dom?.querySelector('.wb-body');
+      if (target) {
+        target.appendChild(content);
+      } else {
+        console.warn('Folder window missing body element');
+      }
 
       // Add click handlers for apps in folder
       content.querySelectorAll('.folder-app-item').forEach(item => {

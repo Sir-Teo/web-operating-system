@@ -135,12 +135,24 @@ export class SyncEngine {
           toUpload.push({ relativePath, localFile });
         } else {
           // File exists in both places - check for conflicts
-          const localModified = localFile.modified || 0;
-          const cloudModified = cloudFile.modified?.getTime() || 0;
+          const hasConflict = await this._hasConflict(
+            localPath,
+            cloudPath,
+            relativePath,
+            localFile,
+            cloudFile
+          );
 
-          if (Math.abs(localModified - cloudModified) > 1000) {
-            // Modified times differ by more than 1 second
+          if (hasConflict) {
             conflicts.push({ relativePath, localFile, cloudFile });
+          } else {
+            const localModified = localFile.modified || 0;
+            const cloudModified = cloudFile.modified?.getTime?.() || cloudFile.modified || 0;
+            if (localModified > cloudModified) {
+              toUpload.push({ relativePath, localFile });
+            } else if (cloudModified > localModified) {
+              toDownload.push({ relativePath, cloudFile });
+            }
           }
         }
       }
@@ -492,8 +504,11 @@ export class SyncEngine {
    * @returns {string} Conflict path
    */
   getConflictPath(path) {
-    const ext = path.substring(path.lastIndexOf('.'));
-    const base = path.substring(0, path.lastIndexOf('.'));
+    const lastSlash = path.lastIndexOf('/');
+    const lastDot = path.lastIndexOf('.');
+    const hasExt = lastDot > lastSlash;
+    const ext = hasExt ? path.substring(lastDot) : '';
+    const base = hasExt ? path.substring(0, lastDot) : path;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     return `${base}.conflict.${timestamp}${ext}`;
   }
@@ -678,5 +693,49 @@ export class SyncEngine {
 
     // Clear sync pairs
     this.syncPairs.clear();
+  }
+
+  /**
+   * Determine if local and cloud versions are in conflict
+   */
+  async _hasConflict(localBasePath, cloudBasePath, relativePath, localFile, cloudFile) {
+    const localModified = localFile.modified || 0;
+    const cloudModified = cloudFile.modified?.getTime?.() || cloudFile.modified || 0;
+    const localSize = localFile.size ?? 0;
+    const cloudSize = cloudFile.size ?? 0;
+
+    if (Math.abs(localModified - cloudModified) > 1000) {
+      return true;
+    }
+
+    if (localSize !== cloudSize) {
+      return true;
+    }
+
+    // If metadata matches, compare contents to be sure
+    try {
+      const localPath = `${localBasePath}/${relativePath}`;
+      const cloudPath = `${cloudBasePath}/${relativePath}`;
+
+      const [localData, cloudData] = await Promise.all([
+        this.vfs.readFile(localPath),
+        this.cloud.readFile(cloudPath)
+      ]);
+
+      if (localData.length !== cloudData.length) {
+        return true;
+      }
+
+      for (let i = 0; i < localData.length; i++) {
+        if (localData[i] !== cloudData[i]) {
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn('Conflict comparison failed, treating as conflict:', error);
+      return true;
+    }
+
+    return false;
   }
 }

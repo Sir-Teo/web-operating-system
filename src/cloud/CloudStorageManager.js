@@ -14,6 +14,7 @@ export class CloudStorageManager {
     this.providers = new Map();
     this.mounts = new Map(); // Map of mount points to providers
     this.syncEngines = new Map();
+    this._idCounter = 0;
   }
 
   /**
@@ -78,7 +79,7 @@ export class CloudStorageManager {
     await provider.authenticate();
 
     // Register provider
-    const providerId = `${providerType}-${Date.now()}`;
+    const providerId = `${providerType}-${Date.now()}${++this._idCounter}`;
     this.registerProvider(providerId, provider);
 
     return providerId;
@@ -92,8 +93,8 @@ export class CloudStorageManager {
     const provider = this.getProvider(providerId);
 
     // Stop all syncs for this provider
-    for (const [mountPoint, mountProvider] of this.mounts) {
-      if (mountProvider === providerId) {
+    for (const [mountPoint, mountInfo] of this.mounts) {
+      if (mountInfo.providerId === providerId) {
         await this.unmount(mountPoint);
       }
     }

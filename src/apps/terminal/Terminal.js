@@ -49,7 +49,8 @@ export default class Terminal {
     this.networkStack = NetworkStack;
 
     // Initialize cloud storage manager
-    this.cloudManager = context.kernel.cloudManager;
+    const fallbackVfs = context?.kernel?.vfs || context?.fs;
+    this.cloudManager = context?.kernel?.cloudManager || (fallbackVfs ? new CloudStorageManager(fallbackVfs) : null);
 
     // Initialize collaboration commands
     this.collaborationCommands = new CollaborationCommands(this);
@@ -439,8 +440,12 @@ export default class Terminal {
 
     let [command, ...args] = commandLine.trim().split(/\s+/);
 
-    // Expand globs in arguments
-    args = await this._expandGlobs(args);
+    // Expand globs in arguments (special handling for find to keep -name patterns intact)
+    if (command === 'find') {
+      args = await this._expandFindArgs(args);
+    } else {
+      args = await this._expandGlobs(args);
+    }
 
     const builtins = {
       cd: this.cmd_cd.bind(this),
@@ -574,6 +579,9 @@ export default class Terminal {
         const outputMatch = command.match(/\s*>>\s*([^\s|<]+)/);
         if (outputMatch) {
           outputFile = outputMatch[1].trim();
+          if (!outputFile || outputFile.startsWith('>')) {
+            return '❌ Syntax error: invalid redirection';
+          }
           appendOutput = true;
           command = command.replace(outputMatch[0], '');
         }
@@ -581,6 +589,9 @@ export default class Terminal {
         const outputMatch = command.match(/\s*>\s*([^\s|<]+)/);
         if (outputMatch) {
           outputFile = outputMatch[1].trim();
+          if (!outputFile || outputFile.startsWith('>')) {
+            return '❌ Syntax error: invalid redirection';
+          }
           command = command.replace(outputMatch[0], '');
         }
       }
@@ -692,6 +703,43 @@ export default class Terminal {
     return expanded;
   }
 
+  async _expandFindArgs(args) {
+    // Keep -name patterns literal while still expanding other glob arguments
+    const expanded = [];
+    let skipPattern = false;
+
+    for (const arg of args) {
+      if (skipPattern) {
+        expanded.push(arg);
+        skipPattern = false;
+        continue;
+      }
+
+      if (arg === '-name') {
+        expanded.push(arg);
+        skipPattern = true;
+        continue;
+      }
+
+      if (typeof arg === 'string' && (arg.includes('*') || arg.includes('?') || arg.match(/\[.+\]/))) {
+        try {
+          const matches = await this._matchGlob(arg);
+          if (matches.length > 0) {
+            expanded.push(...matches);
+          } else {
+            expanded.push(arg);
+          }
+        } catch {
+          expanded.push(arg);
+        }
+      } else {
+        expanded.push(arg);
+      }
+    }
+
+    return expanded;
+  }
+
   async _matchGlob(pattern) {
     // Convert glob pattern to regex
     const regexPattern = pattern
@@ -718,7 +766,9 @@ export default class Terminal {
 
       try {
         const entries = await this.context.fs.readdir(dir);
-        const matches = entries.filter(entry => fileRegex.test(entry));
+        const matches = entries
+          .map(entry => (typeof entry === 'string' ? entry : entry?.name))
+          .filter(name => typeof name === 'string' && fileRegex.test(name));
         return matches.map(m => pattern.substring(0, lastSlash + 1) + m);
       } catch (e) {
         return [];
@@ -728,7 +778,9 @@ export default class Terminal {
     // Match in current directory
     try {
       const entries = await this.context.fs.readdir(dir);
-      return entries.filter(entry => regex.test(entry));
+      return entries
+        .map(entry => (typeof entry === 'string' ? entry : entry?.name))
+        .filter(name => typeof name === 'string' && regex.test(name));
     } catch (e) {
       return [];
     }
@@ -1296,13 +1348,34 @@ export default class Terminal {
       if (args[i] === '-name' && i + 1 < args.length) {
         namePattern = args[i + 1];
         i++;
-      } else if (!args[i].startsWith('-')) {
+      } else if (typeof args[i] === 'string' && !args[i].startsWith('-')) {
         searchPath = this._resolvePath(args[i]);
       }
     }
 
     if (!namePattern) {
       namePattern = '*'; // Find all
+    }
+    if (typeof namePattern !== 'string') {
+      namePattern = '*';
+    }
+
+    if (namePattern === '*') {
+      let entries = [];
+      try {
+        entries = await this.context.fs.readdir(searchPath);
+      } catch (error) {
+        entries = [];
+      }
+
+      if (!Array.isArray(entries) || entries.length === 0) {
+        return `❌ find: no files matching '${namePattern}' found in ${searchPath}`;
+      }
+      const lines = entries.map(entry => {
+        const icon = entry.type === 'directory' ? '📁' : '📄';
+        return `${icon} ${searchPath}/${entry.name}`;
+      });
+      return lines.join('\n');
     }
 
     const results = [];

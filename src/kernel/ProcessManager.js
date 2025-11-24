@@ -285,7 +285,8 @@ class ProcessManager extends EventTarget {
 
     const process = this.processes.get(pid);
     if (!process) {
-      throw new ProcessNotFoundError(pid);
+      logger.warn('Process not found', { pid });
+      return false;
     }
 
     try {
