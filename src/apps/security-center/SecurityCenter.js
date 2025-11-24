@@ -13,6 +13,7 @@ import WebAuthnManager from '../../security/WebAuthnManager.js';
 import TOTPManager from '../../security/TOTPManager.js';
 import CredentialManager from '../../security/CredentialManager.js';
 import SecurityAuditLogger from '../../security/SecurityAuditLogger.js';
+import CSPEnforcer from '../../security/CSPEnforcer.js';
 
 class SecurityCenter {
   constructor(context) {
@@ -29,6 +30,7 @@ class SecurityCenter {
     this.totp = TOTPManager;
     this.credentials = CredentialManager;
     this.audit = SecurityAuditLogger;
+    this.csp = CSPEnforcer;
   }
 
   render() {
@@ -50,6 +52,7 @@ class SecurityCenter {
           <button class="tab-btn" data-tab="webauthn">🔐 Biometric</button>
           <button class="tab-btn" data-tab="totp">🔑 2FA</button>
           <button class="tab-btn" data-tab="vault">🗝️ Vault</button>
+          <button class="tab-btn" data-tab="csp">🛡️ CSP</button>
           <button class="tab-btn" data-tab="audit">📋 Audit Log</button>
         </div>
 
@@ -59,6 +62,7 @@ class SecurityCenter {
           <div id="webauthn-tab" class="tab-pane"></div>
           <div id="totp-tab" class="tab-pane"></div>
           <div id="vault-tab" class="tab-pane"></div>
+          <div id="csp-tab" class="tab-pane"></div>
           <div id="audit-tab" class="tab-pane"></div>
         </div>
       </div>
@@ -69,6 +73,7 @@ class SecurityCenter {
     this._renderWebAuthn();
     this._renderTOTP();
     this._renderVault();
+    this._renderCSP();
     this._renderAudit();
 
     return this.container;
@@ -126,6 +131,16 @@ class SecurityCenter {
             <div class="stat-icon">📋</div>
             <div class="stat-value">${stats.total}</div>
             <div class="stat-label">Audit Events (24h)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-value">${this.csp.enabled ? 'Active' : 'Inactive'}</div>
+            <div class="stat-label">CSP Protection</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value">${this.csp.violations.length}</div>
+            <div class="stat-label">CSP Violations</div>
           </div>
         </div>
 
@@ -403,6 +418,124 @@ class SecurityCenter {
         </div>
       </div>
     `).join('');
+  }
+
+  _renderCSP() {
+    const tab = this.container.querySelector('#csp-tab');
+    const policy = this.csp.getCurrentPolicy();
+    const violations = this.csp.getViolations(50);
+
+    tab.innerHTML = `
+      <div class="csp-panel">
+        <h3>Content Security Policy</h3>
+        <p>Manage CSP rules to prevent XSS and injection attacks</p>
+
+        <div class="csp-status">
+          <div class="status-row">
+            <strong>Status:</strong>
+            <span class="badge ${this.csp.enabled ? 'badge-success' : 'badge-warning'}">
+              ${this.csp.enabled ? 'Enabled' : 'Disabled'}
+            </span>
+            <button id="toggle-csp" class="btn-secondary">
+              ${this.csp.enabled ? 'Disable' : 'Enable'} CSP
+            </button>
+          </div>
+        </div>
+
+        <div class="csp-policy-editor">
+          <h4>Current Policy</h4>
+          <div class="policy-directives">
+            ${Object.entries(policy).map(([directive, sources]) => `
+              <div class="directive-row">
+                <strong>${directive}:</strong>
+                <div class="sources">
+                  ${Array.isArray(sources) && sources.length > 0
+                    ? sources.map(src => `<span class="source-tag">${src}</span>`).join('')
+                    : '<em>No sources</em>'}
+                </div>
+                <button class="btn-small edit-directive" data-directive="${directive}">Edit</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="action-section">
+          <button id="reset-csp" class="btn-secondary">Reset to Default</button>
+          <button id="export-policy" class="btn-secondary">Export Policy</button>
+          <button id="import-policy" class="btn-secondary">Import Policy</button>
+        </div>
+
+        <div class="csp-violations">
+          <h4>Recent Violations (${violations.length})</h4>
+          <div class="violations-list">
+            ${violations.length === 0 ? '<p class="empty-state">No violations recorded</p>' :
+              violations.map(v => `
+                <div class="violation-item">
+                  <div class="violation-header">
+                    <strong>${v.effectiveDirective}</strong>
+                    <span class="violation-time">${new Date(v.timestamp).toLocaleString()}</span>
+                  </div>
+                  <div class="violation-details">
+                    <div><strong>Blocked:</strong> ${v.blockedURI}</div>
+                    ${v.sourceFile ? `<div><strong>Source:</strong> ${v.sourceFile}:${v.lineNumber}</div>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+          </div>
+          ${violations.length > 0 ? `<button id="clear-violations" class="btn-danger">Clear Violations</button>` : ''}
+        </div>
+      </div>
+    `;
+
+    // Event listeners
+    const toggleBtn = tab.querySelector('#toggle-csp');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        if (this.csp.enabled) {
+          this.csp.disable();
+        } else {
+          this.csp.enable();
+        }
+        this._renderCSP();
+        this._renderDashboard();
+      });
+    }
+
+    tab.querySelector('#reset-csp')?.addEventListener('click', () => {
+      if (confirm('Reset CSP policy to default?')) {
+        this.csp.resetPolicy();
+        this._renderCSP();
+      }
+    });
+
+    tab.querySelector('#export-policy')?.addEventListener('click', () => {
+      const policyString = this.csp.getPolicyString();
+      const blob = new Blob([policyString], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `csp-policy-${Date.now()}.txt`;
+      a.click();
+    });
+
+    tab.querySelector('#clear-violations')?.addEventListener('click', () => {
+      this.csp.clearViolations();
+      this._renderCSP();
+    });
+
+    tab.querySelectorAll('.edit-directive').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const directive = btn.dataset.directive;
+        const current = policy[directive] || [];
+        const newSources = prompt(`Edit sources for ${directive} (comma-separated):`, current.join(', '));
+
+        if (newSources !== null) {
+          const sources = newSources.split(',').map(s => s.trim()).filter(s => s);
+          this.csp.updateDirective(directive, sources);
+          this._renderCSP();
+        }
+      });
+    });
   }
 
   _renderAudit() {

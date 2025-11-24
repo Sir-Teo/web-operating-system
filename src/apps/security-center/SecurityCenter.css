@@ -178,6 +178,7 @@
 .webauthn-panel,
 .totp-panel,
 .vault-panel,
+.csp-panel,
 .audit-panel {
   background: #fff;
   padding: 24px;
@@ -188,15 +189,27 @@
 .webauthn-panel h3,
 .totp-panel h3,
 .vault-panel h3,
+.csp-panel h3,
 .audit-panel h3 {
   margin: 0 0 8px 0;
   color: #333;
   font-size: 20px;
 }
 
+.webauthn-panel h4,
+.totp-panel h4,
+.vault-panel h4,
+.csp-panel h4,
+.audit-panel h4 {
+  margin: 24px 0 12px 0;
+  color: #444;
+  font-size: 16px;
+}
+
 .webauthn-panel p,
 .totp-panel p,
 .vault-panel p,
+.csp-panel p,
 .audit-panel p {
   margin: 0 0 20px 0;
   color: #666;
@@ -490,6 +503,131 @@
 .tab-content::-webkit-scrollbar-thumb:hover,
 .audit-logs::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
+}
+
+/* CSP Panel */
+.csp-status {
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: #4caf50;
+  color: #fff;
+}
+
+.badge-warning {
+  background: #ff9800;
+  color: #fff;
+}
+
+.csp-policy-editor {
+  margin: 24px 0;
+}
+
+.policy-directives {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.directive-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.directive-row strong {
+  min-width: 150px;
+  color: #333;
+  font-size: 13px;
+}
+
+.sources {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.source-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  color: #1976d2;
+}
+
+.edit-directive {
+  padding: 6px 12px;
+}
+
+.csp-violations {
+  margin-top: 32px;
+}
+
+.violations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.violation-item {
+  padding: 12px;
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  border-radius: 4px;
+}
+
+.violation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.violation-header strong {
+  color: #e65100;
+  font-size: 14px;
+}
+
+.violation-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.violation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #666;
+  font-family: monospace;
 }
 
 /* Responsive */

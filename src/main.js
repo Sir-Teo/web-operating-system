@@ -47,6 +47,9 @@ import RuntimeDiagnostics from './apps/runtime-diagnostics/RuntimeDiagnostics.ts
 import ScreenshotApp from './apps/screenshot/Screenshot.js';
 import CollaborationHub from './apps/collaboration-hub/CollaborationHub.js';
 import SecurityCenter from './apps/security-center/SecurityCenter.js';
+import ImageEditor from './apps/image-editor/ImageEditor.js';
+import CSVEditor from './apps/csv-editor/CSVEditor.js';
+import PluginMarketplace from './apps/plugin-marketplace/PluginMarketplace.js';
 import Email from './apps/email/Email.js';
 import Notes from './apps/notes/Notes.js';
 import VideoPlayer from './apps/video-player/VideoPlayer.js';
@@ -79,6 +82,8 @@ import './apps/spreadsheet/Spreadsheet.css';
 import './apps/presentation/Presentation.css';
 import './apps/collaboration-hub/CollaborationHub.css';
 import './apps/security-center/SecurityCenter.css';
+import './apps/image-editor/ImageEditor.css';
+import './apps/csv-editor/CSVEditor.css';
 import './apps/email/Email.css';
 import './apps/notes/Notes.css';
 import './apps/video-player/VideoPlayer.css';
@@ -322,6 +327,39 @@ class WebOS {
       type: 'web',
       permissions: ['system.security', 'filesystem.read', 'filesystem.write'],
       Component: SecurityCenter
+    });
+
+    // Register Image Editor
+    AppRegistry.register({
+      id: 'image-editor',
+      name: 'Image Editor',
+      version: '1.0.0',
+      icon: '🎨',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: ImageEditor
+    });
+
+    // Register CSV Editor
+    AppRegistry.register({
+      id: 'csv-editor',
+      name: 'CSV Editor',
+      version: '1.0.0',
+      icon: '📊',
+      type: 'web',
+      permissions: ['filesystem.read', 'filesystem.write'],
+      Component: CSVEditor
+    });
+
+    // Register Plugin Marketplace
+    AppRegistry.register({
+      id: 'plugin-marketplace',
+      name: 'Plugin Marketplace',
+      version: '1.0.0',
+      icon: '🧩',
+      type: 'web',
+      permissions: ['network.http', 'filesystem.read', 'filesystem.write'],
+      Component: PluginMarketplace
     });
 
     // Register Paint
