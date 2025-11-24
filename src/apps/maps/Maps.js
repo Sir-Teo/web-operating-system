@@ -4,6 +4,7 @@ export default class Maps {
   constructor(context) {
     this.context = context;
     this.fs = context.fs;
+    this._resizeHandler = null;
 
     this.currentLocation = { lat: 37.7749, lng: -122.4194, name: 'San Francisco' };
     this.zoom = 12;
@@ -63,6 +64,7 @@ export default class Maps {
   render() {
     const container = document.createElement('div');
     container.className = 'maps-app';
+    this.container = container;
     container.innerHTML = `
       <div class="maps-layout">
         <div class="maps-sidebar">
@@ -203,7 +205,13 @@ export default class Maps {
     `;
 
     this.attachEventListeners(container);
-    this.drawMap(container);
+    // Defer drawing until the element is attached to the DOM so sizing works
+    setTimeout(() => this.drawMap(), 0);
+
+    if (!this._resizeHandler) {
+      this._resizeHandler = () => this.drawMap();
+      window.addEventListener('resize', this._resizeHandler);
+    }
     return container;
   }
 
@@ -452,7 +460,8 @@ export default class Maps {
     }
   }
 
-  drawMap(container) {
+  drawMap(container = this.container) {
+    if (!container) return;
     const canvas = container.querySelector('.map-canvas');
     if (!canvas) return;
 
