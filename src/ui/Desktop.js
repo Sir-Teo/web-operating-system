@@ -39,15 +39,141 @@ export class Desktop {
       const { default: AppRegistry } = await import('../apps/AppRegistry.js');
       const apps = AppRegistry.listApps();
 
+      // Create folders for organizing apps
+      this._createFolder('System', ['⚙️', '🖥️', '👤', '📦', '🔧', '🔒'], [
+        'settings', 'system-monitor', 'user-manager', 'package-manager',
+        'plugin-manager', 'security-center', 'devtools'
+      ]);
+
+      this._createFolder('Productivity', ['📝', '📊', '📈', '📅'], [
+        'word-processor', 'spreadsheet', 'presentation', 'notes',
+        'calendar', 'task-manager', 'contacts'
+      ]);
+
+      this._createFolder('Development', ['💻', '📝', '🐛', '🔧'], [
+        'code-editor', 'terminal', 'git-client', 'code-runner',
+        'code-runner-enhanced', 'database-manager', 'api-tester',
+        'markdown-editor', 'language-manager', 'polyglot-playground',
+        'interactive-notebook', 'runtime-diagnostics'
+      ]);
+
+      this._createFolder('Media', ['🎨', '🖼️', '🎵', '📹'], [
+        'image-editor', 'advanced-image-editor', 'image-viewer', 'paint',
+        'music-player', 'video-player', 'camera', 'voice-recorder',
+        'screen-recorder', 'screenshot'
+      ]);
+
+      this._createFolder('Files & Data', ['📁', '📊', '🗄️', '📄'], [
+        'file-manager', 'file-manager-v2', 'text-editor', 'csv-editor',
+        'archive-manager', 'pdf-viewer', 'data-visualization', 'cloud-storage'
+      ]);
+
+      this._createFolder('Communication', ['📧', '💬', '🎥', '🤝'], [
+        'email', 'chat', 'video-conferencing', 'collaboration-hub'
+      ]);
+
+      this._createFolder('Utilities', ['🧮', '🎨', '🌤️', '🗺️'], [
+        'calculator', 'clock', 'weather', 'maps', 'color-picker',
+        'character-map', 'browser'
+      ]);
+
+      this._createFolder('AI & Plugins', ['🤖', '🧩'], [
+        'ai-assistant', 'plugin-marketplace'
+      ]);
+
+      this._createFolder('Games', ['🎮', '🕹️'], [
+        'tic-tac-toe', 'snake', 'tetris', 'minesweeper',
+        'airplane-shooter', 'racing'
+      ]);
+
+      // Add any apps not in folders as individual icons
+      const folderedAppIds = new Set();
+      this.icons.forEach(icon => {
+        if (icon.data.type === 'folder') {
+          icon.data.apps.forEach(appId => folderedAppIds.add(appId));
+        }
+      });
+
       apps.forEach((app, index) => {
-        this._createIcon({
-          name: app.name,
-          icon: app.icon || '🧩',
-          appId: app.id
-        }, index);
+        if (!folderedAppIds.has(app.id)) {
+          this._createIcon({
+            name: app.name,
+            icon: app.icon || '🧩',
+            appId: app.id
+          }, index);
+        }
       });
     } catch (error) {
       console.error('Failed to load desktop icons:', error);
+    }
+  }
+
+  _createFolder(name, icons, appIds) {
+    const folderIcon = icons[0];
+    const icon = document.createElement('div');
+    icon.className = 'desktop-icon desktop-folder';
+    icon.innerHTML = `
+      <div class="icon-image">📁</div>
+      <div class="icon-label">${name}</div>
+    `;
+
+    icon.addEventListener('dblclick', () => {
+      this._openFolder(name, appIds);
+    });
+
+    this.iconsContainer.appendChild(icon);
+    this.icons.push({
+      element: icon,
+      data: {
+        name,
+        icon: '📁',
+        type: 'folder',
+        apps: appIds
+      }
+    });
+  }
+
+  async _openFolder(folderName, appIds) {
+    try {
+      const { default: AppRegistry } = await import('../apps/AppRegistry.js');
+      const { default: WindowManager } = await import('./WindowManager.js');
+
+      // Create a folder window with app grid
+      const apps = appIds.map(id => AppRegistry.getApp(id)).filter(app => app);
+
+      const content = document.createElement('div');
+      content.className = 'folder-content';
+      content.innerHTML = `
+        <div class="folder-grid">
+          ${apps.map(app => `
+            <div class="folder-app-item" data-app-id="${app.id}">
+              <div class="folder-app-icon">${app.icon || '🧩'}</div>
+              <div class="folder-app-name">${app.name}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      const winbox = WindowManager.createWindow({
+        title: `📁 ${folderName}`,
+        icon: '📁',
+        width: '600px',
+        height: '400px',
+        x: 'center',
+        y: 'center'
+      });
+
+      winbox.body.appendChild(content);
+
+      // Add click handlers for apps in folder
+      content.querySelectorAll('.folder-app-item').forEach(item => {
+        item.addEventListener('dblclick', async () => {
+          const appId = item.dataset.appId;
+          await AppRegistry.launchApp(appId);
+        });
+      });
+    } catch (error) {
+      console.error('Failed to open folder:', error);
     }
   }
 

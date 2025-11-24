@@ -1,0 +1,63 @@
+
+/* Desktop Folder Styles */
+.desktop-folder {
+  cursor: pointer;
+}
+
+.desktop-folder:hover {
+  transform: translateY(-2px);
+}
+
+.folder-content {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 20px;
+  padding: 10px;
+}
+
+.folder-app-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.folder-app-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.folder-app-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.folder-app-name {
+  font-size: 12px;
+  text-align: center;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Folder window styling */
+.wb-body:has(.folder-content) {
+  padding: 0;
+  background: transparent;
+}
