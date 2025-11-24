@@ -9,6 +9,7 @@ import { LoginScreen } from './ui/LoginScreen.js';
 import AppRegistry from './apps/AppRegistry.js';
 import nextGenKernel from './NextGenKernel.js';
 import './ui/CommandPalette.css';
+import './ui/desktop.css';
 import AIAssistant from './apps/ai-assistant/AIAssistant.js';
 import Terminal from './apps/terminal/Terminal.js';
 import FileManager from './apps/file-manager/FileManager.js';
