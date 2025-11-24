@@ -11,7 +11,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html')
-      }
+      },
+      external: ['react', 'react-dom']
     }
   },
   plugins: [

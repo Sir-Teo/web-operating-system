@@ -10,7 +10,7 @@ import {
   SUPPORTED_LANGUAGES,
   type ExecutionResult,
 } from '../../system/runtime';
-import { getFileSystem } from '../../system/filesystem/FileSystemService';
+import VFS from '../../filesystem/VFS.js';
 
 interface NotebookCell {
   id: string;
@@ -146,7 +146,7 @@ const InteractiveNotebook: React.FC<NotebookProps> = ({ windowId }) => {
   };
 
   const saveNotebook = async () => {
-    const fs = getFileSystem();
+    const fs = VFS;
     const notebookData = {
       language,
       cells: cells.map(c => ({
@@ -166,7 +166,7 @@ const InteractiveNotebook: React.FC<NotebookProps> = ({ windowId }) => {
   };
 
   const loadNotebook = async (filename: string) => {
-    const fs = getFileSystem();
+    const fs = VFS;
     try {
       const content = await fs.readFile(filename);
       const notebookData = JSON.parse(content);
