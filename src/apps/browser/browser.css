@@ -1,0 +1,146 @@
+
+/* Proxy Engine Indicators */
+.proxy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(52, 152, 219, 0.2);
+  border: 1px solid rgba(52, 152, 219, 0.4);
+  border-radius: 12px;
+  font-size: 11px;
+  color: #3498db;
+  font-weight: 500;
+}
+
+.popup-notification {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.popup-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  animation: popupBounce 0.6s ease;
+}
+
+@keyframes popupBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.popup-notification h2 {
+  font-size: 28px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.popup-notification p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  opacity: 0.95;
+}
+
+.popup-url {
+  font-family: 'Monaco', 'Consolas', monospace;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  word-break: break-all;
+}
+
+.popup-help {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.popup-retry {
+  margin-top: 24px;
+  padding: 12px 32px;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.popup-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading spinner for proxy */
+.proxy-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.proxy-loading::after {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: proxySpinner 0.8s linear infinite;
+}
+
+@keyframes proxySpinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Browser iframe with proxy */
+.browser-iframe.proxy-iframe {
+  border: 2px solid rgba(52, 152, 219, 0.3);
+  background: #f8f9fa;
+}
+
+/* Enhanced status bar for proxy info */
+#status-info {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* Proxy menu items */
+.menu-item #proxy-status {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.menu-item #proxy-status.disabled {
+  color: #e74c3c;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .popup-notification {
+    padding: 20px;
+  }
+
+  .popup-icon {
+    font-size: 60px;
+  }
+
+  .popup-notification h2 {
+    font-size: 22px;
+  }
+
+  .popup-notification p {
+    font-size: 14px;
+  }
+}

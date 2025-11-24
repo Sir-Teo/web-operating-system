@@ -1,12 +1,14 @@
 /**
  * Next-Generation Web Browser Application
  * Advanced browser with tabs, groups, downloads, dev tools, and more
+ * Now with Proxy Engine to handle embed-blocked sites!
  */
 import { BrowserTabManager } from './BrowserTabManager.js';
 import { BookmarkManager } from './BookmarkManager.js';
 import { HistoryManager } from './HistoryManager.js';
 import { DownloadManager } from './DownloadManager.js';
 import { RecentlyClosedManager } from './RecentlyClosedManager.js';
+import { ProxyBrowserEngine } from './ProxyBrowserEngine.js';
 
 export default class Browser {
   constructor(context) {
@@ -16,6 +18,7 @@ export default class Browser {
     this.historyManager = new HistoryManager();
     this.downloadManager = new DownloadManager();
     this.recentlyClosedManager = new RecentlyClosedManager();
+    this.proxyEngine = new ProxyBrowserEngine();
     this.container = null;
     this.currentIframe = null;
     this._isUpdatingUI = false;
@@ -31,6 +34,7 @@ export default class Browser {
     this.devToolsOpen = false;
     this.readingMode = false;
     this.autoExternalFallback = true;
+    this.useProxyEngine = true; // Enable proxy engine by default
     this.iframeCompatibilityRules = [
       {
         id: 'google',
@@ -76,6 +80,12 @@ export default class Browser {
    * Initialize the application
    */
   async init() {
+    // Initialize proxy engine
+    if (this.useProxyEngine) {
+      await this.proxyEngine.initialize();
+      console.log('✅ Proxy Browser Engine enabled');
+    }
+
     // Create initial tab
     this.tabManager.createTab('about:blank');
 
@@ -197,6 +207,14 @@ export default class Browser {
             <button class="menu-item" id="search-engine-menu">
               <span class="menu-icon">🔍</span>
               <span>Search Engine: <span id="current-engine">${this.currentSearchEngine}</span></span>
+            </button>
+            <button class="menu-item" id="proxy-toggle-menu">
+              <span class="menu-icon">🌐</span>
+              <span>Proxy Engine: <span id="proxy-status">Enabled</span></span>
+            </button>
+            <button class="menu-item" id="proxy-switch-menu">
+              <span class="menu-icon">🔄</span>
+              <span>Switch Proxy Service</span>
             </button>
           </div>
         </div>
@@ -354,6 +372,14 @@ export default class Browser {
 
     this.container.querySelector('#search-engine-menu')?.addEventListener('click', () => {
       this.cycleSearchEngine();
+    });
+
+    this.container.querySelector('#proxy-toggle-menu')?.addEventListener('click', () => {
+      this.toggleProxyEngine();
+    });
+
+    this.container.querySelector('#proxy-switch-menu')?.addEventListener('click', () => {
+      this.switchProxyService();
     });
 
     // Tab context menu
@@ -527,100 +553,217 @@ export default class Browser {
   }
 
   /**
-   * Load URL in iframe
+   * Load URL in iframe - Now with Proxy Engine!
    * @param {string} url - URL to load
    */
-  loadURL(url) {
+  async loadURL(url) {
     const viewContainer = this.container.querySelector('#browser-view');
     if (!viewContainer) return;
 
     // Remove existing iframe and error overlay
     viewContainer.innerHTML = '';
+    this.updateStatus('Loading...');
 
-    const compatibilityRule = this.getIframeCompatibilityRule(url);
-    if (compatibilityRule) {
-      if (compatibilityRule.forceExternal && this.autoExternalFallback) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
-      this.showIframeError(url, compatibilityRule.message, {
-        title: compatibilityRule.title,
-        explanation: compatibilityRule.explanation,
-        details: compatibilityRule.details,
-        suggestions: compatibilityRule.suggestions,
-        statusMessage: 'Blocked by site restrictions'
-      });
-      this.currentIframe = null;
-      return;
+    const tab = this.tabManager.getActiveTab();
+    if (tab) {
+      this.tabManager.updateTabInfo(tab.id, { loading: true });
     }
 
+    // Use proxy engine if enabled
+    if (this.useProxyEngine) {
+      try {
+        const strategy = this.proxyEngine.getRecommendedStrategy(url);
+        console.log(`  Using strategy: ${strategy} for ${url}`);
+
+        const result = await this.proxyEngine.loadURL(url, {
+          container: viewContainer,
+          preferProxy: true,
+          allowPopup: true,
+          onLoad: (result) => {
+            this.handleProxyLoadSuccess(result, url);
+          },
+          onError: (error) => {
+            this.handleProxyLoadError(error, url);
+          }
+        });
+
+        if (result.type === 'popup') {
+          this.showPopupNotification(url);
+          this.updateStatus('Opened in popup window');
+          if (tab) {
+            this.tabManager.updateTabInfo(tab.id, { loading: false });
+          }
+          return;
+        }
+
+        if (result.type === 'error') {
+          this.showIframeError(url, result.error, {
+            title: 'Cannot Load Page',
+            explanation: 'This site blocks embedding and all bypass methods failed.',
+            suggestions: [
+              'The site has strong anti-embedding protections',
+              'Try opening in a new browser tab instead',
+              'Some sites only work in their native browser'
+            ]
+          });
+          return;
+        }
+
+        // Success - iframe loaded
+        this.currentIframe = result.element;
+
+        // Show proxy indicator if proxied
+        if (result.type === 'proxy-iframe') {
+          this.showProxyIndicator(result.proxy);
+        }
+
+        // Try to get title after load
+        setTimeout(() => {
+          if (tab && this.currentIframe) {
+            let title = url;
+            try {
+              title = this.currentIframe.contentDocument?.title || url;
+            } catch (e) {
+              // Cross-origin
+            }
+
+            this.tabManager.updateTabInfo(tab.id, {
+              loading: false,
+              title: title
+            });
+
+            // Add to history
+            this.historyManager.addEntry({ url, title });
+            this.updateStatus(result.type === 'proxy-iframe' ? `Loaded via ${result.proxy}` : 'Loaded');
+          }
+        }, 1000);
+
+      } catch (error) {
+        console.error('Proxy engine error:', error);
+        this.showIframeError(url, error.message);
+      }
+    } else {
+      // Fallback to legacy iframe loading
+      this.loadURLLegacy(url, viewContainer);
+    }
+  }
+
+  /**
+   * Legacy iframe loading (fallback)
+   */
+  loadURLLegacy(url, viewContainer) {
     url = this.applyIframeCompatibility(url);
 
-    // Create new iframe
     const iframe = document.createElement('iframe');
     iframe.src = url;
     iframe.className = 'browser-iframe';
-    iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
+    iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads';
 
     let loadSuccessful = false;
     let loadTimeout = null;
 
-    // Loading handlers
     iframe.addEventListener('load', () => {
       loadSuccessful = true;
       clearTimeout(loadTimeout);
 
       const tab = this.tabManager.getActiveTab();
       if (tab) {
-        // Try to access iframe content to verify it loaded successfully
         let title = url;
         try {
           title = iframe.contentDocument?.title || url;
-        } catch (e) {
-          // Cross-origin - can't access title, but iframe loaded
-        }
+        } catch (e) {}
 
         this.tabManager.updateTabInfo(tab.id, {
           loading: false,
           title: title
         });
 
-        // Add to history
-        this.historyManager.addEntry({
-          url,
-          title: title
-        });
-
+        this.historyManager.addEntry({ url, title });
         this.updateStatus('Loaded');
       }
     });
 
     iframe.addEventListener('error', () => {
-      loadSuccessful = true; // Prevent timeout from also showing error
+      loadSuccessful = true;
       clearTimeout(loadTimeout);
       this.showIframeError(url, 'Failed to load the page');
     });
 
-    // Set a timeout to detect if iframe fails to load
-    // This catches X-Frame-Options and CSP violations which don't trigger error events
     loadTimeout = setTimeout(() => {
       if (!loadSuccessful) {
-        // Check if iframe is still blank/unloaded
-        try {
-          // Try to access iframe location
-          const iframeLocation = iframe.contentWindow?.location?.href;
-          if (!iframeLocation || iframeLocation === 'about:blank') {
-            this.showIframeError(url, 'Unable to display this page in a frame');
-          }
-        } catch (e) {
-          // Cross-origin error - might indicate the page is trying to load but blocked
-          this.showIframeError(url, 'This website cannot be displayed in a frame');
-        }
+        this.showIframeError(url, 'This website cannot be displayed in a frame');
       }
-    }, 5000); // 5 second timeout
+    }, 5000);
 
     viewContainer.appendChild(iframe);
     this.currentIframe = iframe;
-    this.updateStatus('Loading...');
+  }
+
+  /**
+   * Handle successful proxy load
+   */
+  handleProxyLoadSuccess(result, url) {
+    console.log(`✅ Successfully loaded ${url} using ${result.type}`);
+  }
+
+  /**
+   * Handle proxy load error
+   */
+  handleProxyLoadError(error, url) {
+    console.error(`❌ Failed to load ${url}:`, error);
+  }
+
+  /**
+   * Show popup notification
+   */
+  showPopupNotification(url) {
+    const viewContainer = this.container.querySelector('#browser-view');
+    if (!viewContainer) return;
+
+    viewContainer.innerHTML = `
+      <div class="popup-notification">
+        <div class="popup-icon">🪟</div>
+        <h2>Opened in Popup Window</h2>
+        <p>This site couldn't be embedded, so it was opened in a popup window.</p>
+        <p class="popup-url">${this.escapeHtml(url)}</p>
+        <p class="popup-help">If the popup was blocked, check your browser's popup settings.</p>
+        <button class="popup-retry" onclick="window.open('${url}', '_blank')">
+          Retry Opening Popup
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Show proxy indicator
+   */
+  showProxyIndicator(proxyName) {
+    const statusInfo = this.container.querySelector('#status-info');
+    if (statusInfo) {
+      statusInfo.innerHTML = `<span class="proxy-badge" title="Loaded via proxy">📡 ${proxyName}</span>`;
+    }
+  }
+
+  /**
+   * Toggle proxy engine
+   */
+  toggleProxyEngine() {
+    this.useProxyEngine = !this.useProxyEngine;
+
+    const statusSpan = this.container.querySelector('#proxy-status');
+    if (statusSpan) {
+      statusSpan.textContent = this.useProxyEngine ? 'Enabled' : 'Disabled';
+    }
+
+    this.updateStatus(`Proxy Engine ${this.useProxyEngine ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Switch proxy service
+   */
+  switchProxyService() {
+    const newProxy = this.proxyEngine.switchProxy();
+    this.updateStatus(`Switched to proxy: ${newProxy.name}`);
   }
 
   /**
