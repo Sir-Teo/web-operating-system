@@ -1,3 +1,5 @@
+import './Maps.css';
+
 export default class Maps {
   constructor(context) {
     this.context = context;
@@ -111,6 +113,24 @@ export default class Maps {
             ` : ''}
           </div>
 
+          <div class="poi-section">
+            <h3>Nearby Places</h3>
+            <div class="poi-list">
+              ${this.showPOIs
+                ? this.pois.slice(0, 6).map(poi => `
+                  <div class="poi-item">
+                    <span class="poi-icon">${poi.icon}</span>
+                    <div class="poi-info">
+                      <div class="poi-name">${poi.name}</div>
+                      <div class="poi-meta">${poi.type}</div>
+                    </div>
+                  </div>
+                `).join('')
+                : '<div class="empty-state">Enable POIs to see what is nearby.</div>'
+              }
+            </div>
+          </div>
+
           <div class="saved-places-section">
             <h3>Saved Places</h3>
             <div class="saved-places-list">
@@ -159,6 +179,23 @@ export default class Maps {
               <div class="coordinates">
                 ${this.currentLocation.lat.toFixed(4)}°, ${this.currentLocation.lng.toFixed(4)}°
               </div>
+            </div>
+            <div class="map-overlay">
+              <div class="overlay-row">
+                <div class="overlay-card">
+                  <div class="overlay-label">View</div>
+                  <div class="overlay-value">${this.viewMode}</div>
+                </div>
+                <div class="overlay-card">
+                  <div class="overlay-label">Markers</div>
+                  <div class="overlay-value">${this.markers.length}</div>
+                </div>
+                <div class="overlay-card">
+                  <div class="overlay-label">Saved</div>
+                  <div class="overlay-value">${this.savedPlaces.length}</div>
+                </div>
+              </div>
+              <div class="overlay-hint">Click anywhere on the map to move the camera. Use “Add Marker” to drop a pin.</div>
             </div>
           </div>
         </div>

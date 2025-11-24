@@ -28,7 +28,7 @@ export class WebXRManager {
     // Check for AR support
     this.arSupported = await navigator.xr.isSessionSupported('immersive-ar');
     
-    console.log(\`✅ WebXR initialized (VR: \${this.vrSupported}, AR: \${this.arSupported})\`);
+    console.log(`✅ WebXR initialized (VR: ${this.vrSupported}, AR: ${this.arSupported})`);
     return true;
   }
 

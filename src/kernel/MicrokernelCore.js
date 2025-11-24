@@ -10,14 +10,14 @@
  * - Capability-based security at the kernel level
  */
 
-import { EventBus } from './EventBus.js';
+import { eventBus } from '../utils/EventBus.js';
 
 export class MicrokernelCore {
   constructor() {
     this.services = new Map();
     this.workers = new Map();
     this.messageQueue = [];
-    this.eventBus = EventBus.getInstance();
+    this.eventBus = eventBus;
     this.capabilities = new Map();
     this.serviceStates = new Map();
 

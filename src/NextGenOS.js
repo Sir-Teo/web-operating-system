@@ -126,7 +126,7 @@ export class NextGenOS {
       this.initialized = true;
 
       console.log('='.repeat(50));
-      console.log(\`✅ Next-Gen OS initialized in \${initTime}ms\`);
+      console.log(`✅ Next-Gen OS initialized in ${initTime}ms`);
       console.log('='.repeat(50));
       
       this.printSystemInfo();
@@ -152,7 +152,7 @@ export class NextGenOS {
     
     for (const [feature, enabled] of Object.entries(this.features)) {
       if (enabled) {
-        console.log(\`  ✓ \${feature}\`);
+        console.log(`  ✓ ${feature}`);
       }
     }
     
@@ -160,13 +160,13 @@ export class NextGenOS {
     console.log('💾 Resources:');
     if (this.monitor) {
       const metrics = this.monitor.getMetrics();
-      console.log(\`  Memory: \${(metrics.memory.used / 1024 / 1024).toFixed(2)} MB / \${(metrics.memory.total / 1024 / 1024).toFixed(2)} MB\`);
-      console.log(\`  CPU: \${metrics.cpu.toFixed(1)}%\`);
+      console.log(`  Memory: ${(metrics.memory.used / 1024 / 1024).toFixed(2)} MB / ${(metrics.memory.total / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`  CPU: ${metrics.cpu.toFixed(1)}%`);
     }
     
     if (this.gpu && this.gpu.isSupported()) {
       const deviceInfo = this.gpu.getDeviceInfo();
-      console.log(\`  GPU: \${deviceInfo?.vendor || 'Unknown'}\`);
+      console.log(`  GPU: ${deviceInfo?.vendor || 'Unknown'}`);
     }
     
     console.log('');

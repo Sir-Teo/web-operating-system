@@ -19,6 +19,8 @@ export class MeshNetwork {
     this.routingTable = new Map();
     this.taskQueue = [];
     this.runningTasks = new Map();
+    this.messageHandlers = new Map();
+    this.pendingRequests = new Map();
     this.config = {
       maxPeers: 10,
       heartbeatInterval: 5000,
@@ -30,7 +32,7 @@ export class MeshNetwork {
 
   async initialize() {
     console.log('🌐 Initializing Mesh Network...');
-    console.log(\`  Local Node ID: \${this.localNodeId}\`);
+    console.log(`  Local Node ID: ${this.localNodeId}`);
     if (!this.checkWebRTCSupport()) {
       console.error('❌ WebRTC not supported');
       return false;
@@ -54,14 +56,14 @@ export class MeshNetwork {
   }
 
   generateNodeId() {
-    return \`node_\${Date.now()}_\${Math.random().toString(36).substr(2, 9)}\`;
+    return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   async submitTask(code, data = {}, options = {}) {
     const taskId = this.generateTaskId();
     const targetPeer = this.selectPeerForTask(options);
     if (!targetPeer) {
-      console.log(\`  Executing task locally: \${taskId}\`);
+      console.log(`  Executing task locally: ${taskId}`);
       return await this.executeTask(code, data);
     }
     return new Promise((resolve, reject) => {
@@ -79,7 +81,7 @@ export class MeshNetwork {
   }
 
   generateTaskId() {
-    return \`task_\${Date.now()}_\${Math.random().toString(36).substr(2, 9)}\`;
+    return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   getLocalResources() {
@@ -91,6 +93,102 @@ export class MeshNetwork {
 
   startHeartbeat() {}
   startTaskScheduler() {}
+
+  /**
+   * Register a handler for a specific message type.
+   */
+  registerMessageHandler(type, handler) {
+    if (!this.messageHandlers.has(type)) {
+      this.messageHandlers.set(type, []);
+    }
+    this.messageHandlers.get(type).push(handler);
+    // return unsubscribe
+    return () => {
+      const handlers = this.messageHandlers.get(type) || [];
+      this.messageHandlers.set(
+        type,
+        handlers.filter(h => h !== handler)
+      );
+    };
+  }
+
+  /**
+   * Fire-and-forget message to a peer (simulated locally).
+   */
+  sendMessage(peerId, message) {
+    this._deliverMessage(peerId, message);
+  }
+
+  /**
+   * Request/response helper. Simulates async peer messaging.
+   */
+  sendRequest(peerId, message, timeout = this.config.taskTimeout) {
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const payload = { ...message, messageId };
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pendingRequests.delete(messageId);
+        reject(new Error('Request timeout'));
+      }, timeout);
+
+      this.pendingRequests.set(messageId, {
+        resolve: (data) => {
+          clearTimeout(timer);
+          this.pendingRequests.delete(messageId);
+          resolve(data);
+        },
+        reject: (error) => {
+          clearTimeout(timer);
+          this.pendingRequests.delete(messageId);
+          reject(error instanceof Error ? error : new Error(error));
+        }
+      });
+
+      this._deliverMessage(peerId, payload);
+    });
+  }
+
+  /**
+   * Resolve a pending request by messageId.
+   */
+  sendResponse(peerId, messageId, data) {
+    const pending = this.pendingRequests.get(messageId);
+    if (pending) {
+      pending.resolve(data);
+    } else {
+      console.warn(`MeshNetwork: no pending request for message ${messageId}`);
+    }
+  }
+
+  /**
+   * Broadcast a message to all peers (simulated).
+   */
+  broadcast(message) {
+    // In this simplified implementation, deliver locally
+    this._deliverMessage('local', message);
+  }
+
+  /**
+   * Return a list of known peers (empty in stub).
+   */
+  getPeers() {
+    return Array.from(this.peers.values());
+  }
+
+  /**
+   * Internal dispatcher to run registered handlers.
+   */
+  _deliverMessage(peerId, message) {
+    const handlers = this.messageHandlers.get(message.type) || [];
+    handlers.forEach(handler => {
+      try {
+        handler(peerId, message);
+      } catch (error) {
+        console.error(`MeshNetwork handler error for ${message.type}:`, error);
+      }
+    });
+  }
 
   getNetworkStats() {
     return {
@@ -114,3 +212,5 @@ export function getMeshNetwork() {
   if (!meshInstance) meshInstance = new MeshNetwork();
   return meshInstance;
 }
+
+export default MeshNetwork;

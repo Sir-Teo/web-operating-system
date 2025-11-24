@@ -53,20 +53,20 @@ export class ContainerRuntime {
     };
 
     this.containers.set(containerId, container);
-    console.log(\`  ✓ Container created: \${containerId}\`);
+    console.log(`  ✓ Container created: ${containerId}`);
     
     return container;
   }
 
   async startContainer(containerId) {
     const container = this.containers.get(containerId);
-    if (!container) throw new Error(\`Container not found: \${containerId}\`);
+    if (!container) throw new Error(`Container not found: ${containerId}`);
 
     // Create isolated worker for container
-    const workerCode = \`
+    const workerCode = `
       const container = {
-        id: '\${containerId}',
-        env: \${JSON.stringify(container.env)}
+        id: '${containerId}',
+        env: ${JSON.stringify(container.env)}
       };
       
       self.onmessage = (e) => {
@@ -81,7 +81,7 @@ export class ContainerRuntime {
       };
       
       self.postMessage({ type: 'ready' });
-    \`;
+    `;
 
     const blob = new Blob([workerCode], { type: 'application/javascript' });
     const worker = new Worker(URL.createObjectURL(blob));
@@ -90,7 +90,7 @@ export class ContainerRuntime {
     container.state = 'running';
     container.started = Date.now();
 
-    console.log(\`  ✓ Container started: \${containerId}\`);
+    console.log(`  ✓ Container started: ${containerId}`);
     return container;
   }
 
@@ -104,19 +104,19 @@ export class ContainerRuntime {
     }
 
     container.state = 'stopped';
-    console.log(\`  ✓ Container stopped: \${containerId}\`);
+    console.log(`  ✓ Container stopped: ${containerId}`);
   }
 
   async removeContainer(containerId) {
     await this.stopContainer(containerId);
     this.containers.delete(containerId);
-    console.log(\`  ✓ Container removed: \${containerId}\`);
+    console.log(`  ✓ Container removed: ${containerId}`);
   }
 
   async execInContainer(containerId, command) {
     const container = this.containers.get(containerId);
     if (!container || container.state !== 'running') {
-      throw new Error(\`Container not running: \${containerId}\`);
+      throw new Error(`Container not running: ${containerId}`);
     }
 
     return new Promise((resolve, reject) => {
@@ -152,7 +152,7 @@ export class ContainerRuntime {
   }
 
   generateContainerId() {
-    return \`container_\${Math.random().toString(36).substr(2, 12)}\`;
+    return `container_${Math.random().toString(36).substr(2, 12)}`;
   }
 
   async shutdown() {

@@ -82,7 +82,7 @@ export class AdvancedMonitor {
     const processLimits = this.limits.get(processId);
     processLimits[resource] = limit;
     
-    console.log(\`  ✓ Set \${resource} limit for process \${processId}: \${limit}\`);
+    console.log(`  ✓ Set ${resource} limit for process ${processId}: ${limit}`);
   }
 
   enforcelimits() {
@@ -106,7 +106,7 @@ export class AdvancedMonitor {
   }
 
   handleLimitExceeded(processId, resource, current, limit) {
-    console.warn(\`⚠️  Process \${processId} exceeded \${resource} limit: \${current} > \${limit}\`);
+    console.warn(`⚠️  Process ${processId} exceeded ${resource} limit: ${current} > ${limit}`);
     
     window.dispatchEvent(new CustomEvent('resource:limit-exceeded', {
       detail: { processId, resource, current, limit }
