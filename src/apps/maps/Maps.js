@@ -5,6 +5,10 @@ export default class Maps {
     this.context = context;
     this.fs = context.fs;
     this._resizeHandler = null;
+    this._leafletLoaded = null;
+    this.map = null;
+    this.tileLayer = null;
+    this.markersLayer = null;
 
     this.currentLocation = { lat: 37.7749, lng: -122.4194, name: 'San Francisco' };
     this.zoom = 12;
@@ -205,13 +209,8 @@ export default class Maps {
     `;
 
     this.attachEventListeners(container);
-    // Defer drawing until the element is attached to the DOM so sizing works
-    requestAnimationFrame(() => this.drawMap());
-
-    if (!this._resizeHandler) {
-      this._resizeHandler = () => this.drawMap();
-      window.addEventListener('resize', this._resizeHandler);
-    }
+    // Defer map render until attached so sizing is correct
+    requestAnimationFrame(() => this._renderLeafletMap());
     return container;
   }
 
@@ -436,192 +435,116 @@ export default class Maps {
       });
     }
 
-    // Canvas interaction
-    const canvas = container.querySelector('.map-canvas');
-    if (canvas) {
-      canvas.addEventListener('click', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Simple pan functionality
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const offsetX = (x - centerX) / 10000 * (20 - this.zoom);
-        const offsetY = (centerY - y) / 10000 * (20 - this.zoom);
-
-        this.currentLocation = {
-          lat: this.currentLocation.lat + offsetY,
-          lng: this.currentLocation.lng + offsetX,
-          name: 'Custom Location'
-        };
-        this.refresh();
-      });
-    }
+    // Map interaction handled by Leaflet once loaded
   }
 
-  drawMap(container = this.container) {
-    if (!container) return;
-    const canvas = container.querySelector('.map-canvas');
-    if (!canvas) return;
+  async _ensureLeaflet() {
+    if (window.L) return window.L;
+    if (this._leafletLoaded) return this._leafletLoaded;
 
-    const ctx = canvas.getContext('2d');
-    const parent = canvas.parentElement;
-
-    const parentWidth = parent.clientWidth || 900;
-    const parentHeight = parent.clientHeight || 560;
-    canvas.width = parentWidth;
-    canvas.height = parentHeight;
-
-    // Draw background based on view mode
-    if (this.viewMode === 'satellite') {
-      ctx.fillStyle = '#2d5016';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    } else if (this.viewMode === 'terrain') {
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#8B7355');
-      gradient.addColorStop(0.5, '#90a955');
-      gradient.addColorStop(1, '#6a994e');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    } else {
-      ctx.fillStyle = '#e8f4f8';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // Draw grid
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.lineWidth = 1;
-    const gridSize = 50;
-
-    for (let x = 0; x < canvas.width; x += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-
-    for (let y = 0; y < canvas.height; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-
-    // Draw center marker
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#c0392b';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw route if exists
-    if (this.route && this.routeStart && this.routeEnd) {
-      const startX = centerX + (this.routeStart.lng - this.currentLocation.lng) * 10000 / (20 - this.zoom);
-      const startY = centerY + (this.currentLocation.lat - this.routeStart.lat) * 10000 / (20 - this.zoom);
-      const endX = centerX + (this.routeEnd.lng - this.currentLocation.lng) * 10000 / (20 - this.zoom);
-      const endY = centerY + (this.currentLocation.lat - this.routeEnd.lat) * 10000 / (20 - this.zoom);
-
-      // Draw route line
-      ctx.strokeStyle = '#3498db';
-      ctx.lineWidth = 4;
-      ctx.setLineDash([10, 5]);
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw start/end points
-      ctx.fillStyle = '#27ae60';
-      ctx.beginPath();
-      ctx.arc(startX, startY, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.arc(endX, endY, 8, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Draw measurement line
-    if (this.measureStart && this.measureEnd) {
-      const startX = centerX + (this.measureStart.lng - this.currentLocation.lng) * 10000 / (20 - this.zoom);
-      const startY = centerY + (this.currentLocation.lat - this.measureStart.lat) * 10000 / (20 - this.zoom);
-      const endX = centerX + (this.measureEnd.lng - this.currentLocation.lng) * 10000 / (20 - this.zoom);
-      const endY = centerY + (this.currentLocation.lat - this.measureEnd.lat) * 10000 / (20 - this.zoom);
-
-      ctx.strokeStyle = '#f39c12';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = '#f39c12';
-      ctx.beginPath();
-      ctx.arc(startX, startY, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(endX, endY, 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Draw POIs if enabled
-    if (this.showPOIs) {
-      this.pois.forEach(poi => {
-        const dx = (poi.lng - this.currentLocation.lng) * 10000 / (20 - this.zoom);
-        const dy = (this.currentLocation.lat - poi.lat) * 10000 / (20 - this.zoom);
-        const poiX = centerX + dx;
-        const poiY = centerY + dy;
-
-        if (poiX >= 0 && poiX <= canvas.width && poiY >= 0 && poiY <= canvas.height) {
-          // Draw POI marker
-          ctx.fillStyle = '#9b59b6';
-          ctx.beginPath();
-          ctx.arc(poiX, poiY, 5, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Draw POI label
-          ctx.fillStyle = '#8e44ad';
-          ctx.font = '9px sans-serif';
-          ctx.fillText(poi.name, poiX + 8, poiY - 8);
-        }
-      });
-    }
-
-    // Draw markers
-    this.markers.forEach(marker => {
-      const dx = (marker.lng - this.currentLocation.lng) * 10000 / (20 - this.zoom);
-      const dy = (this.currentLocation.lat - marker.lat) * 10000 / (20 - this.zoom);
-      const markerX = centerX + dx;
-      const markerY = centerY + dy;
-
-      if (markerX >= 0 && markerX <= canvas.width && markerY >= 0 && markerY <= canvas.height) {
-        ctx.fillStyle = '#3498db';
-        ctx.beginPath();
-        ctx.arc(markerX, markerY, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#2980b9';
-        ctx.font = '10px sans-serif';
-        ctx.fillText(marker.name, markerX + 10, markerY - 10);
+    this._leafletLoaded = new Promise((resolve, reject) => {
+      // CSS
+      if (!document.querySelector('link[data-leaflet]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.setAttribute('data-leaflet', 'true');
+        document.head.appendChild(link);
       }
+
+      // JS
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => resolve(window.L);
+      script.onerror = reject;
+      document.body.appendChild(script);
     });
 
-    // Draw zoom level
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.font = '12px monospace';
-    ctx.fillText(`Zoom: ${this.zoom}`, 10, canvas.height - 10);
+    return this._leafletLoaded;
+  }
+
+  async _renderLeafletMap() {
+    if (!this.container) return;
+    const mapEl = this.container.querySelector('.map-canvas');
+    if (!mapEl) return;
+
+    try {
+      const L = await this._ensureLeaflet();
+
+      if (this.map) {
+        this.map.remove();
+      }
+
+      this.map = L.map(mapEl, {
+        zoomControl: false
+      }).setView([this.currentLocation.lat, this.currentLocation.lng], this.zoom);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(this.map);
+
+      // Zoom buttons hook into Leaflet
+      const zoomInBtn = this.container.querySelector('.zoom-in-btn');
+      const zoomOutBtn = this.container.querySelector('.zoom-out-btn');
+      if (zoomInBtn) zoomInBtn.onclick = () => this.map.zoomIn();
+      if (zoomOutBtn) zoomOutBtn.onclick = () => this.map.zoomOut();
+
+      // Current location marker
+      L.marker([this.currentLocation.lat, this.currentLocation.lng], {
+        title: this.currentLocation.name
+      }).addTo(this.map);
+
+      // Saved places markers
+      this.savedPlaces.forEach(place => {
+        const icon = L.divIcon({
+          className: 'place-pin',
+          html: `<div class="pin-icon">${place.icon || '📍'}</div>`
+        });
+        L.marker([place.lat, place.lng], { icon, title: place.name }).addTo(this.map);
+      });
+
+      // User markers (custom pins)
+      this.markers.forEach(marker => {
+        const icon = L.divIcon({
+          className: 'marker-pin',
+          html: `<div class="pin-icon">📌</div>`
+        });
+        L.marker([marker.lat, marker.lng], { icon, title: marker.name }).addTo(this.map);
+      });
+
+      // POIs
+      if (this.showPOIs) {
+        const poiLayer = L.layerGroup();
+        this.pois.forEach(poi => {
+          const icon = L.divIcon({
+            className: 'poi-pin',
+            html: `<div class="pin-icon">${poi.icon}</div>`
+          });
+          L.marker([poi.lat, poi.lng], { icon, title: poi.name }).addTo(poiLayer);
+        });
+        poiLayer.addTo(this.map);
+      }
+
+      // Click to move camera
+      this.map.on('click', (e) => {
+        this.currentLocation = {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+          name: 'Pinned Location'
+        };
+        this.saveData();
+        this.refresh();
+      });
+
+      // Keep zoom in sync with UI
+      this.map.on('zoomend', () => {
+        this.zoom = this.map.getZoom();
+      });
+    } catch (error) {
+      console.error('Failed to load map tiles:', error);
+    }
   }
 
   calculateDistance(point1, point2) {
