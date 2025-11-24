@@ -15,13 +15,15 @@ export class LanguageCommands {
    * Register all language commands
    */
   registerCommands(commands) {
+    const self = this;
+
     // Python command
     commands.python = {
       description: 'Execute Python code',
       usage: 'python [options] [file or -c "code"]',
       async execute(args) {
-        return this.executeLanguage('python', args);
-      }.bind(this),
+        return self.executeLanguage('python', args);
+      },
     };
 
     // Python alias
@@ -29,8 +31,8 @@ export class LanguageCommands {
       description: 'Execute Python code (alias for python)',
       usage: 'py [options] [file or -c "code"]',
       async execute(args) {
-        return this.executeLanguage('python', args);
-      }.bind(this),
+        return self.executeLanguage('python', args);
+      },
     };
 
     // JavaScript/Node command
@@ -38,8 +40,8 @@ export class LanguageCommands {
       description: 'Execute JavaScript code',
       usage: 'node [options] [file or -e "code"]',
       async execute(args) {
-        return this.executeLanguage('javascript', args, '-e');
-      }.bind(this),
+        return self.executeLanguage('javascript', args, '-e');
+      },
     };
 
     // Ruby command
@@ -47,8 +49,8 @@ export class LanguageCommands {
       description: 'Execute Ruby code',
       usage: 'ruby [options] [file or -e "code"]',
       async execute(args) {
-        return this.executeLanguage('ruby', args, '-e');
-      }.bind(this),
+        return self.executeLanguage('ruby', args, '-e');
+      },
     };
 
     // Ruby alias
@@ -56,8 +58,8 @@ export class LanguageCommands {
       description: 'Execute Ruby code (alias for ruby)',
       usage: 'rb [options] [file or -e "code"]',
       async execute(args) {
-        return this.executeLanguage('ruby', args, '-e');
-      }.bind(this),
+        return self.executeLanguage('ruby', args, '-e');
+      },
     };
 
     // PHP command
@@ -65,8 +67,8 @@ export class LanguageCommands {
       description: 'Execute PHP code',
       usage: 'php [options] [file or -r "code"]',
       async execute(args) {
-        return this.executeLanguage('php', args, '-r');
-      }.bind(this),
+        return self.executeLanguage('php', args, '-r');
+      },
     };
 
     // TypeScript command
@@ -74,8 +76,8 @@ export class LanguageCommands {
       description: 'Execute TypeScript code',
       usage: 'ts [options] [file or -e "code"]',
       async execute(args) {
-        return this.executeLanguage('typescript', args, '-e');
-      }.bind(this),
+        return self.executeLanguage('typescript', args, '-e');
+      },
     };
 
     // SQLite command
@@ -83,8 +85,8 @@ export class LanguageCommands {
       description: 'Execute SQL queries',
       usage: 'sqlite [file or -c "query"]',
       async execute(args) {
-        return this.executeLanguage('sql', args);
-      }.bind(this),
+        return self.executeLanguage('sql', args);
+      },
     };
 
     // SQL alias
@@ -92,8 +94,8 @@ export class LanguageCommands {
       description: 'Execute SQL queries (alias for sqlite)',
       usage: 'sql [file or -c "query"]',
       async execute(args) {
-        return this.executeLanguage('sql', args);
-      }.bind(this),
+        return self.executeLanguage('sql', args);
+      },
     };
 
     // Language info command
@@ -101,8 +103,8 @@ export class LanguageCommands {
       description: 'Show information about available language runtimes',
       usage: 'langinfo [language]',
       async execute(args) {
-        return this.showLanguageInfo(args);
-      }.bind(this),
+        return self.showLanguageInfo(args);
+      },
     };
 
     // Install package command
@@ -110,8 +112,8 @@ export class LanguageCommands {
       description: 'Install a package for a language runtime',
       usage: 'langinstall <language> <package>',
       async execute(args) {
-        return this.installPackage(args);
-      }.bind(this),
+        return self.installPackage(args);
+      },
     };
 
     // REPL command
@@ -119,8 +121,8 @@ export class LanguageCommands {
       description: 'Start an interactive REPL for a language',
       usage: 'repl <language>',
       async execute(args) {
-        return this.startREPL(args);
-      }.bind(this),
+        return self.startREPL(args);
+      },
     };
   }
 
