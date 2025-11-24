@@ -206,7 +206,7 @@ export default class Maps {
 
     this.attachEventListeners(container);
     // Defer drawing until the element is attached to the DOM so sizing works
-    setTimeout(() => this.drawMap(), 0);
+    requestAnimationFrame(() => this.drawMap());
 
     if (!this._resizeHandler) {
       this._resizeHandler = () => this.drawMap();
@@ -468,8 +468,10 @@ export default class Maps {
     const ctx = canvas.getContext('2d');
     const parent = canvas.parentElement;
 
-    canvas.width = parent.clientWidth;
-    canvas.height = parent.clientHeight;
+    const parentWidth = parent.clientWidth || 900;
+    const parentHeight = parent.clientHeight || 560;
+    canvas.width = parentWidth;
+    canvas.height = parentHeight;
 
     // Draw background based on view mode
     if (this.viewMode === 'satellite') {
