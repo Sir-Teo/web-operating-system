@@ -6,6 +6,9 @@ const monacoEditorPlugin = monacoEditorPluginModule.default || monacoEditorPlugi
 
 export default defineConfig({
   base: './',
+  define: {
+    global: 'globalThis',
+  },
   build: {
     outDir: 'dist',
     rollupOptions: {
