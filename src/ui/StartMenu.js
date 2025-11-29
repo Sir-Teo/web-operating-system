@@ -23,8 +23,8 @@ export class StartMenu {
         const appItem = document.createElement('div');
         appItem.className = 'start-menu-app';
         appItem.innerHTML = `
-          <span class="app-icon">${app.icon}</span>
-          <span class="app-name">${app.name}</span>
+          <div class="app-icon">${app.icon}</div>
+          <div class="app-name">${app.name}</div>
         `;
 
         appItem.addEventListener('click', async () => {
@@ -44,23 +44,36 @@ export class StartMenu {
       const confirmed = confirm('Are you sure you want to shut down?');
       if (confirmed) {
         await this.kernel.shutdown();
-        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:2rem;">System Shutdown</div>';
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:2rem;background:#000;color:#fff;">System Shutdown</div>';
       }
     });
 
     // Close start menu when clicking outside
     document.addEventListener('click', (e) => {
-      if (!this.element.contains(e.target) && !document.getElementById('start-button').contains(e.target)) {
+      const startMenu = this.element;
+      const startButton = document.getElementById('start-button');
+
+      if (startMenu.classList.contains('visible') &&
+        !startMenu.contains(e.target) &&
+        !startButton.contains(e.target)) {
         this.hide();
       }
     });
   }
 
   show() {
-    this.element.style.display = 'block';
+    this.element.style.display = 'flex';
+    // Force reflow
+    this.element.offsetHeight;
+    this.element.classList.add('visible');
   }
 
   hide() {
-    this.element.style.display = 'none';
+    this.element.classList.remove('visible');
+    setTimeout(() => {
+      if (!this.element.classList.contains('visible')) {
+        this.element.style.display = 'none';
+      }
+    }, 300);
   }
 }

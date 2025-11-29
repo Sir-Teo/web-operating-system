@@ -2,16 +2,17 @@
 .winbox {
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  animation: windowFadeIn 0.3s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: windowFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @keyframes windowFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(20px);
+    transform: scale(0.9) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -19,7 +20,7 @@
 }
 
 .wb-body {
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: auto;
@@ -27,79 +28,132 @@
   position: relative;
 }
 
+/* Dark mode support for window body */
+@media (prefers-color-scheme: dark) {
+  .wb-body {
+    background: rgba(30, 30, 40, 0.95);
+    color: #eee;
+  }
+}
+
 .wb-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(240, 240, 240, 0.8);
+  color: #333;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .wb-header {
+    background: rgba(40, 40, 50, 0.8);
+    color: #eee;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
 }
 
 .wb-title {
   font-weight: 600;
   font-size: 13px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-align: center;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .wb-icon {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-.wb-icon:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  display: none;
+  /* Hide icon in header for cleaner look */
 }
 
 /* Controls container for proper button alignment */
 .wb-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
+  position: absolute;
+  left: 16px;
+  /* macOS style: controls on left */
 }
 
 .wb-min,
 .wb-max,
 .wb-close {
-  background: rgba(255, 255, 255, 0.2);
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 8px;
+  border: none;
+  opacity: 1;
 }
 
-.wb-min:hover {
-  background: rgba(255, 193, 7, 0.8);
-  transform: scale(1.1);
+/* Traffic lights colors */
+.wb-close {
+  background-color: #ff5f56;
+  order: 1;
 }
 
-.wb-max:hover {
-  background: rgba(40, 167, 69, 0.8);
-  transform: scale(1.1);
+.wb-min {
+  background-color: #ffbd2e;
+  order: 2;
+}
+
+.wb-max {
+  background-color: #27c93f;
+  order: 3;
+}
+
+/* Hover effects showing symbols */
+.wb-controls:hover .wb-close::after {
+  content: '×';
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.wb-controls:hover .wb-min::after {
+  content: '−';
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: bold;
+}
+
+.wb-controls:hover .wb-max::after {
+  content: '+';
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 10px;
+  line-height: 1;
 }
 
 .wb-close:hover {
-  background: rgba(220, 53, 69, 0.9);
-  transform: scale(1.1);
+  background-color: #ff5f56;
+  opacity: 0.8;
+}
+
+.wb-min:hover {
+  background-color: #ffbd2e;
+  opacity: 0.8;
+}
+
+.wb-max:hover {
+  background-color: #27c93f;
+  opacity: 0.8;
 }
 
 /* Custom scrollbar for windows */

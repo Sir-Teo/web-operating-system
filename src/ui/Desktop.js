@@ -190,6 +190,10 @@ export class Desktop {
       <div class="icon-label">${data.name}</div>
     `;
 
+    icon.addEventListener('click', async () => {
+      // Simple click effect or selection logic could go here
+    });
+
     icon.addEventListener('dblclick', async () => {
       await this._launchApp(data.appId);
     });
@@ -201,9 +205,16 @@ export class Desktop {
   async _launchApp(appId) {
     try {
       const { default: AppRegistry } = await import('../apps/AppRegistry.js');
+      
+      // Add visual feedback
+      document.body.style.cursor = 'wait';
+      
       await AppRegistry.launchApp(appId);
+      
+      document.body.style.cursor = 'default';
     } catch (error) {
       console.error('Failed to launch app:', error);
+      document.body.style.cursor = 'default';
     }
   }
 
@@ -219,22 +230,36 @@ export class Desktop {
     // Click to hide context menu
     document.addEventListener('click', () => {
       const contextMenu = document.getElementById('context-menu');
-      contextMenu.style.display = 'none';
+      if (contextMenu) contextMenu.style.display = 'none';
     });
   }
 
   _showContextMenu(x, y) {
     const contextMenu = document.getElementById('context-menu');
+    if (!contextMenu) return;
+
     contextMenu.innerHTML = `
       <div class="context-menu-item" data-action="refresh">🔄 Refresh</div>
       <div class="context-menu-divider"></div>
+      <div class="context-menu-item" data-action="wallpaper">🖼️ Change Wallpaper</div>
       <div class="context-menu-item" data-action="personalize">🎨 Personalize</div>
+      <div class="context-menu-divider"></div>
       <div class="context-menu-item" data-action="cascade">⊞ Cascade Windows</div>
       <div class="context-menu-item" data-action="tile">⊞ Tile Windows</div>
     `;
 
-    contextMenu.style.left = `${x}px`;
-    contextMenu.style.top = `${y}px`;
+    // Adjust position to keep within viewport
+    const menuWidth = 200;
+    const menuHeight = 200;
+    
+    let posX = x;
+    let posY = y;
+
+    if (x + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 10;
+    if (y + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight - 10;
+
+    contextMenu.style.left = `${posX}px`;
+    contextMenu.style.top = `${posY}px`;
     contextMenu.style.display = 'block';
 
     // Add click handlers
@@ -255,14 +280,42 @@ export class Desktop {
           case 'tile':
             WindowManager.tileWindows();
             break;
+          case 'wallpaper':
+            this._cycleWallpaper();
+            break;
           case 'personalize':
-            console.log('Personalize - not implemented yet');
+            const { default: AppRegistry } = await import('../apps/AppRegistry.js');
+            AppRegistry.launchApp('settings');
             break;
         }
 
         contextMenu.style.display = 'none';
       });
     });
+  }
+
+  _cycleWallpaper() {
+    const wallpapers = [
+      'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=80&w=2070&auto=format&fit=crop', // Mountains
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop', // Space
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2070&auto=format&fit=crop', // Landscape
+      'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop', // Abstract
+      '#2c3e50' // Solid color fallback
+    ];
+    
+    // Get current wallpaper index or default to 0
+    let currentIndex = parseInt(localStorage.getItem('wallpaperIndex') || '0');
+    currentIndex = (currentIndex + 1) % wallpapers.length;
+    
+    const newWallpaper = wallpapers[currentIndex];
+    localStorage.setItem('wallpaperIndex', currentIndex.toString());
+    
+    if (newWallpaper.startsWith('#')) {
+      this.element.style.backgroundImage = 'none';
+      this.element.style.backgroundColor = newWallpaper;
+    } else {
+      this.element.style.backgroundImage = `url(${newWallpaper})`;
+    }
   }
 
   show() {

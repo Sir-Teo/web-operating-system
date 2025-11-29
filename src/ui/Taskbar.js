@@ -52,8 +52,13 @@ export class Taskbar {
   addWindow(windowId, title) {
     const button = document.createElement('button');
     button.className = 'taskbar-window-button';
-    button.textContent = title || 'Window';
     button.dataset.windowId = windowId;
+    button.title = title || 'Window'; // Tooltip for title since text is hidden
+
+    // Try to find an icon based on title or default
+    // In a real app, we'd pass the icon path/char from the window creation event
+    const iconChar = this._getIconForTitle(title);
+    button.innerHTML = `<span style="font-size: 20px;">${iconChar}</span>`;
 
     button.addEventListener('click', async () => {
       // Focus or minimize window
@@ -62,31 +67,73 @@ export class Taskbar {
       if (window) {
         if (window.winbox.min) {
           window.winbox.restore();
+          button.classList.add('active');
+        } else if (document.activeElement === window.winbox.body || window.winbox.focused) {
+          window.winbox.minimize();
+          button.classList.remove('active');
+        } else {
+          window.winbox.focus();
+          button.classList.add('active');
         }
-        window.winbox.focus();
       }
     });
 
     this.windowsContainer.appendChild(button);
     this.windows.set(windowId, button);
+
+    // Animate in
+    button.style.opacity = '0';
+    button.style.transform = 'scale(0.5)';
+    requestAnimationFrame(() => {
+      button.style.opacity = '1';
+      button.style.transform = 'scale(1)';
+    });
+  }
+
+  _getIconForTitle(title) {
+    if (!title) return '📄';
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('terminal')) return '💻';
+    if (lowerTitle.includes('file')) return '📁';
+    if (lowerTitle.includes('editor')) return '📝';
+    if (lowerTitle.includes('browser')) return '🌐';
+    if (lowerTitle.includes('settings')) return '⚙️';
+    if (lowerTitle.includes('calculator')) return '🧮';
+    if (lowerTitle.includes('music')) return '🎵';
+    if (lowerTitle.includes('video')) return '🎬';
+    if (lowerTitle.includes('image')) return '🖼️';
+    if (lowerTitle.includes('chat')) return '💬';
+    return '📄';
   }
 
   removeWindow(windowId) {
     const button = this.windows.get(windowId);
     if (button) {
-      button.remove();
-      this.windows.delete(windowId);
+      button.style.opacity = '0';
+      button.style.transform = 'scale(0.5)';
+      setTimeout(() => {
+        button.remove();
+        this.windows.delete(windowId);
+      }, 200);
     }
   }
 
   _toggleStartMenu() {
     const startMenu = document.getElementById('start-menu');
-    const isVisible = startMenu.style.display === 'block';
+    const isVisible = startMenu.classList.contains('visible');
 
     if (isVisible) {
-      startMenu.style.display = 'none';
+      startMenu.classList.remove('visible');
+      setTimeout(() => {
+        if (!startMenu.classList.contains('visible')) {
+          startMenu.style.display = 'none';
+        }
+      }, 300); // Wait for transition
     } else {
-      startMenu.style.display = 'block';
+      startMenu.style.display = 'flex';
+      // Force reflow
+      startMenu.offsetHeight;
+      startMenu.classList.add('visible');
     }
   }
 
@@ -95,7 +142,10 @@ export class Taskbar {
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
+      // Optional: Add seconds or date
+      // const seconds = String(now.getSeconds()).padStart(2, '0');
       this.clock.textContent = `${hours}:${minutes}`;
+      this.clock.title = now.toLocaleDateString();
     };
 
     updateClock();
