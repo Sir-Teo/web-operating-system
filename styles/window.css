@@ -1,86 +1,85 @@
 /* WinBox customization */
 .winbox {
-  border-radius: 12px;
+  border-radius: 10px;
+  /* macOS radius */
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: windowFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1);
+  /* Deep shadow + border */
+  border: none;
+  animation: windowScaleIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-@keyframes windowFadeIn {
+@keyframes windowScaleIn {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.9);
   }
 
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
 }
 
 .wb-body {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  overflow: auto;
-  height: 100%;
+  background: #ffffff;
   position: relative;
 }
 
 /* Dark mode support for window body */
 @media (prefers-color-scheme: dark) {
   .wb-body {
-    background: rgba(30, 30, 40, 0.95);
-    color: #eee;
+    background: #1e1e1e;
+    color: #fff;
   }
 }
 
 .wb-header {
-  background: rgba(240, 240, 240, 0.8);
+  background: #f6f6f6;
+  /* macOS light mode header */
   color: #333;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  height: 28px;
+  /* Standard macOS title bar height */
+  min-height: 28px;
+  padding: 0 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  min-height: 44px;
+  justify-content: center;
+  /* Center title */
 }
 
 @media (prefers-color-scheme: dark) {
   .wb-header {
-    background: rgba(40, 40, 50, 0.8);
-    color: #eee;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: #2d2d2d;
+    color: #ddd;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.5);
   }
 }
 
 .wb-title {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
   font-size: 13px;
   text-align: center;
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   pointer-events: none;
+  opacity: 0.9;
 }
 
 .wb-icon {
   display: none;
-  /* Hide icon in header for cleaner look */
 }
 
 /* Controls container for proper button alignment */
 .wb-controls {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-  position: absolute;
-  left: 16px;
-  /* macOS style: controls on left */
 }
 
 .wb-min,
@@ -89,32 +88,28 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 8px;
-  border: none;
-  opacity: 1;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  position: relative;
+  background-clip: padding-box;
+  transition: filter 0.2s;
 }
 
 /* Traffic lights colors */
 .wb-close {
-  background-color: #ff5f56;
+  background-color: #ff5f57;
   order: 1;
 }
 
 .wb-min {
-  background-color: #ffbd2e;
+  background-color: #febc2e;
   order: 2;
 }
 
 .wb-max {
-  background-color: #27c93f;
+  background-color: #28c840;
   order: 3;
 }
 

@@ -10,6 +10,11 @@ export class Desktop {
   }
 
   async init() {
+    // Initialize Top Bar
+    const { TopBar } = await import('./TopBar.js');
+    this.topBar = new TopBar(this.kernel);
+    this.topBar.init();
+
     await this._loadWallpaper();
     await this._loadIcons();
     this.show();
@@ -205,12 +210,12 @@ export class Desktop {
   async _launchApp(appId) {
     try {
       const { default: AppRegistry } = await import('../apps/AppRegistry.js');
-      
+
       // Add visual feedback
       document.body.style.cursor = 'wait';
-      
+
       await AppRegistry.launchApp(appId);
-      
+
       document.body.style.cursor = 'default';
     } catch (error) {
       console.error('Failed to launch app:', error);
@@ -251,7 +256,7 @@ export class Desktop {
     // Adjust position to keep within viewport
     const menuWidth = 200;
     const menuHeight = 200;
-    
+
     let posX = x;
     let posY = y;
 
@@ -302,14 +307,14 @@ export class Desktop {
       'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop', // Abstract
       '#2c3e50' // Solid color fallback
     ];
-    
+
     // Get current wallpaper index or default to 0
     let currentIndex = parseInt(localStorage.getItem('wallpaperIndex') || '0');
     currentIndex = (currentIndex + 1) % wallpapers.length;
-    
+
     const newWallpaper = wallpapers[currentIndex];
     localStorage.setItem('wallpaperIndex', currentIndex.toString());
-    
+
     if (newWallpaper.startsWith('#')) {
       this.element.style.backgroundImage = 'none';
       this.element.style.backgroundColor = newWallpaper;

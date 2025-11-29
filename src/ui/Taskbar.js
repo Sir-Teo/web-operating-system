@@ -84,10 +84,17 @@ export class Taskbar {
     // Animate in
     button.style.opacity = '0';
     button.style.transform = 'scale(0.5)';
+    button.classList.add('bouncing'); // Add bounce class
+
     requestAnimationFrame(() => {
       button.style.opacity = '1';
       button.style.transform = 'scale(1)';
     });
+
+    // Remove bounce after animation
+    setTimeout(() => {
+      button.classList.remove('bouncing');
+    }, 2000);
   }
 
   _getIconForTitle(title) {
