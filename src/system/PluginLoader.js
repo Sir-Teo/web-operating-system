@@ -21,7 +21,19 @@ export class PluginLoader {
   async init() {
     try {
       // Ensure plugin directory exists
-      await this.vfs.mkdir(this.pluginDir, { recursive: true }).catch(() => {});
+      try {
+        await this.vfs.mkdir(this.pluginDir, { recursive: true });
+      } catch (e) {
+        // Ignore if directory already exists
+        if (e.code !== 'EEXIST') {
+          // If the error object has no code or it's not EEXIST, re-throw
+          // But since the original code was doing .catch(() => {}), it intended to ignore errors
+          // The issue was undefined catch on the result of await?
+          // No, await returns the result, which might not be a promise if vfs.mkdir is sync or not standard
+          // However, usually vfs.mkdir returns a promise.
+          // If vfs is mocked in tests and returns undefined, then .catch fails.
+        }
+      }
 
       console.log('[PluginLoader] Initialized');
     } catch (error) {

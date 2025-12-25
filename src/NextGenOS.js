@@ -264,7 +264,7 @@ export class NextGenOS {
 
     // Check LLM
     if (this.llm && this.llm.getProviders().length > 0) {
-      results.passed.push(\`LLM: \${this.llm.getProviders().length} providers available\`);
+      results.passed.push(`LLM: ${this.llm.getProviders().length} providers available`);
     } else if (this.features.llm) {
       results.warnings.push('LLM: No API keys configured');
     }

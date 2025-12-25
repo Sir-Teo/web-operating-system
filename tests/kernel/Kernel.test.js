@@ -31,6 +31,8 @@ describe('Kernel', () => {
         writeFile: vi.fn(),
         mkdir: vi.fn(),
         sync: vi.fn(),
+        userHomeExists: vi.fn().mockResolvedValue(true),
+        createUserHome: vi.fn().mockResolvedValue(true),
       },
     }));
 

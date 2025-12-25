@@ -359,11 +359,11 @@ export class DistributedTaskExecutor {
       return fnString;
     }
 
-    const cleaned = typeof fnString === 'string'
-      ? fnString.split(',')[0].trim()
-      : '';
+    if (typeof fnString !== 'string') return () => {};
 
-    return new Function('return ' + cleaned)();
+    // For map/work functions, assume it's a single function
+    // If it's a reduce function config like "func, initVal", this method isn't for that
+    return new Function('return ' + fnString.trim())();
   }
 
   /**
@@ -374,13 +374,32 @@ export class DistributedTaskExecutor {
       return { fn: fnString, initialValue: 0 };
     }
 
-    const parts = typeof fnString === 'string' ? fnString.split(',') : [];
-    const fnPart = parts[0]?.trim() || '(acc, val) => acc';
-    const initialValue = parts[1] !== undefined ? Number(parts[1]) : 0;
+    if (typeof fnString !== 'string') {
+      return { fn: (acc) => acc, initialValue: 0 };
+    }
 
+    // Attempt to split by last comma for initial value if present
+    // This is a naive heuristic but works for simple cases
+    // A better approach would be to pass function and initial value separately
+    const lastCommaIndex = fnString.lastIndexOf(',');
+
+    if (lastCommaIndex !== -1) {
+      const possibleInitValue = fnString.substring(lastCommaIndex + 1).trim();
+      const fnPart = fnString.substring(0, lastCommaIndex).trim();
+
+      // Check if the part after last comma is a number
+      if (!isNaN(Number(possibleInitValue)) && possibleInitValue !== '') {
+        return {
+          fn: new Function('return ' + fnPart)(),
+          initialValue: Number(possibleInitValue)
+        };
+      }
+    }
+
+    // Fallback: assume the whole string is the function
     return {
-      fn: new Function('return ' + fnPart)(),
-      initialValue: Number.isNaN(initialValue) ? 0 : initialValue
+      fn: new Function('return ' + fnString)(),
+      initialValue: 0
     };
   }
 
