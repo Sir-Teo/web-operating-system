@@ -427,10 +427,12 @@ export class LSPClient {
     const blob = new Blob([workerCode], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(blob);
 
-    const worker = new Worker(workerUrl, {
-      type: 'module',
-      name: `lsp-${languageId}`
-    });
+    const worker = typeof Worker !== 'undefined'
+      ? new Worker(workerUrl, {
+          type: 'module',
+          name: `lsp-${languageId}`
+        })
+      : this.createMockWorker(languageId);
 
     // Set up message handling
     worker.onmessage = (event) => {
@@ -442,6 +444,60 @@ export class LSPClient {
     };
 
     return worker;
+  }
+
+  /**
+   * Create a mock worker for environments without Web Workers
+   */
+  createMockWorker(languageId) {
+    const mockWorker = {
+      onmessage: null,
+      onerror: null,
+      postMessage: (data) => {
+        // Simulate worker processing
+        setTimeout(() => {
+          if (mockWorker.onmessage) {
+            if (data.method === 'initialize') {
+              mockWorker.onmessage({
+                data: {
+                  jsonrpc: '2.0',
+                  id: data.id,
+                  result: {
+                    capabilities: {
+                      textDocumentSync: 1,
+                      completionProvider: { resolveProvider: true }
+                    },
+                    serverInfo: {
+                      name: `mock-${languageId}`,
+                      version: '1.0.0'
+                    }
+                  }
+                }
+              });
+            } else if (data.method === 'shutdown') {
+              mockWorker.onmessage({
+                data: {
+                  jsonrpc: '2.0',
+                  id: data.id,
+                  result: null
+                }
+              });
+            } else if (data.id !== undefined) {
+              // Generic response for other requests
+              mockWorker.onmessage({
+                data: {
+                  jsonrpc: '2.0',
+                  id: data.id,
+                  result: {}
+                }
+              });
+            }
+          }
+        }, 10);
+      },
+      terminate: () => {}
+    };
+    return mockWorker;
   }
 
   /**

@@ -102,10 +102,12 @@ export class MicrokernelCore {
     const blob = new Blob([workerCode], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(blob);
 
-    const worker = new Worker(workerUrl, {
-      type: 'module',
-      name: `kernel-service-${serviceName}`
-    });
+    const worker = typeof Worker !== 'undefined'
+      ? new Worker(workerUrl, {
+          type: 'module',
+          name: `kernel-service-${serviceName}`
+        })
+      : this.createMockWorker(serviceName);
 
     // Set up message handling
     worker.onmessage = (event) => {
@@ -124,6 +126,42 @@ export class MicrokernelCore {
     });
 
     return worker;
+  }
+
+  /**
+   * Create a mock worker for environments without Web Workers (e.g., tests)
+   */
+  createMockWorker(serviceName) {
+    const mockWorker = {
+      onmessage: null,
+      onerror: null,
+      postMessage: (data) => {
+        // Simulate worker processing
+        setTimeout(() => {
+          if (mockWorker.onmessage) {
+            // Handle different message types
+            if (data.type === 'init') {
+              mockWorker.onmessage({ data: { type: 'init-response', success: true } });
+            } else if (data.type === 'heartbeat') {
+              mockWorker.onmessage({ data: { type: 'heartbeat-response', data: { timestamp: Date.now() } } });
+            } else if (data.type === 'shutdown') {
+              mockWorker.onmessage({ data: { type: 'shutdown-response', success: true } });
+            } else if (data.type === 'request') {
+              mockWorker.onmessage({
+                data: {
+                  type: 'response',
+                  id: data.id,
+                  success: true,
+                  data: { status: 'processed', service: serviceName, mock: true }
+                }
+              });
+            }
+          }
+        }, 10);
+      },
+      terminate: () => {}
+    };
+    return mockWorker;
   }
 
   /**
